@@ -1,6 +1,6 @@
 # 공개 GitHub 비실행 스냅샷 게시
 
-상태: 활성
+상태: 완료
 
 ## 목표
 
@@ -32,8 +32,8 @@
 - [x] 공개용 orphan worktree 생성
 - [x] 설정 제외 및 공개 경고 문서화
 - [x] 공개 이력·비밀정보·미디어 검증
-- [ ] 원격 main 게시 및 fresh clone 검증
-- [ ] 리뷰와 문서화
+- [x] 원격 main 게시 및 fresh clone 검증
+- [x] 리뷰와 문서화
 
 ## 진행 상황
 
@@ -43,6 +43,8 @@
 - 2026-08-10: 공개 스냅샷 하네스 실패가 누락을 명시한 README와 일치함을 확인했습니다.
 - 2026-08-10: 로컬 fresh clone 검증을 통과했습니다.
 - 2026-08-10: HTTPS 자격 증명과 GitHub SSH 공개키가 없어 원격 push가 차단되었습니다.
+- 2026-08-10: GitHub CLI 인증 후 HTTP/1.1과 확장 전송 버퍼로 원격 main 게시를 완료했습니다.
+- 2026-08-10: 원격 fresh clone, 공개 범위, 기본 브랜치, secret scanning과 push protection을 확인했습니다.
 
 ## 명령과 증거
 
@@ -51,8 +53,9 @@
 | `./scripts/harness check` | BASELINED | 테스트 63개, 기존 실패 9개, 새 회귀 없음 |
 | 공개 tree 검사 | PASS | 제외 파일 없음, 선택된 비밀 패턴 없음, 최대 미디어 16,306,587 bytes |
 | 로컬 fresh clone 검사 | PASS | 단일 이력, 제외 파일·비밀 패턴 없음, 정적 미디어 8개 |
-| `git push -u origin HEAD:main` | BLOCKED | HTTPS 사용자 자격 증명을 읽을 수 없음 |
-| GitHub SSH 인증 | BLOCKED | 등록된 공개키가 없어 `Permission denied (publickey)` |
+| `git push -u origin HEAD:main` | PASS | 원격 main 생성, 커밋 `4a406d2` 게시 |
+| 원격 fresh clone 검사 | PASS | main 단일 이력, 제외 파일·비밀 패턴 없음, 정적 미디어 8개 |
+| GitHub 저장소 설정 | PASS | PUBLIC, 기본 브랜치 main, secret scanning·push protection 활성 |
 
 ## 위험과 롤백
 
@@ -62,8 +65,7 @@
 
 ## 미해결 항목
 
-- 사용자가 GitHub CLI 또는 Git credential을 인증한 뒤 push를 재실행합니다.
-- 원격 게시 후 공개 범위와 secret protection 설정을 확인합니다.
+- 없음.
 
 ## 완료 조건
 
