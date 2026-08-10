@@ -1,0 +1,7 @@
+NC-DATA-001|src/main/resources/application.yml|Flyway baseline-on-migrate가 활성화되어 있음
+NC-OPS-001|src/main/resources/application.yml|실제 Toss URL과 reconciliation이 모두 기본값으로 활성화되어 있음
+NC-OPS-002|compose.yaml|Compose 기본값이 실제 Toss URL과 활성화된 reconciliation을 결합함
+NC-OPS-003|compose.yaml|MySQL이 기본적으로 host loopback에 공개됨
+NC-SEC-001|src/main/java/com/nanacocoa/server/common/security/config/SecurityConfig.java|CSRF 보호가 비활성화되어 있음
+NC-SEC-002|src/main/java/com/nanacocoa/server/member/controller/AuthController.java|로그아웃이 상태 변경 요청으로 GET을 허용함
+NC-SEC-003|src/main/java/com/nanacocoa/server/common/session/SessionLoginService.java|로그인 성공 시 명시적 세션 ID 회전이 없음

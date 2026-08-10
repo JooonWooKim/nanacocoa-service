@@ -1,0 +1,26 @@
+.gradle/
+build/
+out/
+
+.idea/
+*.iml
+
+.DS_Store
+Thumbs.db
+
+*.log
+
+# Local deployment secrets
+.env
+.env.*
+
+# Private runtime and deployment configuration
+.env.example
+src/main/resources/application.yml
+src/test/resources/application-test.yml
+compose.yaml
+Dockerfile
+.dockerignore
+
+# Local unpublished media
+/IMG_2399.HEIC

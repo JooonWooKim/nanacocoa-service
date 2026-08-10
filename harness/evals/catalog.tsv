@@ -1,0 +1,16 @@
+# id|위험|test_id|성공 조건|문서
+APP-001|Spring 애플리케이션 context가 test 프로필로 시작될 수 있음|com.nanacocoa.server.NanacocoaServerApplicationTests#contextLoads|애플리케이션 context가 예외 없이 로드됨|docs/quality/RELIABILITY.md
+DB-001|운영 Flyway 이력이 순서대로 적용됨|com.nanacocoa.server.migration.FlywayMigrationTest#appliesBaselineAndPaymentMigrations|등록된 모든 마이그레이션이 적용되고 예상 주문·결제 스키마가 존재함|docs/runbooks/database-migrations.md
+DB-002|JPA mapping이 마이그레이션된 스키마와 일치함|com.nanacocoa.server.migration.JpaSchemaValidationTest#applicationStartsWithFlywaySchemaValidation|Flyway와 ddl-auto validate를 함께 사용해 애플리케이션이 시작됨|docs/runbooks/database-migrations.md
+AUTH-001|알려진 사용자 로그인이 예상 세션 계약을 설정함|com.nanacocoa.server.NanacocoaServerApplicationTests#loginCreatesAuthenticatedSessionForDemoUser|로그인이 인증된 사용자 정보를 반환하고 세션을 생성함|docs/product-specs/evaluation-catalog.md
+AUTH-002|잘못된 자격 증명이 세션 없이 실패 우선으로 닫힘|com.nanacocoa.server.NanacocoaServerApplicationTests#loginRejectsInvalidPasswordWithoutCreatingSession|응답이 미인증·익명이며 세션을 생성하지 않음|docs/quality/SECURITY.md
+AUTH-003|회원가입이 검증·저장·hash·인증을 수행함|com.nanacocoa.server.NanacocoaServerApplicationTests#signupStoresMemberWithBcryptedPasswordAndCreatesSession|회원이 BCrypt 비밀번호로 저장되고 인증된 세션 응답을 반환함|docs/product-specs/evaluation-catalog.md
+ORDER-001|주문 합계가 서버의 상품 가격을 사용함|com.nanacocoa.server.order.service.OrderServiceTest#createsMultiItemOrderUsingServerPrices|여러 상품의 금액이 저장된 상품 가격으로 계산됨|docs/product-specs/evaluation-catalog.md
+PAY-001|승인이 제공자와 데이터베이스의 일관된 상태에 도달함|com.nanacocoa.server.payment.facade.PaymentFacadeTest#confirmsPaymentAndCompletesDatabaseState|승인이 결제와 주문 상태를 한 번만 완료함|docs/quality/RELIABILITY.md
+PAY-002|승인 멱등성이 중복 제공자 호출을 방지함|com.nanacocoa.server.payment.facade.PaymentFacadeTest#idempotentSuccessReplayDoesNotCallProvider|재실행이 추가 제공자 호출 없이 이전 성공을 반환함|docs/quality/RELIABILITY.md
+PAY-003|동시 결제 시도가 실패 우선으로 닫힘|com.nanacocoa.server.payment.lock.PaymentLockManagerTest#rejectsConcurrentRequestWhenWaitTimeExpires|두 번째 경합 요청이 제한된 대기 후 거부됨|docs/quality/RELIABILITY.md
+PAY-004|대기 중 결제 복구가 권위 있는 제공자 상태를 사용함|com.nanacocoa.server.payment.service.PaymentRecoveryServiceTest#completesPendingPaymentWhenProviderLookupIsDone|제공자 확인 후에만 대기 중 결제를 완료함|docs/quality/RELIABILITY.md
+PAY-005|결제 취소가 허용된 상태 전이를 따름|com.nanacocoa.server.payment.service.PaymentStateTest#approvalAndFullCancellationFollowAllowedTransitions|승인된 결제와 주문이 완전 취소 상태에 도달함|docs/quality/RELIABILITY.md
+STORAGE-001|S3 어댑터가 생성된 key와 CDN 응답을 만듦|com.nanacocoa.server.products.storage.S3ProductImageStorageTest#uploadsWithGeneratedKeyAndReturnsCdnUrl|mock S3 요청과 반환 공개 URL이 어댑터 계약을 만족함|docs/product-specs/evaluation-catalog.md
+SEC-001|익명 호출자가 인증이 필요한 주문을 생성할 수 없음|com.nanacocoa.server.NanacocoaServerApplicationTests#createOrderRequiresLogin|미인증 주문 요청이 AUTH_01로 거부됨|docs/quality/SECURITY.md
+OPS-001|애플리케이션이 기계 판독 가능한 상태 API를 제공함|com.nanacocoa.server.NanacocoaServerApplicationTests#healthApiReturnsOk|상태 API가 HTTP 200과 ok 상태를 반환함|docs/quality/OBSERVABILITY.md

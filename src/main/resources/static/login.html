@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>로그인 | nanacocoa</title>
+    <meta
+      name="description"
+      content="nanacocoa 로그인 페이지"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="login-body">
+    <main class="login-page" aria-labelledby="login-title">
+      <header class="login-topbar" aria-label="로그인 상단 메뉴">
+        <button class="login-nav-button" type="button" aria-label="이전 페이지" onclick="history.back()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 18 9 12l6-6"></path>
+            <path d="M10 12h11"></path>
+          </svg>
+        </button>
+        <a class="login-nav-button" href="index.html" aria-label="홈으로 이동">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m3 11 9-8 9 8"></path>
+            <path d="M5 10v10h5v-6h4v6h5V10"></path>
+          </svg>
+        </a>
+      </header>
+
+      <section class="login-content">
+        <div class="login-heading">
+          <h1 id="login-title">로그인</h1>
+          <p>
+            아이디와 비밀번호 입력하기 귀찮으시죠?<br />
+            1초 회원가입으로 입력없이 간편하게 로그인 하세요.
+          </p>
+        </div>
+
+        <button class="social-login kakao-login" type="button" data-social-login>
+          <span class="kakao-icon" aria-hidden="true"></span>
+          <span>카카오 1초 로그인/회원가입</span>
+        </button>
+
+        <div class="login-divider" role="separator">
+          <span>또는</span>
+        </div>
+
+        <form class="login-form" action="/api/auth/login" method="post" data-login-form>
+          <label class="login-field">
+            <span class="visually-hidden">이메일</span>
+            <input
+              class="login-input"
+              type="email"
+              name="email"
+              autocomplete="email"
+              placeholder="이메일"
+              required
+            />
+          </label>
+
+          <label class="login-field">
+            <span class="visually-hidden">비밀번호</span>
+            <input
+              class="login-input"
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              placeholder="비밀번호"
+              required
+            />
+          </label>
+
+          <label class="secure-login">
+            <input type="checkbox" name="secure" checked />
+            <span class="secure-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="6" y="10" width="12" height="10" rx="1.5"></rect>
+                <path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10"></path>
+              </svg>
+            </span>
+            <span>보안접속</span>
+          </label>
+
+          <p class="login-message" role="alert" aria-live="polite" hidden></p>
+
+          <button class="login-submit" type="submit">로그인</button>
+        </form>
+
+        <nav class="login-links" aria-label="계정 메뉴">
+          <a href="#">아이디 찾기</a>
+          <a href="#">비밀번호 찾기</a>
+          <a href="signup.html">회원가입</a>
+        </nav>
+
+        <button class="social-login naver-login" type="button" data-social-login>
+          <span class="naver-icon" aria-hidden="true">N</span>
+          <span>네이버 로그인</span>
+        </button>
+      </section>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>

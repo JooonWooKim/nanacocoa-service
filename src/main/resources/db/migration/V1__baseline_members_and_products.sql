@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS members (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  password VARCHAR(100) NOT NULL,
+  is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME(6) NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT uk_members_email UNIQUE (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS products (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  price BIGINT NOT NULL,
+  summary VARCHAR(500) NOT NULL,
+  detail_title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  image_url VARCHAR(500),
+  created_at DATETIME(6) NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT uk_products_name UNIQUE (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

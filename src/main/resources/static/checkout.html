@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>주문하기 | nanacocoa</title>
+    <meta name="description" content="nanacocoa 주문 정보 입력 및 주문 생성" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="상단 메뉴">
+      <button class="icon-button menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="side-menu">
+        <span class="menu-line"></span>
+        <span class="menu-line"></span>
+      </button>
+
+      <a class="brand" href="index.html" aria-label="nanacocoa 홈">
+        <img src="IMG_1483.JPG" alt="nanacocoa" />
+      </a>
+
+      <nav class="quick-actions" aria-label="빠른 메뉴">
+        <a class="icon-button" href="products.html#product-list" aria-label="검색">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m16.5 16.5 4 4"></path>
+          </svg>
+        </a>
+        <a class="icon-button cart-link" href="products.html" aria-label="상품 목록">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.5 8.5h11l1 11h-13l1-11Z"></path>
+            <path d="M9 8.5a3 3 0 0 1 6 0"></path>
+          </svg>
+        </a>
+      </nav>
+    </header>
+
+    <aside class="side-menu" id="side-menu" aria-hidden="true">
+      <div class="menu-session">
+        <p>로그인이 필요합니다.</p>
+        <a href="login.html">로그인</a>
+      </div>
+
+      <nav class="drawer-nav" aria-label="전체 메뉴">
+        <div class="drawer-group is-open">
+          <button type="button" class="drawer-trigger" aria-expanded="true">
+            <span>About</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="index.html#about">nanacocoa story</a>
+          </div>
+        </div>
+
+        <div class="drawer-group is-open">
+          <button type="button" class="drawer-trigger" aria-expanded="true">
+            <span>Shop</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="products.html">All</a>
+            <a href="index.html#shop">New In</a>
+            <a href="index.html#shop">Tableware</a>
+            <a href="index.html#shop">Mugs</a>
+            <a href="index.html#shop">Ritual</a>
+            <a href="index.html#shop">One Piece, Only</a>
+          </div>
+        </div>
+
+        <a class="drawer-link" href="index.html#workshop">Workshop</a>
+        <a class="drawer-link" href="index.html#archive">Archive</a>
+
+        <div class="drawer-group">
+          <button type="button" class="drawer-trigger" aria-expanded="false">
+            <span>Care</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="index.html#care">Notice</a>
+            <a href="index.html#care">How to use</a>
+            <a href="index.html#care">FAQ</a>
+            <a href="index.html#care">Shipping &amp; Return</a>
+            <a href="index.html#contact">1:1 Q&amp;A</a>
+          </div>
+        </div>
+
+        <a class="drawer-link" href="index.html#contact">Contact</a>
+      </nav>
+    </aside>
+
+    <button class="menu-scrim" type="button" aria-label="메뉴 닫기" hidden></button>
+
+    <main class="checkout-page" data-checkout-page>
+      <header class="checkout-heading">
+        <p>ORDER</p>
+        <h1>주문하기</h1>
+        <a href="products.html">상품 목록으로 돌아가기</a>
+      </header>
+
+      <div class="checkout-guard" data-checkout-guard role="status">
+        주문 정보를 불러오는 중입니다.
+      </div>
+
+      <form class="checkout-form" data-checkout-form hidden novalidate>
+        <section class="checkout-card" aria-labelledby="shipping-title">
+          <div class="checkout-card-heading">
+            <div>
+              <p>SHIPPING</p>
+              <h2 id="shipping-title">배송 정보</h2>
+            </div>
+            <span>필수 입력</span>
+          </div>
+
+          <div class="checkout-fields">
+            <label class="checkout-field">
+              <span>수령인 이름</span>
+              <input type="text" name="recipientName" maxlength="100" autocomplete="name" required />
+            </label>
+
+            <label class="checkout-field">
+              <span>전화번호</span>
+              <input type="tel" name="phoneNumber" maxlength="30" autocomplete="tel" placeholder="010-0000-0000" required />
+            </label>
+
+            <label class="checkout-field checkout-field-wide">
+              <span>주소</span>
+              <textarea name="shippingAddress" maxlength="500" rows="3" autocomplete="street-address" placeholder="배송받을 주소를 입력해 주세요." required></textarea>
+            </label>
+
+            <label class="checkout-field checkout-field-wide">
+              <span>고객 요청 사항 <small>선택</small></span>
+              <select data-customer-request-preset>
+                <option value="">요청 사항을 선택해 주세요.</option>
+                <option value="문 앞에 놓아주세요.">문 앞에 놓아주세요.</option>
+                <option value="배송 전에 연락해 주세요.">배송 전에 연락해 주세요.</option>
+                <option value="부재 시 경비실에 맡겨주세요.">부재 시 경비실에 맡겨주세요.</option>
+                <option value="custom">직접 입력</option>
+              </select>
+            </label>
+
+            <label class="checkout-field checkout-field-wide" data-customer-request-custom hidden>
+              <span>직접 입력</span>
+              <textarea name="customerRequest" maxlength="500" rows="3" placeholder="요청 사항을 입력해 주세요."></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="checkout-card" aria-labelledby="order-product-title">
+          <div class="checkout-card-heading">
+            <div>
+              <p>PRODUCT</p>
+              <h2 id="order-product-title">주문 상품</h2>
+            </div>
+          </div>
+
+          <div class="checkout-product">
+            <img data-checkout-product-image src="IMG_2398.JPG" alt="주문 상품 이미지" />
+            <div class="checkout-product-copy">
+              <strong data-checkout-product-name>상품명</strong>
+              <span data-checkout-unit-price>0원</span>
+              <div class="quantity-control" aria-label="상품 수량 선택">
+                <button type="button" data-quantity-decrease aria-label="수량 줄이기">−</button>
+                <input type="number" name="quantity" min="1" step="1" value="1" inputmode="numeric" aria-label="상품 수량" required />
+                <button type="button" data-quantity-increase aria-label="수량 늘리기">+</button>
+              </div>
+            </div>
+            <strong class="checkout-line-total" data-checkout-line-total>0원</strong>
+          </div>
+        </section>
+
+        <section class="checkout-card checkout-total-card" aria-labelledby="order-total-title">
+          <div>
+            <span id="order-total-title">최종 주문 금액</span>
+            <strong data-checkout-total>0원</strong>
+          </div>
+        </section>
+
+        <p class="checkout-message" data-checkout-message role="alert" aria-live="polite"></p>
+
+        <div class="checkout-submit-bar">
+          <p>주문 정보를 확인한 후 주문을 생성해 주세요.</p>
+          <button type="submit" data-order-submit>0원 주문하기</button>
+        </div>
+      </form>
+
+      <section class="checkout-success" data-checkout-success hidden aria-live="polite">
+        <p>ORDER CREATED</p>
+        <h2>주문이 생성되었습니다.</h2>
+        <dl>
+          <div>
+            <dt>주문번호</dt>
+            <dd data-created-order-id></dd>
+          </div>
+          <div>
+            <dt>최종 주문 금액</dt>
+            <dd data-created-order-total></dd>
+          </div>
+        </dl>
+        <a href="products.html">쇼핑 계속하기</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <img src="IMG_1483.JPG" alt="nanacocoa" />
+        <p>cheerful ceramics, slowly made for everyday tables.</p>
+      </div>
+      <a href="mailto:hello@nanacocoa.kr">hello@nanacocoa.kr</a>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+com.nanacocoa.server.NanacocoaServerApplicationTests#healthApiReturnsOk|FAILURE|java.lang.AssertionError|java.lang.AssertionError: Status expected:&lt;200&gt; but was:&lt;404&gt;
+com.nanacocoa.server.NanacocoaServerApplicationTests#loginCreatesAuthenticatedSessionForDemoUser|FAILURE|java.lang.AssertionError|java.lang.AssertionError: Status expected:&lt;200&gt; but was:&lt;409&gt;
+com.nanacocoa.server.NanacocoaServerApplicationTests#loginRejectsInvalidPasswordWithoutCreatingSession|FAILURE|java.lang.AssertionError|java.lang.AssertionError: Status expected:&lt;401&gt; but was:&lt;409&gt;
+com.nanacocoa.server.NanacocoaServerApplicationTests#logoutClearsAuthenticatedSession|FAILURE|java.lang.AssertionError|java.lang.AssertionError: Status expected:&lt;200&gt; but was:&lt;409&gt;
+com.nanacocoa.server.NanacocoaServerApplicationTests#sessionReturnsAuthenticatedUserAfterLogin|FAILURE|java.lang.AssertionError|java.lang.AssertionError: Status expected:&lt;200&gt; but was:&lt;409&gt;
+com.nanacocoa.server.NanacocoaServerApplicationTests#signupMemberCanLoginWithEmailAndPassword|FAILURE|java.lang.AssertionError|java.lang.AssertionError: No value at JSON path &quot;$.authenticated&quot;
+com.nanacocoa.server.NanacocoaServerApplicationTests#signupRejectsDuplicateEmail|FAILURE|java.lang.AssertionError|java.lang.AssertionError: No value at JSON path &quot;$.authenticated&quot;
+com.nanacocoa.server.NanacocoaServerApplicationTests#signupRejectsInvalidInput|FAILURE|java.lang.AssertionError|java.lang.AssertionError: Status expected:&lt;400&gt; but was:&lt;201&gt;
+com.nanacocoa.server.NanacocoaServerApplicationTests#signupStoresMemberWithBcryptedPasswordAndCreatesSession|FAILURE|java.lang.AssertionError|java.lang.AssertionError: No value at JSON path &quot;$.authenticated&quot;

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>상품 상세 | nanacocoa</title>
+    <meta
+      name="description"
+      content="nanacocoa 상품 상세 정보와 구매 버튼"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="상단 메뉴">
+      <button class="icon-button menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="side-menu">
+        <span class="menu-line"></span>
+        <span class="menu-line"></span>
+      </button>
+
+      <a class="brand" href="index.html" aria-label="nanacocoa 홈">
+        <img src="IMG_1483.JPG" alt="nanacocoa" />
+      </a>
+
+      <nav class="quick-actions" aria-label="빠른 메뉴">
+        <a class="icon-button" href="products.html#product-list" aria-label="검색">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m16.5 16.5 4 4"></path>
+          </svg>
+        </a>
+        <a class="icon-button cart-link" href="#purchase" aria-label="장바구니">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.5 8.5h11l1 11h-13l1-11Z"></path>
+            <path d="M9 8.5a3 3 0 0 1 6 0"></path>
+          </svg>
+          <span class="cart-dot" aria-hidden="true">0</span>
+        </a>
+      </nav>
+    </header>
+
+    <aside class="side-menu" id="side-menu" aria-hidden="true">
+      <div class="menu-session">
+        <p>로그인이 필요합니다.</p>
+        <a href="login.html">로그인</a>
+      </div>
+
+      <nav class="drawer-nav" aria-label="전체 메뉴">
+        <div class="drawer-group is-open">
+          <button type="button" class="drawer-trigger" aria-expanded="true">
+            <span>About</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="index.html#about">nanacocoa story</a>
+          </div>
+        </div>
+
+        <div class="drawer-group is-open">
+          <button type="button" class="drawer-trigger" aria-expanded="true">
+            <span>Shop</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="products.html">All</a>
+            <a href="index.html#shop">New In</a>
+            <a href="index.html#shop">Tableware</a>
+            <a href="index.html#shop">Mugs</a>
+            <a href="index.html#shop">Ritual</a>
+            <a href="index.html#shop">One Piece, Only</a>
+          </div>
+        </div>
+
+        <a class="drawer-link" href="index.html#workshop">Workshop</a>
+        <a class="drawer-link" href="index.html#archive">Archive</a>
+
+        <div class="drawer-group">
+          <button type="button" class="drawer-trigger" aria-expanded="false">
+            <span>Care</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="index.html#care">Notice</a>
+            <a href="index.html#care">How to use</a>
+            <a href="index.html#care">FAQ</a>
+            <a href="index.html#care">Shipping &amp; Return</a>
+            <a href="index.html#contact">1:1 Q&amp;A</a>
+          </div>
+        </div>
+
+        <a class="drawer-link" href="index.html#contact">Contact</a>
+      </nav>
+    </aside>
+
+    <button class="menu-scrim" type="button" aria-label="메뉴 닫기" hidden></button>
+
+    <main class="product-detail-page" id="top" data-product-detail>
+      <section class="detail-hero" aria-labelledby="product-title">
+        <nav class="product-breadcrumb" aria-label="상품 경로">
+          <a href="products.html">All Products</a>
+          <span aria-hidden="true">/</span>
+          <span id="breadcrumb-product">상품 상세</span>
+        </nav>
+
+        <div class="detail-layout">
+          <section class="product-gallery" aria-label="상품 이미지">
+            <button class="gallery-arrow gallery-prev" type="button" data-gallery-prev aria-label="이전 상품 이미지"></button>
+            <div class="gallery-stage">
+              <img id="product-image" src="IMG_2398.JPG" alt="상품 대표 이미지" />
+              <div class="gallery-dots" id="gallery-dots" aria-label="상품 이미지 선택"></div>
+            </div>
+            <button class="gallery-arrow gallery-next" type="button" data-gallery-next aria-label="다음 상품 이미지"></button>
+          </section>
+
+          <aside class="product-purchase" id="purchase" aria-label="상품 구매 정보">
+            <p class="detail-kicker">nanacocoa made</p>
+            <h1 id="product-title">핑크 코코아 머그</h1>
+            <p class="product-summary" id="product-summary">손으로 빚은 밝은 색감의 데일리 세라믹 피스입니다.</p>
+            <p class="detail-price" id="product-price">28,000원</p>
+
+            <div class="purchase-actions">
+              <button class="purchase-button purchase-secondary" type="button" data-cart-button>장바구니</button>
+              <button class="purchase-button purchase-primary" type="button" data-buy-button>구매하기</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="product-detail-tabs" aria-labelledby="detail-info-title">
+        <div class="detail-tablist" aria-label="상품 상세 탭">
+          <a class="detail-tab is-active" href="#detail-info-title">상세정보</a>
+          <span class="detail-tab detail-tab-muted">리뷰 (0)</span>
+        </div>
+
+        <div class="detail-copy">
+          <h2 id="detail-info-title">손맛이 남아 있는 작은 오브제</h2>
+          <p id="product-description">
+            매일 사용하는 컵과 볼도 식탁의 분위기를 바꿀 수 있도록, 밝은 색감과 부드러운 형태를 중심으로 제작했습니다.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <img src="IMG_1483.JPG" alt="nanacocoa" />
+        <p>cheerful ceramics, slowly made for everyday tables.</p>
+      </div>
+      <a href="mailto:hello@nanacocoa.kr">hello@nanacocoa.kr</a>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>nanacocoa | cheerful handmade ceramics</title>
+    <meta
+      name="description"
+      content="nanacocoa의 발랄하고 화사한 핸드메이드 도자기 메인페이지"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="상단 메뉴">
+      <button class="icon-button menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="side-menu">
+        <span class="menu-line"></span>
+        <span class="menu-line"></span>
+      </button>
+
+      <a class="brand" href="#top" aria-label="nanacocoa 홈">
+        <img src="IMG_1483.JPG" alt="nanacocoa" />
+      </a>
+
+      <nav class="quick-actions" aria-label="빠른 메뉴">
+        <a class="icon-button" href="#shop" aria-label="검색">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m16.5 16.5 4 4"></path>
+          </svg>
+        </a>
+        <a class="icon-button cart-link" href="#shop" aria-label="장바구니">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.5 8.5h11l1 11h-13l1-11Z"></path>
+            <path d="M9 8.5a3 3 0 0 1 6 0"></path>
+          </svg>
+          <span class="cart-dot" aria-hidden="true">0</span>
+        </a>
+      </nav>
+    </header>
+
+    <aside class="side-menu" id="side-menu" aria-hidden="true">
+      <div class="menu-session">
+        <p>로그인이 필요합니다.</p>
+        <a href="login.html">로그인</a>
+      </div>
+
+      <nav class="drawer-nav" aria-label="전체 메뉴">
+        <div class="drawer-group is-open">
+          <button type="button" class="drawer-trigger" aria-expanded="true">
+            <span>About</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="#about">nanacocoa story</a>
+          </div>
+        </div>
+
+        <div class="drawer-group is-open">
+          <button type="button" class="drawer-trigger" aria-expanded="true">
+            <span>상품</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="products.html">All</a>
+          </div>
+        </div>
+
+        <!--<a class="drawer-link" href="#workshop">Workshop</a>
+        <a class="drawer-link" href="#archive">Archive</a>-->
+
+        <div class="drawer-group">
+          <button type="button" class="drawer-trigger" aria-expanded="false">
+            <span>고객센터</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div class="drawer-panel">
+            <a href="#care">Notice</a>
+            <a href="#care">How to use</a>
+            <a href="#care">FAQ</a>
+            <a href="#care">Shipping &amp; Return</a>
+            <a href="#contact">1:1 문의사항</a>
+          </div>
+        </div>
+
+        <a class="drawer-link" href="#contact">Contact</a>
+      </nav>
+    </aside>
+
+    <button class="menu-scrim" type="button" aria-label="메뉴 닫기" hidden></button>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <img class="hero-image" src="IMG_2398.JPG" alt="알록달록한 핸드메이드 도자기 컵과 볼" />
+        <div class="hero-wash" aria-hidden="true"></div>
+        <div class="hero-content">
+          <p class="eyebrow">handmade ceramics for bright tables</p>
+          <h1 id="hero-title">오늘의 식탁을 더 귀엽게.</h1>
+          <p class="hero-copy">
+            손으로 빚고 그린 컵과 볼, 매일의 작은 순간을 화사하게 만드는 nanacocoa의 도자기.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#shop">Shop New Pieces</a>
+            <a class="button button-ghost" href="#about">Our Story</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="intro-section" id="about" aria-labelledby="about-title">
+        <div class="section-kicker">About nanacocoa</div>
+        <div class="intro-grid">
+          <h2 id="about-title">한 점마다 다른 표정, 매일 쓰고 싶은 도자기.</h2>
+          <p>
+            나나코코아는 밝은 색, 장난스러운 패턴, 손맛이 남아 있는 형태를 좋아합니다.
+            완벽하게 똑같은 물건보다 오늘의 기분을 닮은 한 점을 만들고, 오래 곁에 두고
+            쓰기 좋은 생활 도자기를 소개합니다.
+          </p>
+        </div>
+      </section>
+
+      <section class="shop-section" id="shop" aria-labelledby="shop-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Shop</p>
+            <h2 id="shop-title">색으로 고르는 오늘의 조각</h2>
+          </div>
+          <a class="text-link" href="#contact">입고 알림 받기</a>
+        </div>
+
+        <div class="category-grid" aria-label="쇼핑 카테고리">
+          <a class="category-card card-coral" href="#shop">
+            <span class="category-image category-crop-one" aria-hidden="true"></span>
+            <span class="category-name">New In</span>
+            <span class="category-copy">막 도착한 밝은 색감의 신상품</span>
+          </a>
+          <a class="category-card card-mint" href="#shop">
+            <span class="category-image category-crop-two" aria-hidden="true"></span>
+            <span class="category-name">Mugs</span>
+            <span class="category-copy">아침을 더 경쾌하게 여는 컵</span>
+          </a>
+          <a class="category-card card-yellow" href="#shop">
+            <span class="category-image category-crop-three" aria-hidden="true"></span>
+            <span class="category-name">Tableware</span>
+            <span class="category-copy">작은 간식과 식탁을 위한 볼</span>
+          </a>
+          <a class="category-card card-pink" href="#shop">
+            <span class="category-image category-crop-four" aria-hidden="true"></span>
+            <span class="category-name">One Piece</span>
+            <span class="category-copy">하나뿐이라 더 사랑스러운 피스</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="feature-band" id="workshop" aria-labelledby="workshop-title">
+        <div>
+          <p class="section-kicker">Workshop</p>
+          <h2 id="workshop-title">작은 손그림이 완성되는 곳</h2>
+        </div>
+        <p>
+          매달 한정 수량으로 제작되는 피스와 원데이 워크숍 소식을 전합니다.
+          알록달록하지만 오래 봐도 질리지 않는 도자기를 천천히 만나보세요.
+        </p>
+      </section>
+
+      <section class="care-section" id="care" aria-labelledby="care-title">
+        <p class="section-kicker">Care</p>
+        <h2 id="care-title">오래 화사하게 쓰는 방법</h2>
+        <div class="care-list">
+          <p>전자레인지 사용 전 제품별 안내를 확인해 주세요.</p>
+          <p>강한 충격과 급격한 온도 변화는 피해주세요.</p>
+          <p>손세척을 권장하며, 부드러운 수세미를 사용하면 색감이 오래 유지됩니다.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" id="contact">
+      <div>
+        <img src="IMG_1483.JPG" alt="nanacocoa" />
+        <p>cheerful ceramics, slowly made for everyday tables.</p>
+      </div>
+      <a href="mailto:hello@nanacocoa.kr">hello@nanacocoa.kr</a>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
