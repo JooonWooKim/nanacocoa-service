@@ -14,7 +14,9 @@ const ordersApi = {
 const loginRedirectUrl = "index.html";
 const defaultProductImage = "IMG_2398.JPG";
 const maxProductImageSize = 5 * 1024 * 1024;
+const kakaoPostcodeScriptUrl = "https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
 let authSessionPromise;
+let kakaoPostcodePromise;
 
 const galleryViews = [
   { position: "50% 50%", label: "대표 사진" },
@@ -74,6 +76,54 @@ function initMenu() {
 
 function formatPrice(price) {
   return `${Number(price || 0).toLocaleString("ko-KR")}원`;
+}
+
+function normalizeAddressPart(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function formatShippingAddress(postalCode, basicAddress, detailAddress) {
+  const normalizedPostalCode = normalizeAddressPart(postalCode);
+  const address = [basicAddress, detailAddress]
+    .map(normalizeAddressPart)
+    .filter(Boolean)
+    .join(" ");
+
+  return normalizedPostalCode ? `[${normalizedPostalCode}] ${address}`.trim() : address;
+}
+
+function loadKakaoPostcode() {
+  if (typeof window.kakao?.Postcode === "function") {
+    return Promise.resolve(window.kakao.Postcode);
+  }
+
+  if (kakaoPostcodePromise) {
+    return kakaoPostcodePromise;
+  }
+
+  kakaoPostcodePromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = kakaoPostcodeScriptUrl;
+    script.async = true;
+    script.dataset.kakaoPostcodeScript = "";
+
+    script.addEventListener("load", () => {
+      if (typeof window.kakao?.Postcode !== "function") {
+        reject(new Error("Kakao 우편번호 서비스를 초기화하지 못했습니다."));
+        return;
+      }
+
+      resolve(window.kakao.Postcode);
+    }, { once: true });
+
+    script.addEventListener("error", () => {
+      reject(new Error("Kakao 우편번호 스크립트를 불러오지 못했습니다."));
+    }, { once: true });
+
+    document.head.append(script);
+  });
+
+  return kakaoPostcodePromise;
 }
 
 function getProductImageUrl(product) {
@@ -666,7 +716,11 @@ async function initCheckoutPage() {
   const submitButton = page.querySelector("[data-order-submit]");
   const recipientNameInput = form?.querySelector('[name="recipientName"]');
   const phoneNumberInput = form?.querySelector('[name="phoneNumber"]');
-  const shippingAddressInput = form?.querySelector('[name="shippingAddress"]');
+  const postalCodeInput = form?.querySelector("[data-address-postal-code]");
+  const shippingAddressInput = form?.querySelector("[data-address-basic]");
+  const shippingAddressDetailInput = form?.querySelector("[data-address-detail]");
+  const addressSearchButton = form?.querySelector("[data-address-search]");
+  const addressSearchStatus = form?.querySelector("[data-address-search-status]");
   const customerRequestInput = form?.querySelector('[name="customerRequest"]');
   const customerRequestPreset = form?.querySelector("[data-customer-request-preset]");
   const customerRequestCustom = form?.querySelector("[data-customer-request-custom]");
@@ -681,10 +735,11 @@ async function initCheckoutPage() {
   const successPanel = page.querySelector("[data-checkout-success]");
 
   if (!form || !guard || !messageBox || !submitButton || !recipientNameInput
-      || !phoneNumberInput || !shippingAddressInput || !customerRequestInput
-      || !customerRequestPreset || !customerRequestCustom || !quantityInput
-      || !quantityDecrease || !quantityIncrease || !productImage || !productName
-      || !unitPrice || !lineTotal || !orderTotal || !successPanel) {
+      || !phoneNumberInput || !postalCodeInput || !shippingAddressInput
+      || !shippingAddressDetailInput || !addressSearchButton || !addressSearchStatus
+      || !customerRequestInput || !customerRequestPreset || !customerRequestCustom
+      || !quantityInput || !quantityDecrease || !quantityIncrease || !productImage
+      || !productName || !unitPrice || !lineTotal || !orderTotal || !successPanel) {
     renderCheckoutGuard(guard, "주문 페이지를 표시하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     return;
   }
@@ -769,6 +824,92 @@ async function initCheckoutPage() {
     return customerRequestPreset.value || null;
   }
 
+  function setAddressSearchStatus(message) {
+    addressSearchStatus.textContent = message || "";
+    addressSearchStatus.hidden = !message;
+  }
+
+  function validateShippingAddress() {
+    const postalCode = normalizeAddressPart(postalCodeInput.value);
+    const basicAddress = normalizeAddressPart(shippingAddressInput.value);
+    const detailAddress = normalizeAddressPart(shippingAddressDetailInput.value);
+    const shippingAddress = formatShippingAddress(postalCode, basicAddress, detailAddress);
+
+    postalCodeInput.setCustomValidity("");
+    shippingAddressInput.setCustomValidity("");
+    shippingAddressDetailInput.setCustomValidity("");
+
+    if (!/^[0-9]{5}$/.test(postalCode)) {
+      postalCodeInput.setCustomValidity("우편번호 5자리를 입력해 주세요.");
+    }
+
+    if (!basicAddress) {
+      shippingAddressInput.setCustomValidity("기본주소를 입력해 주세요.");
+    }
+
+    if (shippingAddress.length > 500) {
+      const invalidInput = detailAddress ? shippingAddressDetailInput : shippingAddressInput;
+      invalidInput.setCustomValidity("우편번호와 상세주소를 포함한 전체 주소는 500자 이하로 입력해 주세요.");
+    }
+
+    return shippingAddress;
+  }
+
+  function disableAddressSearch(message) {
+    addressSearchButton.disabled = true;
+    addressSearchButton.textContent = "주소검색 불가";
+    setAddressSearchStatus(message);
+  }
+
+  addressSearchButton.addEventListener("click", () => {
+    const Postcode = window.kakao?.Postcode;
+
+    if (typeof Postcode !== "function") {
+      disableAddressSearch("주소검색을 사용할 수 없습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+      return;
+    }
+
+    try {
+      new Postcode({
+        oncomplete(data) {
+          const postalCode = normalizeAddressPart(data.zonecode);
+          const selectedAddress = data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
+          const basicAddress = normalizeAddressPart(selectedAddress || data.address);
+
+          if (!postalCode || !basicAddress) {
+            setAddressSearchStatus("선택한 주소를 입력하지 못했습니다. 다시 검색하거나 직접 입력해 주세요.");
+            return;
+          }
+
+          postalCodeInput.value = postalCode;
+          shippingAddressInput.value = basicAddress;
+          shippingAddressDetailInput.value = "";
+          postalCodeInput.setCustomValidity("");
+          shippingAddressInput.setCustomValidity("");
+          shippingAddressDetailInput.setCustomValidity("");
+          setAddressSearchStatus("");
+          shippingAddressDetailInput.focus();
+        },
+      }).open();
+    } catch {
+      disableAddressSearch("주소검색 창을 열지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+    }
+  });
+
+  postalCodeInput.addEventListener("input", () => postalCodeInput.setCustomValidity(""));
+  shippingAddressInput.addEventListener("input", () => shippingAddressInput.setCustomValidity(""));
+  shippingAddressDetailInput.addEventListener("input", () => shippingAddressDetailInput.setCustomValidity(""));
+
+  loadKakaoPostcode()
+    .then(() => {
+      addressSearchButton.disabled = false;
+      addressSearchButton.textContent = "주소검색";
+      setAddressSearchStatus("");
+    })
+    .catch(() => {
+      disableAddressSearch("주소검색을 불러오지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+    });
+
   customerRequestPreset.addEventListener("change", () => {
     const isCustom = customerRequestPreset.value === "custom";
     customerRequestCustom.hidden = !isCustom;
@@ -788,7 +929,13 @@ async function initCheckoutPage() {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    if (orderSubmitted || !form.reportValidity()) {
+    if (orderSubmitted) {
+      return;
+    }
+
+    const shippingAddress = validateShippingAddress();
+
+    if (!form.reportValidity()) {
       return;
     }
 
@@ -801,7 +948,7 @@ async function initCheckoutPage() {
     const payload = {
       recipientName: recipientNameInput.value.trim(),
       phoneNumber: phoneNumberInput.value.trim(),
-      shippingAddress: shippingAddressInput.value.trim(),
+      shippingAddress,
       customerRequest: selectedCustomerRequest(),
       items: [{ productId: product.id, quantity }],
     };

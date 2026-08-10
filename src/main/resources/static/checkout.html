@@ -121,10 +121,54 @@
               <input type="tel" name="phoneNumber" maxlength="30" autocomplete="tel" placeholder="010-0000-0000" required />
             </label>
 
-            <label class="checkout-field checkout-field-wide">
-              <span>주소</span>
-              <textarea name="shippingAddress" maxlength="500" rows="3" autocomplete="street-address" placeholder="배송받을 주소를 입력해 주세요." required></textarea>
-            </label>
+            <div class="checkout-field checkout-field-wide checkout-address-field" role="group" aria-labelledby="shipping-address-label">
+              <span id="shipping-address-label">주소</span>
+              <div class="checkout-address-search-row">
+                <label>
+                  <span class="visually-hidden">우편번호</span>
+                  <input
+                    type="text"
+                    name="shippingPostalCode"
+                    maxlength="5"
+                    pattern="[0-9]{5}"
+                    inputmode="numeric"
+                    autocomplete="postal-code"
+                    placeholder="우편번호"
+                    aria-describedby="shipping-address-status"
+                    data-address-postal-code
+                    required
+                  />
+                </label>
+                <button type="button" data-address-search disabled>주소검색 준비 중</button>
+              </div>
+              <label>
+                <span class="visually-hidden">기본주소</span>
+                <input
+                  type="text"
+                  name="shippingAddress"
+                  maxlength="500"
+                  autocomplete="street-address"
+                  placeholder="기본주소"
+                  aria-describedby="shipping-address-status"
+                  data-address-basic
+                  required
+                />
+              </label>
+              <label>
+                <span class="visually-hidden">상세주소</span>
+                <input
+                  type="text"
+                  name="shippingAddressDetail"
+                  maxlength="500"
+                  autocomplete="address-line2"
+                  placeholder="상세주소 (선택 입력 가능)"
+                  data-address-detail
+                />
+              </label>
+              <p class="checkout-address-status" id="shipping-address-status" data-address-search-status role="status" aria-live="polite">
+                주소검색을 준비하는 중입니다.
+              </p>
+            </div>
 
             <label class="checkout-field checkout-field-wide">
               <span>고객 요청 사항 <small>선택</small></span>
