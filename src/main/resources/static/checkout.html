@@ -132,7 +132,7 @@
                     maxlength="5"
                     pattern="[0-9]{5}"
                     inputmode="numeric"
-                    autocomplete="postal-code"
+                    autocomplete="shipping postal-code"
                     placeholder="우편번호"
                     aria-describedby="shipping-address-status"
                     data-address-postal-code
@@ -147,7 +147,7 @@
                   type="text"
                   name="shippingAddress"
                   maxlength="500"
-                  autocomplete="street-address"
+                  autocomplete="shipping address-line1"
                   placeholder="기본주소"
                   aria-describedby="shipping-address-status"
                   data-address-basic
@@ -160,7 +160,7 @@
                   type="text"
                   name="shippingAddressDetail"
                   maxlength="500"
-                  autocomplete="address-line2"
+                  autocomplete="shipping address-line2"
                   placeholder="상세주소 (선택 입력 가능)"
                   data-address-detail
                 />
