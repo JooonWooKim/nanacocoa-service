@@ -797,7 +797,7 @@ class NanacocoaServerApplicationTests {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-checkout-page")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-checkout-form")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-postal-code")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-search")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("<button type=\"button\" data-address-search disabled>")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-basic")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-detail")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-search-status")))
