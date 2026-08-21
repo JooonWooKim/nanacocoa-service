@@ -100,6 +100,19 @@ Actuator health·info를 허용하며 나머지 요청은 인증된 세션이 �
 
 ## 결제 흐름
 
+### 브라우저 결제 요청
+
+1. 인증된 checkout이 `/api/payments/client-config`에서 브라우저 공개용 Toss
+   클라이언트 키를 조회합니다. 시크릿 키는 이 응답에 포함하지 않습니다.
+2. 사용자가 토스페이 필수 약관에 동의하고 결제 버튼을 누르면 서버 가격으로
+   주문을 먼저 생성합니다.
+3. 브라우저가 서버의 `orderId`와 `totalAmount`로 Toss Payments V2의 토스페이
+   직접 결제를 요청합니다. 다른 표시 결제수단은 준비 중이며 요청을 만들지
+   않습니다.
+4. 성공 redirect의 `paymentKey`, `orderId`, `amount`가 저장된 요청 문맥과
+   일치할 때만 기존 승인 API를 호출합니다. 대기 응답은 자동 polling하지 않고
+   사용자가 결제 조회를 한 번씩 실행합니다.
+
 ### 승인
 
 1. `PaymentController`가 요청과 principal을 검증합니다.
@@ -123,6 +136,9 @@ Actuator health·info를 허용하며 나머지 요청은 인증된 세션이 �
 
 - `TossPaymentsClient`는 타입이 지정된 결제 경계입니다. 테스트에서는 이를
   mock 처리하며 실제 제공자를 호출하면 안 됩니다.
+- 브라우저는 Toss Payments 공식 V2 SDK를 사용합니다. 인증된
+  `PaymentClientConfigController -> PaymentClientConfigService` 경계는 공개용
+  클라이언트 키만 반환하며 시크릿 키는 반환하지 않습니다.
 - `ProductImageStorage`는 설정에 따라 mock 또는 S3 동작을 선택합니다.
 - `OrderPaymentLock`은 로컬·Redis 락 동작을 추상화합니다.
 - 비밀값은 환경 변수로만 주입하며 소스, 증거, 로그, 생성 문서에 나타나면

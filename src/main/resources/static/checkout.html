@@ -211,6 +211,64 @@
           </div>
         </section>
 
+        <section class="checkout-card checkout-payment-card" aria-labelledby="payment-method-title">
+          <button
+            class="checkout-card-heading checkout-card-toggle"
+            type="button"
+            aria-expanded="true"
+            aria-controls="payment-method-panel"
+            data-payment-method-toggle
+          >
+            <span>
+              <span class="checkout-card-kicker">PAYMENT</span>
+              <span class="checkout-card-title" id="payment-method-title">결제수단</span>
+            </span>
+            <span class="checkout-payment-chevron" aria-hidden="true"></span>
+          </button>
+
+          <div class="checkout-payment-panel" id="payment-method-panel" data-payment-method-panel>
+            <fieldset class="checkout-payment-methods">
+              <legend>결제수단 선택</legend>
+
+              <label class="checkout-payment-option is-selected">
+                <input type="radio" name="paymentMethod" value="TOSSPAY" checked />
+                <span>토스 결제</span>
+                <small>선택됨</small>
+              </label>
+
+              <label class="checkout-payment-option is-disabled">
+                <input type="radio" name="paymentMethod" value="KAKAOPAY" disabled />
+                <span>카카오 페이</span>
+                <small>준비 중</small>
+              </label>
+
+              <label class="checkout-payment-option is-disabled">
+                <input type="radio" name="paymentMethod" value="CARD" disabled />
+                <span>카드 결제</span>
+                <small>준비 중</small>
+              </label>
+
+              <label class="checkout-payment-option is-disabled">
+                <input type="radio" name="paymentMethod" value="NAVERPAY" disabled />
+                <span>네이버페이</span>
+                <small>준비 중</small>
+              </label>
+            </fieldset>
+
+            <div class="checkout-payment-terms">
+              <label>
+                <input type="checkbox" data-payment-terms required />
+                <span>토스페이 결제 필수 약관 전체 동의</span>
+              </label>
+              <ul>
+                <li><a href="https://pages.tosspayments.com/terms/user" target="_blank" rel="noopener noreferrer">전자금융거래 이용약관</a></li>
+                <li><a href="https://pages.tosspayments.com/terms/privacy/consent1privacy/consent1" target="_blank" rel="noopener noreferrer">개인정보 수집 및 이용 동의</a></li>
+                <li><a href="https://pages.tosspayments.com/terms/privacy/consent2privacy/consent2" target="_blank" rel="noopener noreferrer">개인정보 제3자 제공 동의</a></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
         <section class="checkout-card checkout-total-card" aria-labelledby="order-total-title">
           <div>
             <span id="order-total-title">최종 주문 금액</span>
@@ -221,25 +279,30 @@
         <p class="checkout-message" data-checkout-message role="alert" aria-live="polite"></p>
 
         <div class="checkout-submit-bar">
-          <p>주문 정보를 확인한 후 주문을 생성해 주세요.</p>
-          <button type="submit" data-order-submit>0원 주문하기</button>
+          <p>주문 정보와 필수 약관을 확인한 후 결제해 주세요.</p>
+          <button type="submit" data-order-submit>0원 결제하기</button>
         </div>
       </form>
 
-      <section class="checkout-success" data-checkout-success hidden aria-live="polite">
-        <p>ORDER CREATED</p>
-        <h2>주문이 생성되었습니다.</h2>
+      <section class="checkout-success" data-checkout-result hidden aria-live="polite">
+        <p data-payment-result-eyebrow>PAYMENT</p>
+        <h2 data-payment-result-title>결제 결과를 확인하고 있습니다.</h2>
+        <p class="checkout-result-message" data-payment-result-message></p>
         <dl>
           <div>
             <dt>주문번호</dt>
-            <dd data-created-order-id></dd>
+            <dd data-payment-order-id></dd>
           </div>
           <div>
-            <dt>최종 주문 금액</dt>
-            <dd data-created-order-total></dd>
+            <dt>결제 금액</dt>
+            <dd data-payment-order-total></dd>
           </div>
         </dl>
-        <a href="products.html">쇼핑 계속하기</a>
+        <div class="checkout-result-actions">
+          <button type="button" data-payment-status-check hidden>결제 상태 다시 확인</button>
+          <button type="button" data-payment-retry hidden>토스페이 다시 시도</button>
+          <a href="products.html" data-payment-return>쇼핑 계속하기</a>
+        </div>
       </section>
     </main>
 

@@ -1,8 +1,9 @@
 package com.nanacocoa.server;
 
+import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
+import com.nanacocoa.server.member.dto.reqeust.SignupRequest;
 import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
-import com.nanacocoa.server.member.dto.reqeust.SignupRequest;
 import com.nanacocoa.server.member.service.AuthService;
 import com.nanacocoa.server.products.entity.Products;
 import com.nanacocoa.server.products.repository.ProductsRepository;
@@ -13,7 +14,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -37,7 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.datasource.username=sa",
     "spring.datasource.password=",
     "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.sql.init.mode=never"
+    "spring.sql.init.mode=never",
+    "toss-payments.client-key=test_ck_integration"
 })
 class NanacocoaServerApplicationTests {
 
@@ -761,6 +767,30 @@ class NanacocoaServerApplicationTests {
     }
 
     @Test
+    void paymentClientConfigRequiresLoginAndExposesOnlyClientKey() throws Exception {
+        mockMvc.perform(get("/api/payments/client-config"))
+            .andExpect(status().isUnauthorized());
+
+        UserDetailsImpl principal = new UserDetailsImpl(null, "payment-config@example.com");
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+            principal,
+            null,
+            principal.getAuthorities()
+        ));
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+            securityContext
+        );
+
+        mockMvc.perform(get("/api/payments/client-config").session(session))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.clientKey").value("test_ck_integration"))
+            .andExpect(jsonPath("$.data.secretKey").doesNotExist());
+    }
+
+    @Test
     void servesStaticPages() throws Exception {
         mockMvc.perform(get("/"))
             .andExpect(status().isOk())
@@ -801,6 +831,19 @@ class NanacocoaServerApplicationTests {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-basic")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-detail")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-search-status")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-payment-method-toggle")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"TOSSPAY\" checked")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"KAKAOPAY\" disabled")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"CARD\" disabled")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"NAVERPAY\" disabled")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-payment-terms required")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-checkout-result")))
             .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("쿠폰"))));
+
+        mockMvc.perform(get("/script.js"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("https://js.tosspayments.com/v2/standard")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("easyPay: \"TOSSPAY\"")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Idempotency-Key")));
     }
 }

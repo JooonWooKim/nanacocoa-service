@@ -1,11 +1,11 @@
 # 하네스 원본
 
-상태: 2026-07-25 검증됨
+상태: 2026-08-22 검증됨
 
 - `baselines/test-failures.txt`는 정렬된 정확한 엄격 테스트 실패 래칫입니다.
 - `baselines/test-failure-fingerprints.txt`는 각 알려진 실패의 failure·error
   종류, 예외 타입, assertion 메시지를 고정합니다.
-- `baselines/test-inventory.txt`는 전체 63개 테스트 발견 집합을 고정하며
+- `baselines/test-inventory.txt`는 전체 68개 테스트 발견 집합을 고정하며
   skip된 테스트를 허용하지 않습니다.
 - `baselines/architecture-exceptions.txt`는 현재 역방향 도메인 의존성의
   정확한 래칫입니다.

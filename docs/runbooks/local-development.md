@@ -44,7 +44,9 @@ docker compose ps
 의도적으로 `TOSS_PAYMENTS_BASE_URL`을 연결할 수 없는 loopback으로 설정하고
 결제 reconciliation을 비활성화합니다. 하네스 전용 스택에서는 해당 값을
 바꾸거나 결제 endpoint를 실행하지 않습니다. 실제 제공자는 명시적 배포
-결정과 자격 증명이 필요합니다.
+결정과 자격 증명이 필요합니다. `TOSS_PAYMENTS_CLIENT_KEY`도 기본값이 비어
+있어 checkout은 주문 생성 전에 결제 설정 오류를 안내합니다. 결제 활성화에는
+서로 매칭되는 클라이언트·시크릿 키가 필요합니다.
 
 하네스는 기존 스택을 중지하거나 볼륨을 삭제하지 않습니다.
 [README.md](../../README.md)의 운영자 소유 종료 절차를 따르며 일상 자동화에

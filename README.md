@@ -65,8 +65,11 @@ S3를 사용하는 경우 `PRODUCT_IMAGE_STORAGE_MODE=s3`로 변경하고 버킷
 공개 URL 및 AWS 자격 증명을 입력합니다. `.env.example`은 자동 결제 복구를
 비활성화하고 Toss 주소를 연결 불가능한 로컬 주소로 둔 안전한 개발
 기본값입니다. 결제 기능을 사용하는 실제 배포에서만
-`TOSS_PAYMENTS_BASE_URL`, `TOSS_PAYMENTS_SECRET_KEY`,
+`TOSS_PAYMENTS_BASE_URL`, `TOSS_PAYMENTS_CLIENT_KEY`, `TOSS_PAYMENTS_SECRET_KEY`,
 `PAYMENT_RECONCILIATION_ENABLED`를 함께 명시적으로 설정합니다.
+브라우저에는 공개용 클라이언트 키만 전달되며, 서로 매칭되는 API 개별 연동
+클라이언트 키와 시크릿 키를 사용해야 합니다. 시크릿 키는 서버 환경 변수
+밖으로 노출하지 않습니다.
 
 ## 실행
 
