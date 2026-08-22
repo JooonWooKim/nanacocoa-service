@@ -840,10 +840,42 @@ class NanacocoaServerApplicationTests {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-checkout-result")))
             .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("쿠폰"))));
 
-        mockMvc.perform(get("/script.js"))
+        MvcResult scriptResult = mockMvc.perform(get("/script.js"))
             .andExpect(status().isOk())
             .andExpect(content().string(org.hamcrest.Matchers.containsString("https://js.tosspayments.com/v2/standard")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("easyPay: \"TOSSPAY\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("Idempotency-Key")));
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Idempotency-Key")))
+            .andReturn();
+
+        String script = scriptResult.getResponse().getContentAsString();
+        int renewalStart = script.indexOf("function renewCheckoutPaymentAttempt(context) {");
+        String renewal = script.substring(
+            renewalStart,
+            script.indexOf("function getProductImageUrl(product) {", renewalStart)
+        );
+        int retryStart = script.indexOf("async function retryTossPayment(context) {");
+        String retry = script.substring(
+            retryStart,
+            script.indexOf("function renderPaymentFailure(", retryStart)
+        );
+        int callbackStart = script.indexOf("async function processPaymentSuccessCallback() {");
+        String callback = script.substring(
+            callbackStart,
+            script.indexOf("const session = await loadAuthSession();", callbackStart)
+        );
+
+        assertThat(renewal).containsSubsequence(
+            "context.idempotencyKey = randomUuid();",
+            "delete context.paymentId;",
+            "writeCheckoutPaymentContext(context);"
+        );
+        assertThat(retry).containsSubsequence(
+            "const payment = await prepareTossPayment();",
+            "renewCheckoutPaymentAttempt(context);",
+            "await requestTossPay(payment, context);"
+        );
+        assertThat(callback)
+            .contains("headers: { \"Idempotency-Key\": context.idempotencyKey }")
+            .doesNotContain("renewCheckoutPaymentAttempt(context)");
     }
 }

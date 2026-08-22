@@ -239,6 +239,12 @@ function clearCheckoutPaymentContext() {
   removeCheckoutSessionValue(checkoutPaymentContextKey);
 }
 
+function renewCheckoutPaymentAttempt(context) {
+  context.idempotencyKey = randomUuid();
+  delete context.paymentId;
+  writeCheckoutPaymentContext(context);
+}
+
 function getProductImageUrl(product) {
   return product.imageUrl || defaultProductImage;
 }
@@ -1044,6 +1050,7 @@ async function initCheckoutPage() {
 
     try {
       const payment = await prepareTossPayment();
+      renewCheckoutPaymentAttempt(context);
       resultMessage.textContent = "토스페이 결제창으로 이동하고 있습니다.";
       await requestTossPay(payment, context);
     } catch (error) {
