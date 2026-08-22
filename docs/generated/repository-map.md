@@ -95,7 +95,5 @@ src/test/java/com/nanacocoa/server/products/storage/S3ProductImageStorageTest.ja
 
 - 빌드: `./gradlew`, `build.gradle`
 - 하네스: `./scripts/harness`
-- 로컬 스택: `compose.yaml`, `Dockerfile`
 - 환경 초기화: `scripts/init-env.sh`
-- 실행 환경 설정: `src/main/resources/application.yml`
 - 지식 root: `AGENTS.md`, `ARCHITECTURE.md`, `docs/`
