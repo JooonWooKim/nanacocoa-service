@@ -13,11 +13,11 @@
 | `common` | 10 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
 | `member` | 7 | 식별, 회원가입, 로그인, 세션 |
 | `order` | 10 | 주문, 배송, 서버 가격 계산 |
-| `payment` | 27 | 승인, 취소, 락, 복구 |
+| `payment` | 30 | 승인, 취소, 락, 복구 |
 | `products` | 14 | 상품 목록과 이미지 저장 |
 
-- 주요 Java 파일: 69
-- 테스트 Java 파일: 13
+- 주요 Java 파일: 72
+- 테스트 Java 파일: 15
 - Flyway 마이그레이션: 3
 - 정적 자원·페이지: 17
 
@@ -79,9 +79,11 @@ src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
 src/test/java/com/nanacocoa/server/order/service/OrderServiceTest.java
 src/test/java/com/nanacocoa/server/payment/config/PaymentLockConfigTest.java
+src/test/java/com/nanacocoa/server/payment/controller/PaymentClientConfigControllerTest.java
 src/test/java/com/nanacocoa/server/payment/controller/PaymentControllerTest.java
 src/test/java/com/nanacocoa/server/payment/facade/PaymentFacadeTest.java
 src/test/java/com/nanacocoa/server/payment/lock/PaymentLockManagerTest.java
+src/test/java/com/nanacocoa/server/payment/service/PaymentClientConfigServiceTest.java
 src/test/java/com/nanacocoa/server/payment/service/PaymentRecoveryServiceTest.java
 src/test/java/com/nanacocoa/server/payment/service/PaymentStateTest.java
 src/test/java/com/nanacocoa/server/payment/service/PaymentTransactionalServiceTest.java

@@ -1,8 +1,9 @@
 package com.nanacocoa.server;
 
+import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
+import com.nanacocoa.server.member.dto.reqeust.SignupRequest;
 import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
-import com.nanacocoa.server.member.dto.reqeust.SignupRequest;
 import com.nanacocoa.server.member.service.AuthService;
 import com.nanacocoa.server.products.entity.Products;
 import com.nanacocoa.server.products.repository.ProductsRepository;
@@ -13,7 +14,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -37,7 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.datasource.username=sa",
     "spring.datasource.password=",
     "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.sql.init.mode=never"
+    "spring.sql.init.mode=never",
+    "toss-payments.client-key=test_ck_integration"
 })
 class NanacocoaServerApplicationTests {
 
@@ -761,6 +767,30 @@ class NanacocoaServerApplicationTests {
     }
 
     @Test
+    void paymentClientConfigRequiresLoginAndExposesOnlyClientKey() throws Exception {
+        mockMvc.perform(get("/api/payments/client-config"))
+            .andExpect(status().isUnauthorized());
+
+        UserDetailsImpl principal = new UserDetailsImpl(null, "payment-config@example.com");
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+            principal,
+            null,
+            principal.getAuthorities()
+        ));
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+            securityContext
+        );
+
+        mockMvc.perform(get("/api/payments/client-config").session(session))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.clientKey").value("test_ck_integration"))
+            .andExpect(jsonPath("$.data.secretKey").doesNotExist());
+    }
+
+    @Test
     void servesStaticPages() throws Exception {
         mockMvc.perform(get("/"))
             .andExpect(status().isOk())
@@ -801,6 +831,93 @@ class NanacocoaServerApplicationTests {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-basic")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-detail")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-search-status")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-payment-method-toggle")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"TOSSPAY\" checked")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"KAKAOPAY\" disabled")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"CARD\" disabled")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"NAVERPAY\" disabled")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-payment-terms required")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-checkout-result")))
             .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("쿠폰"))));
+
+        MvcResult scriptResult = mockMvc.perform(get("/script.js"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("https://js.tosspayments.com/v2/standard")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("easyPay: \"TOSSPAY\"")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Idempotency-Key")))
+            .andReturn();
+
+        String script = scriptResult.getResponse().getContentAsString();
+        int callbackReturnUrlStart = script.indexOf("function isPaymentSuccessCallbackUrl(url) {");
+        String callbackReturnUrl = script.substring(
+            callbackReturnUrlStart,
+            script.indexOf("function checkoutCustomerKey() {", callbackReturnUrlStart)
+        );
+        int loginStart = script.indexOf("function initLoginPage() {");
+        String login = script.substring(
+            loginStart,
+            script.indexOf("function initSignupPage() {", loginStart)
+        );
+        int renewalStart = script.indexOf("function renewCheckoutPaymentAttempt(context) {");
+        String renewal = script.substring(
+            renewalStart,
+            script.indexOf("function getProductImageUrl(product) {", renewalStart)
+        );
+        int retryStart = script.indexOf("async function retryTossPayment(context) {");
+        String retry = script.substring(
+            retryStart,
+            script.indexOf("function renderPaymentFailure(", retryStart)
+        );
+        int callbackStart = script.indexOf("async function processPaymentSuccessCallback() {");
+        String callback = script.substring(
+            callbackStart,
+            script.indexOf("const session = await loadAuthSession();", callbackStart)
+        );
+        int checkoutSessionStart = script.indexOf("const session = await loadAuthSession();", callbackStart);
+        String checkoutSession = script.substring(
+            checkoutSessionStart,
+            script.indexOf("if (paymentResult === \"fail\") {", checkoutSessionStart)
+        );
+
+        assertThat(callbackReturnUrl)
+            .contains(
+                "url.origin === window.location.origin",
+                "url.pathname === new URL(\"checkout.html\", window.location.href).pathname",
+                "url.searchParams.get(\"paymentResult\") === \"success\"",
+                "[\"paymentKey\", \"orderId\", \"amount\", \"checkoutOrderId\"]"
+            )
+            .containsSubsequence(
+                "storedUrl = readCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);",
+                "removeCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);",
+                "return isPaymentSuccessCallbackUrl(callbackUrl) ? callbackUrl.toString() : null;"
+            );
+        assertThat(login).contains(
+            "window.location.href = takePaymentCallbackLoginReturnUrl() || loginRedirectUrl;"
+        );
+
+        assertThat(renewal).containsSubsequence(
+            "context.idempotencyKey = randomUuid();",
+            "delete context.paymentId;",
+            "writeCheckoutPaymentContext(context);"
+        );
+        assertThat(retry).containsSubsequence(
+            "const payment = await prepareTossPayment();",
+            "renewCheckoutPaymentAttempt(context);",
+            "await requestTossPay(payment, context);"
+        );
+        assertThat(callback)
+            .contains("headers: { \"Idempotency-Key\": context.idempotencyKey }")
+            .containsSubsequence(
+                "if (response.status === 401) {",
+                "preservePaymentCallbackLoginReturnUrl();",
+                "renderPaymentFailure("
+            )
+            .doesNotContain("renewCheckoutPaymentAttempt(context)");
+        assertThat(checkoutSession).containsSubsequence(
+            "if (!session.authenticated) {",
+            "if (paymentResult === \"success\") {",
+            "preservePaymentCallbackLoginReturnUrl();",
+            "renderCheckoutGuard(guard,"
+        );
     }
 }

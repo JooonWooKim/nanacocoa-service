@@ -11,12 +11,22 @@ const productsApi = {
 const ordersApi = {
   create: "/api/orders",
 };
+const paymentsApi = {
+  clientConfig: "/api/payments/client-config",
+  confirm: "/api/payments/confirm",
+  detail: (paymentId) => `/api/payments/${encodeURIComponent(paymentId)}`,
+};
 const loginRedirectUrl = "index.html";
 const defaultProductImage = "IMG_2398.JPG";
 const maxProductImageSize = 5 * 1024 * 1024;
 const kakaoPostcodeScriptUrl = "https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+const tossPaymentsScriptUrl = "https://js.tosspayments.com/v2/standard";
+const checkoutPaymentContextKey = "nanacocoa.checkout.payment-context";
+const checkoutCustomerKeyKey = "nanacocoa.checkout.customer-key";
+const paymentCallbackLoginReturnUrlKey = "nanacocoa.auth.payment-callback-return-url";
 let authSessionPromise;
 let kakaoPostcodePromise;
+let tossPaymentsSdkPromise;
 
 const galleryViews = [
   { position: "50% 50%", label: "대표 사진" },
@@ -126,6 +136,159 @@ function loadKakaoPostcode() {
   return kakaoPostcodePromise;
 }
 
+function loadTossPaymentsSdk() {
+  if (typeof window.TossPayments === "function") {
+    return Promise.resolve(window.TossPayments);
+  }
+
+  if (tossPaymentsSdkPromise) {
+    return tossPaymentsSdkPromise;
+  }
+
+  tossPaymentsSdkPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = tossPaymentsScriptUrl;
+    script.async = true;
+    script.dataset.tossPaymentsScript = "";
+
+    script.addEventListener("load", () => {
+      if (typeof window.TossPayments !== "function") {
+        tossPaymentsSdkPromise = null;
+        reject(new Error("토스페이 결제 모듈을 초기화하지 못했습니다."));
+        return;
+      }
+
+      resolve(window.TossPayments);
+    }, { once: true });
+
+    script.addEventListener("error", () => {
+      tossPaymentsSdkPromise = null;
+      reject(new Error("토스페이 결제 모듈을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요."));
+    }, { once: true });
+
+    document.head.append(script);
+  });
+
+  return tossPaymentsSdkPromise;
+}
+
+function randomUuid() {
+  if (typeof window.crypto?.randomUUID !== "function") {
+    throw new Error("안전한 결제 식별자를 만들 수 없는 브라우저입니다. 최신 브라우저에서 다시 시도해 주세요.");
+  }
+  return window.crypto.randomUUID();
+}
+
+function readCheckoutSessionValue(key) {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    throw new Error("브라우저 저장공간을 사용할 수 없어 결제를 계속할 수 없습니다.");
+  }
+}
+
+function writeCheckoutSessionValue(key, value) {
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch {
+    throw new Error("브라우저 저장공간을 사용할 수 없어 결제를 계속할 수 없습니다.");
+  }
+}
+
+function removeCheckoutSessionValue(key) {
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // 저장공간 정리 실패는 이미 완료된 결제 결과를 바꾸지 않습니다.
+  }
+}
+
+function isPaymentSuccessCallbackUrl(url) {
+  return url.origin === window.location.origin
+    && url.pathname === new URL("checkout.html", window.location.href).pathname
+    && url.searchParams.get("paymentResult") === "success"
+    && ["paymentKey", "orderId", "amount", "checkoutOrderId"]
+      .every((parameter) => Boolean(url.searchParams.get(parameter)));
+}
+
+function preservePaymentCallbackLoginReturnUrl() {
+  const callbackUrl = new URL(window.location.href);
+  if (!isPaymentSuccessCallbackUrl(callbackUrl)) {
+    return false;
+  }
+
+  try {
+    writeCheckoutSessionValue(paymentCallbackLoginReturnUrlKey, callbackUrl.toString());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function takePaymentCallbackLoginReturnUrl() {
+  let storedUrl;
+  try {
+    storedUrl = readCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);
+  } catch {
+    return null;
+  }
+
+  removeCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);
+  if (!storedUrl) {
+    return null;
+  }
+
+  try {
+    const callbackUrl = new URL(storedUrl, window.location.href);
+    return isPaymentSuccessCallbackUrl(callbackUrl) ? callbackUrl.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function checkoutCustomerKey() {
+  const storedKey = readCheckoutSessionValue(checkoutCustomerKeyKey);
+  if (storedKey) {
+    return storedKey;
+  }
+
+  const customerKey = randomUuid();
+  writeCheckoutSessionValue(checkoutCustomerKeyKey, customerKey);
+  return customerKey;
+}
+
+function readCheckoutPaymentContext() {
+  const storedContext = readCheckoutSessionValue(checkoutPaymentContextKey);
+  if (!storedContext) {
+    return null;
+  }
+
+  try {
+    const context = JSON.parse(storedContext);
+    if (!context?.orderId || !Number.isSafeInteger(context.amount) || context.amount <= 0
+        || !context.idempotencyKey || !context.productId || !context.orderName) {
+      return null;
+    }
+    return context;
+  } catch {
+    return null;
+  }
+}
+
+function writeCheckoutPaymentContext(context) {
+  writeCheckoutSessionValue(checkoutPaymentContextKey, JSON.stringify(context));
+}
+
+function clearCheckoutPaymentContext() {
+  removeCheckoutSessionValue(checkoutPaymentContextKey);
+}
+
+function renewCheckoutPaymentAttempt(context) {
+  context.idempotencyKey = randomUuid();
+  delete context.paymentId;
+  writeCheckoutPaymentContext(context);
+}
+
 function getProductImageUrl(product) {
   return product.imageUrl || defaultProductImage;
 }
@@ -209,7 +372,7 @@ function initLoginPage() {
         throw new Error(data.message || "이메일 또는 비밀번호를 확인해 주세요.");
       }
 
-      window.location.href = loginRedirectUrl;
+      window.location.href = takePaymentCallbackLoginReturnUrl() || loginRedirectUrl;
     } catch (error) {
       setAuthMessage(error.message || "로그인 중 문제가 발생했습니다.");
     } finally {
@@ -703,6 +866,87 @@ function setCheckoutMessage(messageBox, message, includeLoginLink = false) {
   messageBox.append(" ", loginLink);
 }
 
+function checkoutApiError(body, fallback) {
+  return body?.error || body?.message || fallback;
+}
+
+async function createTossPayment() {
+  const configPromise = (async () => {
+    const response = await requestAuth(paymentsApi.clientConfig);
+    const body = await readJson(response);
+
+    if (response.status === 401) {
+      const error = new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+      error.requiresLogin = true;
+      throw error;
+    }
+
+    if (response.status === 503) {
+      throw new Error("토스페이 설정을 사용할 수 없습니다. 관리자에게 문의해 주세요.");
+    }
+
+    if (!response.ok || !body.data?.clientKey) {
+      throw new Error(checkoutApiError(body, "토스페이 설정을 불러오지 못했습니다."));
+    }
+
+    return body.data.clientKey;
+  })();
+
+  const [TossPayments, clientKey] = await Promise.all([loadTossPaymentsSdk(), configPromise]);
+  return TossPayments(clientKey).payment({ customerKey: checkoutCustomerKey() });
+}
+
+function checkoutPaymentCallbackUrl(result, context) {
+  const callbackUrl = new URL("checkout.html", window.location.href);
+  callbackUrl.searchParams.set("id", context.productId);
+  callbackUrl.searchParams.set("paymentResult", result);
+  callbackUrl.searchParams.set("checkoutOrderId", context.orderId);
+  return callbackUrl.toString();
+}
+
+function checkoutMobilePhone(value) {
+  const mobilePhone = String(value || "").replace(/\D/g, "");
+  return mobilePhone.length >= 8 && mobilePhone.length <= 15 ? mobilePhone : null;
+}
+
+async function requestTossPay(payment, context) {
+  const request = {
+    method: "CARD",
+    amount: {
+      currency: "KRW",
+      value: context.amount,
+    },
+    orderId: context.orderId,
+    orderName: context.orderName,
+    successUrl: checkoutPaymentCallbackUrl("success", context),
+    failUrl: checkoutPaymentCallbackUrl("fail", context),
+    card: {
+      flowMode: "DIRECT",
+      easyPay: "TOSSPAY",
+    },
+  };
+  if (context.customerName) {
+    request.customerName = context.customerName;
+  }
+  if (context.customerEmail) {
+    request.customerEmail = context.customerEmail;
+  }
+  const mobilePhone = checkoutMobilePhone(context.customerMobilePhone);
+  if (mobilePhone) {
+    request.customerMobilePhone = mobilePhone;
+  }
+
+  await payment.requestPayment(request);
+}
+
+function clearCheckoutCallbackQuery(productId) {
+  const cleanUrl = new URL("checkout.html", window.location.href);
+  if (productId) {
+    cleanUrl.searchParams.set("id", productId);
+  }
+  window.history.replaceState({}, "", cleanUrl);
+}
+
 async function initCheckoutPage() {
   const page = document.querySelector("[data-checkout-page]");
 
@@ -714,6 +958,9 @@ async function initCheckoutPage() {
   const guard = page.querySelector("[data-checkout-guard]");
   const messageBox = page.querySelector("[data-checkout-message]");
   const submitButton = page.querySelector("[data-order-submit]");
+  const paymentMethodToggle = page.querySelector("[data-payment-method-toggle]");
+  const paymentMethodPanel = page.querySelector("[data-payment-method-panel]");
+  const paymentTermsInput = page.querySelector("[data-payment-terms]");
   const recipientNameInput = form?.querySelector('[name="recipientName"]');
   const phoneNumberInput = form?.querySelector('[name="phoneNumber"]');
   const postalCodeInput = form?.querySelector("[data-address-postal-code]");
@@ -732,41 +979,273 @@ async function initCheckoutPage() {
   const unitPrice = form?.querySelector("[data-checkout-unit-price]");
   const lineTotal = form?.querySelector("[data-checkout-line-total]");
   const orderTotal = form?.querySelector("[data-checkout-total]");
-  const successPanel = page.querySelector("[data-checkout-success]");
+  const resultPanel = page.querySelector("[data-checkout-result]");
+  const resultEyebrow = resultPanel?.querySelector("[data-payment-result-eyebrow]");
+  const resultTitle = resultPanel?.querySelector("[data-payment-result-title]");
+  const resultMessage = resultPanel?.querySelector("[data-payment-result-message]");
+  const resultOrderId = resultPanel?.querySelector("[data-payment-order-id]");
+  const resultTotal = resultPanel?.querySelector("[data-payment-order-total]");
+  const statusCheckButton = resultPanel?.querySelector("[data-payment-status-check]");
+  const paymentRetryButton = resultPanel?.querySelector("[data-payment-retry]");
+  const paymentReturnLink = resultPanel?.querySelector("[data-payment-return]");
 
-  if (!form || !guard || !messageBox || !submitButton || !recipientNameInput
+  if (!form || !guard || !messageBox || !submitButton || !paymentMethodToggle
+      || !paymentMethodPanel || !paymentTermsInput || !recipientNameInput
       || !phoneNumberInput || !postalCodeInput || !shippingAddressInput
       || !shippingAddressDetailInput || !addressSearchButton || !addressSearchStatus
       || !customerRequestInput || !customerRequestPreset || !customerRequestCustom
       || !quantityInput || !quantityDecrease || !quantityIncrease || !productImage
-      || !productName || !unitPrice || !lineTotal || !orderTotal || !successPanel) {
+      || !productName || !unitPrice || !lineTotal || !orderTotal || !resultPanel
+      || !resultEyebrow || !resultTitle || !resultMessage || !resultOrderId
+      || !resultTotal || !statusCheckButton || !paymentRetryButton || !paymentReturnLink) {
     renderCheckoutGuard(guard, "주문 페이지를 표시하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     return;
   }
 
   const params = new URLSearchParams(window.location.search);
-  const productId = params.get("id");
+  let storedPaymentContext;
+  try {
+    storedPaymentContext = readCheckoutPaymentContext();
+  } catch (error) {
+    renderCheckoutGuard(guard, error.message || "결제 정보를 확인하지 못했습니다.");
+    return;
+  }
+
+  const productId = params.get("id") || storedPaymentContext?.productId;
+  const paymentResult = params.get("paymentResult");
 
   if (!productId) {
     renderCheckoutGuard(guard, "주문할 상품 정보가 없습니다.", "products.html", "상품 목록으로 이동");
     return;
   }
 
-  const productPromise = (async () => {
-    const response = await requestAuth(productsApi.detail(productId));
-    const body = await readJson(response);
+  function setPaymentPanelExpanded(expanded) {
+    paymentMethodToggle.setAttribute("aria-expanded", String(expanded));
+    paymentMethodPanel.hidden = !expanded;
+  }
 
-    if (!response.ok || !body.data) {
-      throw new Error(body.error || body.message || "상품 정보를 불러오지 못했습니다.");
+  paymentMethodToggle.addEventListener("click", () => {
+    setPaymentPanelExpanded(paymentMethodToggle.getAttribute("aria-expanded") !== "true");
+  });
+
+  paymentTermsInput.addEventListener("change", () => paymentTermsInput.setCustomValidity(""));
+
+  let paymentSetupPromise;
+  function prepareTossPayment() {
+    if (!paymentSetupPromise) {
+      paymentSetupPromise = createTossPayment().catch((error) => {
+        paymentSetupPromise = null;
+        throw error;
+      });
+    }
+    return paymentSetupPromise;
+  }
+
+  function renderPaymentResult({
+    eyebrow,
+    title,
+    message,
+    context,
+    showStatusCheck = false,
+    statusCheckText = "결제 상태 다시 확인",
+    showPaymentRetry = false,
+    returnHref = "products.html",
+    returnText = "쇼핑 계속하기",
+  }) {
+    guard.hidden = true;
+    form.hidden = true;
+    resultEyebrow.textContent = eyebrow;
+    resultTitle.textContent = title;
+    resultMessage.textContent = message;
+    resultOrderId.textContent = context?.orderId || "-";
+    resultTotal.textContent = context?.amount ? formatPrice(context.amount) : "-";
+    statusCheckButton.hidden = !showStatusCheck;
+    statusCheckButton.disabled = false;
+    statusCheckButton.textContent = statusCheckText;
+    paymentRetryButton.hidden = !showPaymentRetry;
+    paymentRetryButton.disabled = false;
+    paymentRetryButton.textContent = "토스페이 다시 시도";
+    paymentReturnLink.href = returnHref;
+    paymentReturnLink.textContent = returnText;
+    paymentReturnLink.onclick = null;
+    resultPanel.hidden = false;
+    resultPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function checkoutReturnHref() {
+    return `checkout.html?id=${encodeURIComponent(productId)}`;
+  }
+
+  function renderPaymentSuccess(context) {
+    clearCheckoutPaymentContext();
+    clearCheckoutCallbackQuery(productId);
+    renderPaymentResult({
+      eyebrow: "PAYMENT COMPLETED",
+      title: "결제가 완료되었습니다.",
+      message: "토스페이 인증과 서버 승인이 모두 완료되었습니다.",
+      context,
+    });
+  }
+
+  async function retryTossPayment(context) {
+    paymentRetryButton.disabled = true;
+    paymentRetryButton.textContent = "토스페이 준비 중";
+    resultMessage.textContent = "동일한 주문으로 토스페이 결제를 다시 요청하고 있습니다.";
+
+    try {
+      const payment = await prepareTossPayment();
+      renewCheckoutPaymentAttempt(context);
+      resultMessage.textContent = "토스페이 결제창으로 이동하고 있습니다.";
+      await requestTossPay(payment, context);
+    } catch (error) {
+      renderPaymentFailure(error.message || "토스페이 결제창을 열지 못했습니다.", context, true);
+    }
+  }
+
+  function renderPaymentFailure(message, context, allowPaymentRetry = false, includeLogin = false) {
+    renderPaymentResult({
+      eyebrow: "PAYMENT FAILED",
+      title: "결제를 완료하지 못했습니다.",
+      message,
+      context,
+      showPaymentRetry: allowPaymentRetry && Boolean(context),
+      returnHref: includeLogin ? "login.html" : checkoutReturnHref(),
+      returnText: includeLogin ? "로그인하기" : "주문서로 돌아가기",
+    });
+    paymentRetryButton.onclick = allowPaymentRetry && context
+      ? () => retryTossPayment(context)
+      : null;
+    paymentReturnLink.onclick = includeLogin ? null : () => clearCheckoutPaymentContext();
+  }
+
+  function renderPaymentPending(context, message = "결제사 응답을 확인하고 있습니다. 잠시 후 상태를 다시 확인해 주세요.") {
+    try {
+      writeCheckoutPaymentContext(context);
+    } catch (error) {
+      message = `${message} ${error.message}`;
+    }
+    renderPaymentResult({
+      eyebrow: "PAYMENT PENDING",
+      title: "결제 승인을 확인하고 있습니다.",
+      message,
+      context,
+      showStatusCheck: true,
+    });
+    statusCheckButton.onclick = () => checkPaymentStatus(context);
+  }
+
+  async function checkPaymentStatus(context) {
+    if (!context.paymentId) {
+      renderPaymentFailure("확인할 결제 정보가 없습니다. 주문서에서 다시 시도해 주세요.", context);
+      return;
     }
 
-    return body.data;
-  })();
+    statusCheckButton.disabled = true;
+    statusCheckButton.textContent = "결제 상태 확인 중";
+    resultMessage.textContent = "서버에 저장된 결제 상태를 확인하고 있습니다.";
 
-  const [session, productResult] = await Promise.all([
-    loadAuthSession(),
-    productPromise.then((product) => ({ product })).catch((error) => ({ error })),
-  ]);
+    try {
+      const response = await requestAuth(paymentsApi.detail(context.paymentId));
+      const body = await readJson(response);
+
+      if (response.status === 401) {
+        renderPaymentFailure("로그인이 만료되었습니다. 다시 로그인해 결제 상태를 확인해 주세요.", context, false, true);
+        return;
+      }
+
+      if (!response.ok || !body.data?.status) {
+        throw new Error(checkoutApiError(body, "결제 상태를 확인하지 못했습니다."));
+      }
+
+      if (body.data.status === "SUCCESS") {
+        renderPaymentSuccess(context);
+        return;
+      }
+
+      if (body.data.status === "PENDING" || body.data.status === "CANCEL_PENDING") {
+        renderPaymentPending(context, "아직 결제 승인 확인 중입니다. 잠시 후 다시 확인해 주세요.");
+        return;
+      }
+
+      renderPaymentFailure("결제 승인이 완료되지 않았습니다. 동일한 주문으로 다시 결제해 주세요.", context, true);
+    } catch (error) {
+      renderPaymentPending(context, error.message || "결제 상태를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.");
+    }
+  }
+
+  async function processPaymentSuccessCallback() {
+    const context = storedPaymentContext;
+    const paymentKey = params.get("paymentKey");
+    const callbackOrderId = params.get("orderId");
+    const checkoutOrderId = params.get("checkoutOrderId");
+    const callbackAmount = Number(params.get("amount"));
+
+    if (!context || !paymentKey || !callbackOrderId || !checkoutOrderId
+        || !Number.isSafeInteger(callbackAmount) || callbackAmount <= 0
+        || context.orderId !== callbackOrderId || context.orderId !== checkoutOrderId
+        || context.amount !== callbackAmount) {
+      renderPaymentFailure("결제 요청 정보가 저장된 주문과 일치하지 않아 승인을 중단했습니다.", context);
+      return;
+    }
+
+    renderPaymentResult({
+      eyebrow: "PAYMENT APPROVAL",
+      title: "결제를 승인하고 있습니다.",
+      message: "창을 닫거나 새로고침하지 말고 잠시 기다려 주세요.",
+      context,
+    });
+
+    try {
+      const response = await requestAuth(paymentsApi.confirm, {
+        method: "POST",
+        headers: { "Idempotency-Key": context.idempotencyKey },
+        body: JSON.stringify({
+          paymentKey,
+          orderId: callbackOrderId,
+          amount: callbackAmount,
+        }),
+      });
+      const body = await readJson(response);
+
+      if (response.status === 401) {
+        preservePaymentCallbackLoginReturnUrl();
+        renderPaymentFailure("로그인이 만료되었습니다. 다시 로그인해 결제 승인을 확인해 주세요.", context, false, true);
+        return;
+      }
+
+      if (response.status === 202 && body.data?.status === "PENDING" && body.data.paymentId) {
+        context.paymentId = body.data.paymentId;
+        renderPaymentPending(context);
+        return;
+      }
+
+      if (response.ok && body.data?.status === "SUCCESS") {
+        context.paymentId = body.data.paymentId;
+        renderPaymentSuccess(context);
+        return;
+      }
+
+      renderPaymentFailure(
+        checkoutApiError(body, "결제 승인에 실패했습니다. 주문서에서 다시 시도해 주세요."),
+        context,
+        response.status === 422 || response.status === 503,
+      );
+    } catch (error) {
+      renderPaymentResult({
+        eyebrow: "PAYMENT APPROVAL",
+        title: "결제 승인 결과를 확인하지 못했습니다.",
+        message: error.message || "네트워크 연결을 확인한 뒤 승인을 다시 시도해 주세요.",
+        context,
+        showStatusCheck: true,
+        statusCheckText: "결제 승인 다시 시도",
+        returnHref: checkoutReturnHref(),
+        returnText: "주문서로 돌아가기",
+      });
+      statusCheckButton.onclick = processPaymentSuccessCallback;
+    }
+  }
+
+  const session = await loadAuthSession();
 
   if (session.loadFailed) {
     renderCheckoutGuard(guard, "로그인 상태를 확인하지 못했습니다. 페이지를 새로고침해 주세요.");
@@ -774,22 +1253,49 @@ async function initCheckoutPage() {
   }
 
   if (!session.authenticated) {
+    if (paymentResult === "success") {
+      preservePaymentCallbackLoginReturnUrl();
+    }
     renderCheckoutGuard(guard, "주문하려면 로그인이 필요합니다.", "login.html", "로그인하기");
     return;
   }
 
-  if (productResult.error) {
+  if (paymentResult === "success") {
+    await processPaymentSuccessCallback();
+    return;
+  }
+
+  if (paymentResult === "fail") {
+    const checkoutOrderId = params.get("checkoutOrderId");
+    const context = storedPaymentContext?.orderId === checkoutOrderId ? storedPaymentContext : null;
+    const failureCode = params.get("code");
+    const failureMessage = failureCode === "PAY_PROCESS_CANCELED"
+      ? "사용자가 토스페이 결제를 취소했습니다."
+      : params.get("message") || "토스페이 인증을 완료하지 못했습니다.";
+    renderPaymentFailure(failureMessage, context, Boolean(context));
+    return;
+  }
+
+  let product;
+  try {
+    const response = await requestAuth(productsApi.detail(productId));
+    const body = await readJson(response);
+    if (!response.ok || !body.data) {
+      throw new Error(checkoutApiError(body, "상품 정보를 불러오지 못했습니다."));
+    }
+    product = body.data;
+  } catch (error) {
     renderCheckoutGuard(
       guard,
-      productResult.error.message || "상품 정보를 불러오지 못했습니다.",
+      error.message || "상품 정보를 불러오지 못했습니다.",
       "products.html",
       "상품 목록으로 이동",
     );
     return;
   }
 
-  const product = productResult.product;
-  let orderSubmitted = false;
+  let submissionInProgress = false;
+  let createdPaymentContext = null;
 
   recipientNameInput.value = session.name || "";
   productImage.src = getProductImageUrl(product);
@@ -807,7 +1313,7 @@ async function initCheckoutPage() {
     const totalText = formatPrice(total);
     lineTotal.textContent = totalText;
     orderTotal.textContent = totalText;
-    submitButton.textContent = `${totalText} 주문하기`;
+    submitButton.textContent = `${totalText} 결제하기`;
   }
 
   function setQuantity(quantity) {
@@ -902,11 +1408,17 @@ async function initCheckoutPage() {
 
   loadKakaoPostcode()
     .then(() => {
+      if (createdPaymentContext) {
+        return;
+      }
       addressSearchButton.disabled = false;
       addressSearchButton.textContent = "주소검색";
       setAddressSearchStatus("");
     })
     .catch(() => {
+      if (createdPaymentContext) {
+        return;
+      }
       disableAddressSearch("주소검색을 불러오지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
     });
 
@@ -926,62 +1438,101 @@ async function initCheckoutPage() {
   quantityInput.addEventListener("input", renderOrderTotal);
   quantityInput.addEventListener("change", () => setQuantity(readQuantity()));
 
+  function lockCreatedOrderFields() {
+    form.querySelectorAll("input, textarea, select, button").forEach((control) => {
+      if (control !== submitButton && control !== paymentMethodToggle) {
+        control.disabled = true;
+      }
+    });
+  }
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    if (orderSubmitted) {
+    if (submissionInProgress) {
       return;
     }
 
-    const shippingAddress = validateShippingAddress();
+    let orderPayload;
+    let quantity;
+    if (!createdPaymentContext) {
+      const shippingAddress = validateShippingAddress();
+      quantity = readQuantity();
+      quantityInput.value = String(quantity);
 
-    if (!form.reportValidity()) {
-      return;
-    }
+      if (!paymentTermsInput.checked) {
+        setPaymentPanelExpanded(true);
+        paymentTermsInput.setCustomValidity("토스페이 결제 필수 약관에 동의해 주세요.");
+      } else {
+        paymentTermsInput.setCustomValidity("");
+      }
 
-    const quantity = readQuantity();
-    quantityInput.value = String(quantity);
-    setCheckoutMessage(messageBox, "");
-    submitButton.disabled = true;
-    submitButton.textContent = "주문 생성 중";
-
-    const payload = {
-      recipientName: recipientNameInput.value.trim(),
-      phoneNumber: phoneNumberInput.value.trim(),
-      shippingAddress,
-      customerRequest: selectedCustomerRequest(),
-      items: [{ productId: product.id, quantity }],
-    };
-
-    try {
-      const response = await requestAuth(ordersApi.create, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      const body = await readJson(response);
-
-      if (response.status === 401) {
-        setCheckoutMessage(messageBox, "로그인이 만료되었습니다. 다시 로그인해 주세요.", true);
+      if (!form.reportValidity()) {
         return;
       }
 
-      if (!response.ok || !body.data?.orderId) {
-        throw new Error(body.error || body.message || "주문을 생성하지 못했습니다.");
+      orderPayload = {
+        recipientName: recipientNameInput.value.trim(),
+        phoneNumber: phoneNumberInput.value.trim(),
+        shippingAddress,
+        customerRequest: selectedCustomerRequest(),
+        items: [{ productId: product.id, quantity }],
+      };
+    }
+
+    submissionInProgress = true;
+    setCheckoutMessage(messageBox, "");
+    submitButton.disabled = true;
+    submitButton.textContent = "결제 준비 중";
+
+    try {
+      const payment = await prepareTossPayment();
+
+      if (!createdPaymentContext) {
+        submitButton.textContent = "주문 생성 중";
+        const idempotencyKey = randomUuid();
+        const response = await requestAuth(ordersApi.create, {
+          method: "POST",
+          body: JSON.stringify(orderPayload),
+        });
+        const body = await readJson(response);
+
+        if (response.status === 401) {
+          const error = new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+          error.requiresLogin = true;
+          throw error;
+        }
+
+        const serverAmount = Number(body.data?.totalAmount);
+        if (!response.ok || !body.data?.orderId || !Number.isSafeInteger(serverAmount) || serverAmount <= 0) {
+          throw new Error(checkoutApiError(body, "주문을 생성하지 못했습니다."));
+        }
+
+        createdPaymentContext = {
+          productId: String(product.id),
+          orderId: body.data.orderId,
+          amount: serverAmount,
+          orderName: `${product.name} ${quantity}개`.slice(0, 100),
+          idempotencyKey,
+          customerName: orderPayload.recipientName,
+          customerEmail: session.email || null,
+          customerMobilePhone: orderPayload.phoneNumber,
+        };
+        writeCheckoutPaymentContext(createdPaymentContext);
+        lockCreatedOrderFields();
       }
 
-      orderSubmitted = true;
-      form.hidden = true;
-      successPanel.querySelector("[data-created-order-id]").textContent = body.data.orderId;
-      successPanel.querySelector("[data-created-order-total]").textContent = formatPrice(body.data.totalAmount);
-      successPanel.hidden = false;
-      successPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+      submitButton.textContent = "토스페이 여는 중";
+      await requestTossPay(payment, createdPaymentContext);
     } catch (error) {
-      setCheckoutMessage(messageBox, error.message || "주문 생성 중 문제가 발생했습니다.");
-    } finally {
-      if (!orderSubmitted) {
-        submitButton.disabled = false;
-        renderOrderTotal();
-      }
+      submissionInProgress = false;
+      setCheckoutMessage(
+        messageBox,
+        error.message || "결제 준비 중 문제가 발생했습니다.",
+        Boolean(error.requiresLogin),
+      );
+      submitButton.disabled = false;
+      renderOrderTotal();
     }
   });
 
