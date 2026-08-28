@@ -23,6 +23,7 @@ const kakaoPostcodeScriptUrl = "https://t1.kakaocdn.net/mapjsapi/bundle/postcode
 const tossPaymentsScriptUrl = "https://js.tosspayments.com/v2/standard";
 const checkoutPaymentContextKey = "nanacocoa.checkout.payment-context";
 const checkoutCustomerKeyKey = "nanacocoa.checkout.customer-key";
+const paymentCallbackLoginReturnUrlKey = "nanacocoa.auth.payment-callback-return-url";
 let authSessionPromise;
 let kakaoPostcodePromise;
 let tossPaymentsSdkPromise;
@@ -202,6 +203,49 @@ function removeCheckoutSessionValue(key) {
   }
 }
 
+function isPaymentSuccessCallbackUrl(url) {
+  return url.origin === window.location.origin
+    && url.pathname === new URL("checkout.html", window.location.href).pathname
+    && url.searchParams.get("paymentResult") === "success"
+    && ["paymentKey", "orderId", "amount", "checkoutOrderId"]
+      .every((parameter) => Boolean(url.searchParams.get(parameter)));
+}
+
+function preservePaymentCallbackLoginReturnUrl() {
+  const callbackUrl = new URL(window.location.href);
+  if (!isPaymentSuccessCallbackUrl(callbackUrl)) {
+    return false;
+  }
+
+  try {
+    writeCheckoutSessionValue(paymentCallbackLoginReturnUrlKey, callbackUrl.toString());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function takePaymentCallbackLoginReturnUrl() {
+  let storedUrl;
+  try {
+    storedUrl = readCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);
+  } catch {
+    return null;
+  }
+
+  removeCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);
+  if (!storedUrl) {
+    return null;
+  }
+
+  try {
+    const callbackUrl = new URL(storedUrl, window.location.href);
+    return isPaymentSuccessCallbackUrl(callbackUrl) ? callbackUrl.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 function checkoutCustomerKey() {
   const storedKey = readCheckoutSessionValue(checkoutCustomerKeyKey);
   if (storedKey) {
@@ -328,7 +372,7 @@ function initLoginPage() {
         throw new Error(data.message || "이메일 또는 비밀번호를 확인해 주세요.");
       }
 
-      window.location.href = loginRedirectUrl;
+      window.location.href = takePaymentCallbackLoginReturnUrl() || loginRedirectUrl;
     } catch (error) {
       setAuthMessage(error.message || "로그인 중 문제가 발생했습니다.");
     } finally {
@@ -1164,6 +1208,7 @@ async function initCheckoutPage() {
       const body = await readJson(response);
 
       if (response.status === 401) {
+        preservePaymentCallbackLoginReturnUrl();
         renderPaymentFailure("로그인이 만료되었습니다. 다시 로그인해 결제 승인을 확인해 주세요.", context, false, true);
         return;
       }
@@ -1208,6 +1253,9 @@ async function initCheckoutPage() {
   }
 
   if (!session.authenticated) {
+    if (paymentResult === "success") {
+      preservePaymentCallbackLoginReturnUrl();
+    }
     renderCheckoutGuard(guard, "주문하려면 로그인이 필요합니다.", "login.html", "로그인하기");
     return;
   }

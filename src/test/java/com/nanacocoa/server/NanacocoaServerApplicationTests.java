@@ -848,6 +848,16 @@ class NanacocoaServerApplicationTests {
             .andReturn();
 
         String script = scriptResult.getResponse().getContentAsString();
+        int callbackReturnUrlStart = script.indexOf("function isPaymentSuccessCallbackUrl(url) {");
+        String callbackReturnUrl = script.substring(
+            callbackReturnUrlStart,
+            script.indexOf("function checkoutCustomerKey() {", callbackReturnUrlStart)
+        );
+        int loginStart = script.indexOf("function initLoginPage() {");
+        String login = script.substring(
+            loginStart,
+            script.indexOf("function initSignupPage() {", loginStart)
+        );
         int renewalStart = script.indexOf("function renewCheckoutPaymentAttempt(context) {");
         String renewal = script.substring(
             renewalStart,
@@ -863,6 +873,27 @@ class NanacocoaServerApplicationTests {
             callbackStart,
             script.indexOf("const session = await loadAuthSession();", callbackStart)
         );
+        int checkoutSessionStart = script.indexOf("const session = await loadAuthSession();", callbackStart);
+        String checkoutSession = script.substring(
+            checkoutSessionStart,
+            script.indexOf("if (paymentResult === \"fail\") {", checkoutSessionStart)
+        );
+
+        assertThat(callbackReturnUrl)
+            .contains(
+                "url.origin === window.location.origin",
+                "url.pathname === new URL(\"checkout.html\", window.location.href).pathname",
+                "url.searchParams.get(\"paymentResult\") === \"success\"",
+                "[\"paymentKey\", \"orderId\", \"amount\", \"checkoutOrderId\"]"
+            )
+            .containsSubsequence(
+                "storedUrl = readCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);",
+                "removeCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);",
+                "return isPaymentSuccessCallbackUrl(callbackUrl) ? callbackUrl.toString() : null;"
+            );
+        assertThat(login).contains(
+            "window.location.href = takePaymentCallbackLoginReturnUrl() || loginRedirectUrl;"
+        );
 
         assertThat(renewal).containsSubsequence(
             "context.idempotencyKey = randomUuid();",
@@ -876,6 +907,17 @@ class NanacocoaServerApplicationTests {
         );
         assertThat(callback)
             .contains("headers: { \"Idempotency-Key\": context.idempotencyKey }")
+            .containsSubsequence(
+                "if (response.status === 401) {",
+                "preservePaymentCallbackLoginReturnUrl();",
+                "renderPaymentFailure("
+            )
             .doesNotContain("renewCheckoutPaymentAttempt(context)");
+        assertThat(checkoutSession).containsSubsequence(
+            "if (!session.authenticated) {",
+            "if (paymentResult === \"success\") {",
+            "preservePaymentCallbackLoginReturnUrl();",
+            "renderCheckoutGuard(guard,"
+        );
     }
 }
