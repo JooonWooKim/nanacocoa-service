@@ -4,6 +4,10 @@ const authApi = {
   session: "/api/auth/session",
   logout: "/api/auth/logout",
 };
+const membersApi = {
+  profile: "/api/members/me",
+  password: "/api/members/me/password",
+};
 const productsApi = {
   list: "/api/products",
   detail: (productId) => `/api/products/${encodeURIComponent(productId)}`,
@@ -401,6 +405,9 @@ function initSignupPage() {
       email: String(formData.get("email") || ""),
       password: String(formData.get("password") || ""),
       name: String(formData.get("name") || ""),
+      address: String(formData.get("address") || ""),
+      phoneNumber: String(formData.get("phoneNumber") || ""),
+      emailReceiveConsent: String(formData.get("emailReceiveConsent") || ""),
     };
 
     submitButton.disabled = true;
@@ -413,11 +420,11 @@ function initSignupPage() {
       });
       const data = await readJson(response);
 
-      if (!response.ok || !data.authenticated) {
-        throw new Error(data.message || "회원가입 정보를 확인해 주세요.");
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "회원가입 정보를 확인해 주세요.");
       }
 
-      window.location.href = loginRedirectUrl;
+      window.location.href = "login.html";
     } catch (error) {
       setAuthMessage(error.message || "회원가입 중 문제가 발생했습니다.");
     } finally {
@@ -441,9 +448,14 @@ function renderAnonymousSession(menuSession) {
 
 function renderAuthenticatedSession(menuSession, session) {
   const message = document.createElement("p");
+  const actions = document.createElement("span");
+  const mypageLink = document.createElement("a");
   const logoutButton = document.createElement("button");
 
   message.textContent = `${session.name || session.email}님 반갑습니다.`;
+  actions.className = "menu-session-actions";
+  mypageLink.href = "mypage.html";
+  mypageLink.textContent = "마이페이지";
   logoutButton.type = "button";
   logoutButton.textContent = "로그아웃";
   logoutButton.addEventListener("click", async () => {
@@ -465,7 +477,196 @@ function renderAuthenticatedSession(menuSession, session) {
     }
   });
 
-  menuSession.replaceChildren(message, logoutButton);
+  actions.append(mypageLink, logoutButton);
+  menuSession.replaceChildren(message, actions);
+}
+
+function setMypageMessage(messageBox, message, success = false) {
+  if (!messageBox) {
+    return;
+  }
+
+  messageBox.textContent = message || "";
+  messageBox.hidden = !message;
+  messageBox.classList.toggle("is-success", Boolean(message && success));
+}
+
+function renderMypageGuard(guard, message, linkHref, linkText) {
+  const text = document.createElement("p");
+  text.textContent = message;
+
+  if (!linkHref || !linkText) {
+    guard.replaceChildren(text);
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = linkHref;
+  link.textContent = linkText;
+  guard.replaceChildren(text, link);
+}
+
+async function initMyPage() {
+  const page = document.querySelector("[data-mypage-page]");
+
+  if (!page) {
+    return;
+  }
+
+  const guard = page.querySelector("[data-mypage-guard]");
+  const content = page.querySelector("[data-mypage-content]");
+  const profileForm = page.querySelector("[data-profile-form]");
+  const passwordForm = page.querySelector("[data-password-form]");
+  const profileMessage = page.querySelector("[data-profile-message]");
+  const passwordMessage = page.querySelector("[data-password-message]");
+
+  if (!guard || !content || !profileForm || !passwordForm) {
+    return;
+  }
+
+  const session = await loadAuthSession();
+
+  if (session.loadFailed) {
+    renderMypageGuard(guard, "로그인 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.", "index.html", "홈으로");
+    return;
+  }
+
+  if (!session.authenticated) {
+    renderMypageGuard(guard, "마이페이지는 로그인 후 이용할 수 있습니다.", "login.html", "로그인하기");
+    return;
+  }
+
+  let profile;
+  try {
+    const response = await requestAuth(membersApi.profile);
+    const body = await readJson(response);
+
+    if (response.status === 401) {
+      renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+      return;
+    }
+
+    if (!response.ok || !body.data) {
+      throw new Error(body.error || body.message || "회원정보를 불러오지 못했습니다.");
+    }
+
+    profile = body.data;
+  } catch (error) {
+    renderMypageGuard(guard, error.message || "회원정보를 불러오지 못했습니다.", "index.html", "홈으로");
+    return;
+  }
+
+  profileForm.elements.email.value = profile.email || "";
+  profileForm.elements.name.value = profile.name || "";
+  profileForm.elements.address.value = profile.address || "";
+  profileForm.elements.phoneNumber.value = profile.phoneNumber || "";
+  const consentInput = profileForm.querySelector(`input[name="emailReceiveConsent"][value="${profile.emailReceiveConsent || "N"}"]`);
+  if (consentInput) {
+    consentInput.checked = true;
+  }
+
+  guard.hidden = true;
+  content.hidden = false;
+
+  profileForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setMypageMessage(profileMessage, "");
+
+    const formData = new FormData(profileForm);
+    const submitButton = profileForm.querySelector("[data-profile-submit]");
+    const defaultText = submitButton.textContent;
+    const payload = {
+      email: String(formData.get("email") || ""),
+      currentPassword: String(formData.get("currentPassword") || ""),
+      name: String(formData.get("name") || ""),
+      address: String(formData.get("address") || ""),
+      phoneNumber: String(formData.get("phoneNumber") || ""),
+      emailReceiveConsent: String(formData.get("emailReceiveConsent") || ""),
+    };
+
+    submitButton.disabled = true;
+    submitButton.textContent = "저장 중";
+
+    try {
+      const response = await requestAuth(membersApi.profile, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+      const body = await readJson(response);
+
+      if (response.status === 401 || response.status === 403) {
+        content.hidden = true;
+        guard.hidden = false;
+        renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+        return;
+      }
+
+      if (!response.ok || !body.data) {
+        throw new Error(body.error || body.message || "회원정보를 저장하지 못했습니다.");
+      }
+
+      profileForm.elements.name.value = body.data.name || "";
+      profileForm.elements.address.value = body.data.address || "";
+      profileForm.elements.phoneNumber.value = body.data.phoneNumber || "";
+      profileForm.elements.currentPassword.value = "";
+      setMypageMessage(profileMessage, "회원정보가 수정되었습니다.", true);
+      authSessionPromise = null;
+    } catch (error) {
+      setMypageMessage(profileMessage, error.message || "회원정보를 저장하지 못했습니다.");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = defaultText;
+    }
+  });
+
+  passwordForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setMypageMessage(passwordMessage, "");
+
+    const formData = new FormData(passwordForm);
+    const payload = {
+      currentPassword: String(formData.get("currentPassword") || ""),
+      newPassword: String(formData.get("newPassword") || ""),
+      newPasswordConfirm: String(formData.get("newPasswordConfirm") || ""),
+    };
+
+    if (payload.newPassword !== payload.newPasswordConfirm) {
+      setMypageMessage(passwordMessage, "새 비밀번호와 확인 값을 동일하게 입력해 주세요.");
+      return;
+    }
+
+    const submitButton = passwordForm.querySelector("[data-password-submit]");
+    const defaultText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "변경 중";
+
+    try {
+      const response = await requestAuth(membersApi.password, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+      const body = await readJson(response);
+
+      if (response.status === 401 || response.status === 403) {
+        content.hidden = true;
+        guard.hidden = false;
+        renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(body.error || body.message || "비밀번호를 변경하지 못했습니다.");
+      }
+
+      passwordForm.reset();
+      setMypageMessage(passwordMessage, "비밀번호가 변경되었습니다.", true);
+    } catch (error) {
+      setMypageMessage(passwordMessage, error.message || "비밀번호를 변경하지 못했습니다.");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = defaultText;
+    }
+  });
 }
 
 function renderAdminProductRegisterLink(session) {
@@ -1549,3 +1750,4 @@ initProductsPage();
 initProductDetail();
 initProductRegisterPage();
 initCheckoutPage();
+initMyPage();

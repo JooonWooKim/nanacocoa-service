@@ -3,10 +3,14 @@ CREATE TABLE IF NOT EXISTS members (
   email VARCHAR(255) NOT NULL,
   name VARCHAR(100) NOT NULL,
   password VARCHAR(100) NOT NULL,
+  address VARCHAR(500) NOT NULL DEFAULT '',
+  phone_number VARCHAR(13) NOT NULL DEFAULT '',
+  email_receive_consent VARCHAR(1) NOT NULL DEFAULT 'N',
   is_admin BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME(6) NOT NULL,
   PRIMARY KEY (id),
-  CONSTRAINT uk_members_email UNIQUE (email)
+  CONSTRAINT uk_members_email UNIQUE (email),
+  CONSTRAINT chk_members_email_receive_consent CHECK (email_receive_consent IN ('Y', 'N'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS products (

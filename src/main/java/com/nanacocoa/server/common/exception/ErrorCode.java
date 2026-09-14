@@ -12,6 +12,8 @@ public enum ErrorCode {
 	ALREADY_EXIST_EMAIL(HttpStatus.CONFLICT, "MEMBER_01", "이미 등록된 이메일입니다."),
 	NOT_VALID_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_02", "비밀번호를 다시 확인해주세요."),
 	NOT_FOUND_EMAIL(HttpStatus.NOT_FOUND, "MEMBER_03", "이메일을 찾을 수 없습니다."),
+	MEMBER_ID_IMMUTABLE(HttpStatus.BAD_REQUEST, "MEMBER_04", "아이디는 변경할 수 없습니다."),
+	PASSWORD_CONFIRMATION_MISMATCH(HttpStatus.BAD_REQUEST, "MEMBER_05", "새 비밀번호와 확인 값이 일치하지 않습니다."),
 	AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_01", "로그인이 필요합니다."),
 	ADMIN_ACCESS_REQUIRED(HttpStatus.FORBIDDEN, "AUTH_02", "운영자만 접근할 수 있습니다."),
 

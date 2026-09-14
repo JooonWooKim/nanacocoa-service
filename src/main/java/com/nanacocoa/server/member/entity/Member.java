@@ -7,8 +7,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
-import static com.nanacocoa.server.common.exception.ErrorCode.ALREADY_EXIST_EMAIL;
 import static com.nanacocoa.server.common.exception.ErrorCode.ADMIN_ACCESS_REQUIRED;
+import static com.nanacocoa.server.common.exception.ErrorCode.NOT_VALID_PASSWORD;
 
 @Entity
 @Table(name = "members")
@@ -31,6 +31,16 @@ public class Member {
     @Column(name = "password", nullable = false, length = 100)
     private String password;
 
+    @Column(name = "address", nullable = false, length = 500)
+    private String address;
+
+    @Column(name = "phone_number", nullable = false, length = 13)
+    private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "email_receive_consent", nullable = false, length = 1)
+    private EmailReceiveConsent emailReceiveConsent;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -38,23 +48,43 @@ public class Member {
     private boolean admin = false;
 
     @Builder
-    public Member(String email, String name, String password) {
+    public Member(
+            String email,
+            String name,
+            String password,
+            String address,
+            String phoneNumber,
+            EmailReceiveConsent emailReceiveConsent
+    ) {
         this.email = email;
         this.name = name;
         this.password = password;
+        this.address = address == null ? "" : address;
+        this.phoneNumber = phoneNumber == null ? "" : phoneNumber;
+        this.emailReceiveConsent = emailReceiveConsent == null ? EmailReceiveConsent.N : emailReceiveConsent;
         this.admin = false;
-    }
-
-    public void checkEmailDuplicate(String email){
-        if(! this.email.equals(email)){
-            throw new NanacocoaException(ALREADY_EXIST_EMAIL);
-        }
     }
 
     public void checkPassword(PasswordEncoder passwordEncoder, String password){
         if(! passwordEncoder.matches(password, this.password)){
-            throw new NanacocoaException(ALREADY_EXIST_EMAIL);
+            throw new NanacocoaException(NOT_VALID_PASSWORD);
         }
+    }
+
+    public void updateProfile(
+            String name,
+            String address,
+            String phoneNumber,
+            EmailReceiveConsent emailReceiveConsent
+    ) {
+        this.name = name;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
+        this.emailReceiveConsent = emailReceiveConsent;
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
     }
 
     public void checkAdmin() {
@@ -67,6 +97,15 @@ public class Member {
     void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (address == null) {
+            address = "";
+        }
+        if (phoneNumber == null) {
+            phoneNumber = "";
+        }
+        if (emailReceiveConsent == null) {
+            emailReceiveConsent = EmailReceiveConsent.N;
         }
     }
 }

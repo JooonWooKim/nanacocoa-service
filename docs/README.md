@@ -10,6 +10,7 @@
 
 - [설계 문서 인덱스](design-docs/index.md)
 - [핵심 엔지니어링 원칙](design-docs/core-beliefs.md)
+- [마이페이지 PRD](design-docs/PRD.md)
 - [제품 명세 인덱스](product-specs/index.md)
 - [평가 카탈로그](product-specs/evaluation-catalog.md)
 

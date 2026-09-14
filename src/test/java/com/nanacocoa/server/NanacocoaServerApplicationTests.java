@@ -2,6 +2,7 @@ package com.nanacocoa.server;
 
 import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
 import com.nanacocoa.server.member.dto.reqeust.SignupRequest;
+import com.nanacocoa.server.member.entity.EmailReceiveConsent;
 import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
 import com.nanacocoa.server.member.service.AuthService;
@@ -164,26 +165,30 @@ class NanacocoaServerApplicationTests {
     }
 
     @Test
-    void signupStoresMemberWithBcryptedPasswordAndCreatesSession() throws Exception {
+    void signupStoresCompleteProfileWithBcryptedPassword() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
                       "email": "signup-success@example.com",
                       "password": "signup123!",
-                      "name": "가입자"
+                      "name": "가입자",
+                      "address": "서울시 성동구",
+                      "phoneNumber": "010-1111-2222",
+                      "emailReceiveConsent": "N"
                     }
                     """))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.authenticated").value(true))
-            .andExpect(jsonPath("$.email").value("signup-success@example.com"))
-            .andExpect(jsonPath("$.name").value("가입자"))
+            .andExpect(jsonPath("$.message").value("회원가입성공"))
             .andReturn();
 
-        assertThat(result.getRequest().getSession(false)).isNotNull();
+        assertThat(result.getRequest().getSession(false)).isNull();
 
         Member member = memberRepository.findByEmail("signup-success@example.com").orElseThrow();
         assertThat(member.getName()).isEqualTo("가입자");
+        assertThat(member.getAddress()).isEqualTo("서울시 성동구");
+        assertThat(member.getPhoneNumber()).isEqualTo("010-1111-2222");
+        assertThat(member.getEmailReceiveConsent()).isEqualTo(EmailReceiveConsent.N);
         assertThat(member.isAdmin()).isFalse();
         assertThat(member.getPassword()).isNotEqualTo("signup123!");
         assertThat(passwordEncoder.matches("signup123!", member.getPassword())).isTrue();
@@ -193,7 +198,14 @@ class NanacocoaServerApplicationTests {
     void signupCreatesNonAdminMember() {
         String email = "non-admin-signup@example.com";
 
-        authService.signUp(new SignupRequest(email, "signup123!", "일반 가입자"));
+        authService.signUp(new SignupRequest(
+            email,
+            "signup123!",
+            "일반 가입자",
+            "서울시 성동구",
+            "010-1111-2222",
+            EmailReceiveConsent.N
+        ));
 
         Member member = memberRepository.findByEmail(email).orElseThrow();
         assertThat(member.isAdmin()).isFalse();
@@ -295,7 +307,10 @@ class NanacocoaServerApplicationTests {
                     {
                       "email": "login-after-signup@example.com",
                       "password": "signup123!",
-                      "name": "로그인회원"
+                      "name": "로그인회원",
+                      "address": "서울시 성동구",
+                      "phoneNumber": "010-1111-2222",
+                      "emailReceiveConsent": "N"
                     }
                     """))
             .andExpect(status().isCreated());
@@ -309,12 +324,16 @@ class NanacocoaServerApplicationTests {
                     }
                     """))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.authenticated").value(true))
-            .andExpect(jsonPath("$.email").value("login-after-signup@example.com"))
-            .andExpect(jsonPath("$.name").value("로그인회원"))
+            .andExpect(jsonPath("$.message").value("로그인성공"))
             .andReturn();
 
-        assertThat(login.getRequest().getSession(false)).isNotNull();
+        MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
+        assertThat(session).isNotNull();
+        mockMvc.perform(get("/api/auth/session").session(session))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.authenticated").value(true))
+            .andExpect(jsonPath("$.email").value("login-after-signup@example.com"))
+            .andExpect(jsonPath("$.name").value("로그인회원"));
     }
 
     @Test
@@ -323,7 +342,10 @@ class NanacocoaServerApplicationTests {
             {
               "email": "duplicate@example.com",
               "password": "signup123!",
-              "name": "중복회원"
+              "name": "중복회원",
+              "address": "서울시 성동구",
+              "phoneNumber": "010-1111-2222",
+              "emailReceiveConsent": "N"
             }
             """;
 
@@ -336,8 +358,8 @@ class NanacocoaServerApplicationTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(signupBody))
             .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.authenticated").value(false))
-            .andExpect(jsonPath("$.message").value("이미 가입된 이메일입니다."));
+            .andExpect(jsonPath("$.code").value("MEMBER_01"))
+            .andExpect(jsonPath("$.error").value("이미 등록된 이메일입니다."));
     }
 
     @Test
@@ -352,7 +374,7 @@ class NanacocoaServerApplicationTests {
                     }
                     """))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.authenticated").value(false));
+            .andExpect(jsonPath("$.code").value("COMMON_01"));
 
         mockMvc.perform(post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -364,7 +386,7 @@ class NanacocoaServerApplicationTests {
                     }
                     """))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.authenticated").value(false));
+            .andExpect(jsonPath("$.code").value("COMMON_01"));
 
         mockMvc.perform(post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -376,7 +398,7 @@ class NanacocoaServerApplicationTests {
                     }
                     """))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.authenticated").value(false));
+            .andExpect(jsonPath("$.code").value("COMMON_01"));
     }
 
     @Test

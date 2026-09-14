@@ -1,10 +1,14 @@
 # id|위험|test_id|성공 조건|문서
 APP-001|Spring 애플리케이션 context가 test 프로필로 시작될 수 있음|com.nanacocoa.server.NanacocoaServerApplicationTests#contextLoads|애플리케이션 context가 예외 없이 로드됨|docs/quality/RELIABILITY.md
-DB-001|운영 Flyway 이력이 순서대로 적용됨|com.nanacocoa.server.migration.FlywayMigrationTest#appliesBaselineAndPaymentMigrations|등록된 모든 마이그레이션이 적용되고 예상 주문·결제 스키마가 존재함|docs/runbooks/database-migrations.md
+DB-001|운영 Flyway 이력이 순서대로 적용됨|com.nanacocoa.server.migration.FlywayMigrationTest#appliesMigrationsAndPreservesExistingMemberProfileDefaults|등록된 모든 마이그레이션이 적용되고 기존 회원 프로필이 안전한 기본값으로 이관됨|docs/runbooks/database-migrations.md
 DB-002|JPA mapping이 마이그레이션된 스키마와 일치함|com.nanacocoa.server.migration.JpaSchemaValidationTest#applicationStartsWithFlywaySchemaValidation|Flyway와 ddl-auto validate를 함께 사용해 애플리케이션이 시작됨|docs/runbooks/database-migrations.md
 AUTH-001|알려진 사용자 로그인이 예상 세션 계약을 설정함|com.nanacocoa.server.NanacocoaServerApplicationTests#loginCreatesAuthenticatedSessionForDemoUser|로그인이 인증된 사용자 정보를 반환하고 세션을 생성함|docs/product-specs/evaluation-catalog.md
 AUTH-002|잘못된 자격 증명이 세션 없이 실패 우선으로 닫힘|com.nanacocoa.server.NanacocoaServerApplicationTests#loginRejectsInvalidPasswordWithoutCreatingSession|응답이 미인증·익명이며 세션을 생성하지 않음|docs/quality/SECURITY.md
-AUTH-003|회원가입이 검증·저장·hash·인증을 수행함|com.nanacocoa.server.NanacocoaServerApplicationTests#signupStoresMemberWithBcryptedPasswordAndCreatesSession|회원이 BCrypt 비밀번호로 저장되고 인증된 세션 응답을 반환함|docs/product-specs/evaluation-catalog.md
+AUTH-003|회원가입이 완전한 프로필 검증·저장·hash를 수행함|com.nanacocoa.server.NanacocoaServerApplicationTests#signupStoresCompleteProfileWithBcryptedPassword|필수 프로필과 BCrypt 비밀번호가 저장되고 운영자 권한이 부여되지 않음|docs/design-docs/PRD.md
+MEMBER-001|인증된 회원만 자신의 프로필을 조회할 수 있음|com.nanacocoa.server.member.MemberApiIntegrationTest#profileApiRequiresAuthentication|익명 프로필 요청이 HTTP 401로 거부됨|docs/design-docs/PRD.md
+MEMBER-002|현재 비밀번호 확인 후 프로필을 변경함|com.nanacocoa.server.member.MemberApiIntegrationTest#updatesProfileAndSessionUsesLatestName|프로필이 저장되고 세션 조회가 최신 이름을 반환함|docs/design-docs/PRD.md
+MEMBER-003|프로필 변경이 비밀번호·불변 이메일·전화번호 규칙을 지킴|com.nanacocoa.server.member.MemberApiIntegrationTest#rejectsWrongPasswordEmailChangeAndInvalidPhoneWithoutSaving|잘못된 요청이 오류 코드와 함께 저장 없이 거부됨|docs/design-docs/PRD.md
+MEMBER-004|비밀번호를 hash로 변경하고 현재 세션을 유지함|com.nanacocoa.server.member.MemberApiIntegrationTest#changesPasswordAndKeepsCurrentSession|새 비밀번호가 BCrypt hash로 저장되고 현재 세션 조회가 성공함|docs/design-docs/PRD.md
 ORDER-001|주문 합계가 서버의 상품 가격을 사용함|com.nanacocoa.server.order.service.OrderServiceTest#createsMultiItemOrderUsingServerPrices|여러 상품의 금액이 저장된 상품 가격으로 계산됨|docs/product-specs/evaluation-catalog.md
 PAY-001|승인이 제공자와 데이터베이스의 일관된 상태에 도달함|com.nanacocoa.server.payment.facade.PaymentFacadeTest#confirmsPaymentAndCompletesDatabaseState|승인이 결제와 주문 상태를 한 번만 완료함|docs/quality/RELIABILITY.md
 PAY-002|승인 멱등성이 중복 제공자 호출을 방지함|com.nanacocoa.server.payment.facade.PaymentFacadeTest#idempotentSuccessReplayDoesNotCallProvider|재실행이 추가 제공자 호출 없이 이전 성공을 반환함|docs/quality/RELIABILITY.md
