@@ -106,6 +106,21 @@ function formatShippingAddress(postalCode, basicAddress, detailAddress) {
   return normalizedPostalCode ? `[${normalizedPostalCode}] ${address}`.trim() : address;
 }
 
+function parseStoredAddress(value) {
+  const address = normalizeAddressPart(value);
+  const match = address.match(/^\[([0-9]{5})\]\s*(.*)$/);
+
+  if (!match) {
+    return { postalCode: "", basicAddress: address, detailAddress: "" };
+  }
+
+  return {
+    postalCode: match[1],
+    basicAddress: match[2],
+    detailAddress: "",
+  };
+}
+
 function loadKakaoPostcode() {
   if (typeof window.kakao?.Postcode === "function") {
     return Promise.resolve(window.kakao.Postcode);
@@ -138,6 +153,86 @@ function loadKakaoPostcode() {
   });
 
   return kakaoPostcodePromise;
+}
+
+function setupKakaoAddressSearch({
+  postalCodeInput,
+  basicAddressInput,
+  detailAddressInput,
+  searchButton,
+  statusElement,
+  onAddressChange = () => {},
+  shouldKeepDisabled = () => false,
+}) {
+  function setStatus(message) {
+    statusElement.textContent = message || "";
+    statusElement.hidden = !message;
+  }
+
+  function disableSearch(message) {
+    searchButton.disabled = true;
+    searchButton.textContent = "주소검색 불가";
+    setStatus(message);
+  }
+
+  searchButton.addEventListener("click", () => {
+    const Postcode = window.kakao?.Postcode;
+
+    if (typeof Postcode !== "function") {
+      disableSearch("주소검색을 사용할 수 없습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+      return;
+    }
+
+    try {
+      new Postcode({
+        oncomplete(data) {
+          const postalCode = normalizeAddressPart(data.zonecode);
+          const selectedAddress = data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
+          const basicAddress = normalizeAddressPart(selectedAddress || data.address);
+
+          if (!postalCode || !basicAddress) {
+            setStatus("선택한 주소를 입력하지 못했습니다. 다시 검색하거나 직접 입력해 주세요.");
+            return;
+          }
+
+          postalCodeInput.value = postalCode;
+          basicAddressInput.value = basicAddress;
+          detailAddressInput.value = "";
+          postalCodeInput.setCustomValidity("");
+          basicAddressInput.setCustomValidity("");
+          detailAddressInput.setCustomValidity("");
+          onAddressChange();
+          setStatus("");
+          detailAddressInput.focus();
+        },
+      }).open();
+    } catch {
+      disableSearch("주소검색 창을 열지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+    }
+  });
+
+  [postalCodeInput, basicAddressInput, detailAddressInput].forEach((input) => {
+    input.addEventListener("input", () => {
+      input.setCustomValidity("");
+      onAddressChange();
+    });
+  });
+
+  loadKakaoPostcode()
+    .then(() => {
+      if (shouldKeepDisabled()) {
+        return;
+      }
+      searchButton.disabled = false;
+      searchButton.textContent = "주소검색";
+      setStatus("");
+    })
+    .catch(() => {
+      if (shouldKeepDisabled()) {
+        return;
+      }
+      disableSearch("주소검색을 불러오지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+    });
 }
 
 function loadTossPaymentsSdk() {
@@ -519,8 +614,15 @@ async function initMyPage() {
   const passwordForm = page.querySelector("[data-password-form]");
   const profileMessage = page.querySelector("[data-profile-message]");
   const passwordMessage = page.querySelector("[data-password-message]");
+  const postalCodeInput = profileForm?.querySelector("[data-address-postal-code]");
+  const basicAddressInput = profileForm?.querySelector("[data-address-basic]");
+  const detailAddressInput = profileForm?.querySelector("[data-address-detail]");
+  const addressSearchButton = profileForm?.querySelector("[data-address-search]");
+  const addressSearchStatus = profileForm?.querySelector("[data-address-search-status]");
 
-  if (!guard || !content || !profileForm || !passwordForm) {
+  if (!guard || !content || !profileForm || !passwordForm || !postalCodeInput
+      || !basicAddressInput || !detailAddressInput || !addressSearchButton
+      || !addressSearchStatus) {
     return;
   }
 
@@ -558,8 +660,68 @@ async function initMyPage() {
 
   profileForm.elements.email.value = profile.email || "";
   profileForm.elements.name.value = profile.name || "";
-  profileForm.elements.address.value = profile.address || "";
   profileForm.elements.phoneNumber.value = profile.phoneNumber || "";
+  let storedAddress = String(profile.address || "");
+  let addressDirty = false;
+
+  function showStoredAddress(address) {
+    const parsedAddress = parseStoredAddress(address);
+    storedAddress = String(address || "");
+    addressDirty = false;
+    postalCodeInput.value = parsedAddress.postalCode;
+    basicAddressInput.value = parsedAddress.basicAddress;
+    detailAddressInput.value = parsedAddress.detailAddress;
+    postalCodeInput.required = Boolean(parsedAddress.postalCode);
+    postalCodeInput.setCustomValidity("");
+    basicAddressInput.setCustomValidity("");
+    detailAddressInput.setCustomValidity("");
+  }
+
+  function markAddressChanged() {
+    addressDirty = true;
+    postalCodeInput.required = true;
+  }
+
+  function readProfileAddress() {
+    if (!addressDirty) {
+      return storedAddress;
+    }
+
+    const postalCode = normalizeAddressPart(postalCodeInput.value);
+    const basicAddress = normalizeAddressPart(basicAddressInput.value);
+    const detailAddress = normalizeAddressPart(detailAddressInput.value);
+    const address = formatShippingAddress(postalCode, basicAddress, detailAddress);
+
+    postalCodeInput.setCustomValidity("");
+    basicAddressInput.setCustomValidity("");
+    detailAddressInput.setCustomValidity("");
+
+    if (!/^[0-9]{5}$/.test(postalCode)) {
+      postalCodeInput.setCustomValidity("우편번호 5자리를 입력해 주세요.");
+    }
+
+    if (!basicAddress) {
+      basicAddressInput.setCustomValidity("기본주소를 입력해 주세요.");
+    }
+
+    if (address.length > 500) {
+      const invalidInput = detailAddress ? detailAddressInput : basicAddressInput;
+      invalidInput.setCustomValidity("우편번호와 상세주소를 포함한 전체 주소는 500자 이하로 입력해 주세요.");
+    }
+
+    return address;
+  }
+
+  showStoredAddress(storedAddress);
+  setupKakaoAddressSearch({
+    postalCodeInput,
+    basicAddressInput,
+    detailAddressInput,
+    searchButton: addressSearchButton,
+    statusElement: addressSearchStatus,
+    onAddressChange: markAddressChanged,
+  });
+
   const consentInput = profileForm.querySelector(`input[name="emailReceiveConsent"][value="${profile.emailReceiveConsent || "N"}"]`);
   if (consentInput) {
     consentInput.checked = true;
@@ -575,11 +737,17 @@ async function initMyPage() {
     const formData = new FormData(profileForm);
     const submitButton = profileForm.querySelector("[data-profile-submit]");
     const defaultText = submitButton.textContent;
+    const address = readProfileAddress();
+
+    if (!profileForm.reportValidity()) {
+      return;
+    }
+
     const payload = {
       email: String(formData.get("email") || ""),
       currentPassword: String(formData.get("currentPassword") || ""),
       name: String(formData.get("name") || ""),
-      address: String(formData.get("address") || ""),
+      address,
       phoneNumber: String(formData.get("phoneNumber") || ""),
       emailReceiveConsent: String(formData.get("emailReceiveConsent") || ""),
     };
@@ -606,9 +774,11 @@ async function initMyPage() {
       }
 
       profileForm.elements.name.value = body.data.name || "";
-      profileForm.elements.address.value = body.data.address || "";
       profileForm.elements.phoneNumber.value = body.data.phoneNumber || "";
       profileForm.elements.currentPassword.value = "";
+      storedAddress = String(body.data.address || address);
+      addressDirty = false;
+      postalCodeInput.required = Boolean(normalizeAddressPart(postalCodeInput.value));
       setMypageMessage(profileMessage, "회원정보가 수정되었습니다.", true);
       authSessionPromise = null;
     } catch (error) {
@@ -1531,11 +1701,6 @@ async function initCheckoutPage() {
     return customerRequestPreset.value || null;
   }
 
-  function setAddressSearchStatus(message) {
-    addressSearchStatus.textContent = message || "";
-    addressSearchStatus.hidden = !message;
-  }
-
   function validateShippingAddress() {
     const postalCode = normalizeAddressPart(postalCodeInput.value);
     const basicAddress = normalizeAddressPart(shippingAddressInput.value);
@@ -1562,66 +1727,14 @@ async function initCheckoutPage() {
     return shippingAddress;
   }
 
-  function disableAddressSearch(message) {
-    addressSearchButton.disabled = true;
-    addressSearchButton.textContent = "주소검색 불가";
-    setAddressSearchStatus(message);
-  }
-
-  addressSearchButton.addEventListener("click", () => {
-    const Postcode = window.kakao?.Postcode;
-
-    if (typeof Postcode !== "function") {
-      disableAddressSearch("주소검색을 사용할 수 없습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
-      return;
-    }
-
-    try {
-      new Postcode({
-        oncomplete(data) {
-          const postalCode = normalizeAddressPart(data.zonecode);
-          const selectedAddress = data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
-          const basicAddress = normalizeAddressPart(selectedAddress || data.address);
-
-          if (!postalCode || !basicAddress) {
-            setAddressSearchStatus("선택한 주소를 입력하지 못했습니다. 다시 검색하거나 직접 입력해 주세요.");
-            return;
-          }
-
-          postalCodeInput.value = postalCode;
-          shippingAddressInput.value = basicAddress;
-          shippingAddressDetailInput.value = "";
-          postalCodeInput.setCustomValidity("");
-          shippingAddressInput.setCustomValidity("");
-          shippingAddressDetailInput.setCustomValidity("");
-          setAddressSearchStatus("");
-          shippingAddressDetailInput.focus();
-        },
-      }).open();
-    } catch {
-      disableAddressSearch("주소검색 창을 열지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
-    }
+  setupKakaoAddressSearch({
+    postalCodeInput,
+    basicAddressInput: shippingAddressInput,
+    detailAddressInput: shippingAddressDetailInput,
+    searchButton: addressSearchButton,
+    statusElement: addressSearchStatus,
+    shouldKeepDisabled: () => Boolean(createdPaymentContext),
   });
-
-  postalCodeInput.addEventListener("input", () => postalCodeInput.setCustomValidity(""));
-  shippingAddressInput.addEventListener("input", () => shippingAddressInput.setCustomValidity(""));
-  shippingAddressDetailInput.addEventListener("input", () => shippingAddressDetailInput.setCustomValidity(""));
-
-  loadKakaoPostcode()
-    .then(() => {
-      if (createdPaymentContext) {
-        return;
-      }
-      addressSearchButton.disabled = false;
-      addressSearchButton.textContent = "주소검색";
-      setAddressSearchStatus("");
-    })
-    .catch(() => {
-      if (createdPaymentContext) {
-        return;
-      }
-      disableAddressSearch("주소검색을 불러오지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
-    });
 
   customerRequestPreset.addEventListener("change", () => {
     const isCustom = customerRequestPreset.value === "custom";

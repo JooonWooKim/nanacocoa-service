@@ -234,6 +234,12 @@ class MemberApiIntegrationTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("data-mypage-page")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("data-profile-form")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("data-password-form")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-postal-code")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-basic")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-detail")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("data-address-search-status")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("<button type=\"button\" data-address-search disabled>")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("<textarea name=\"address\""))))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("readonly")));
 
         mockMvc.perform(get("/signup.html"))

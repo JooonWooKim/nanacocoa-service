@@ -53,10 +53,53 @@
               <input type="text" name="name" autocomplete="name" maxlength="100" required />
             </label>
 
-            <label class="mypage-field mypage-field-wide">
-              <span>주소</span>
-              <textarea name="address" autocomplete="street-address" maxlength="500" rows="4" required></textarea>
-            </label>
+            <div class="mypage-field mypage-field-wide checkout-address-field" role="group" aria-labelledby="profile-address-label">
+              <span id="profile-address-label">주소</span>
+              <div class="checkout-address-search-row">
+                <label>
+                  <span class="visually-hidden">우편번호</span>
+                  <input
+                    type="text"
+                    name="addressPostalCode"
+                    maxlength="5"
+                    pattern="[0-9]{5}"
+                    inputmode="numeric"
+                    autocomplete="postal-code"
+                    placeholder="우편번호"
+                    aria-describedby="profile-address-status"
+                    data-address-postal-code
+                  />
+                </label>
+                <button type="button" data-address-search disabled>주소검색 준비 중</button>
+              </div>
+              <label>
+                <span class="visually-hidden">기본주소</span>
+                <input
+                  type="text"
+                  name="addressBasic"
+                  maxlength="500"
+                  autocomplete="address-line1"
+                  placeholder="기본주소"
+                  aria-describedby="profile-address-status"
+                  data-address-basic
+                  required
+                />
+              </label>
+              <label>
+                <span class="visually-hidden">상세주소</span>
+                <input
+                  type="text"
+                  name="addressDetail"
+                  maxlength="500"
+                  autocomplete="address-line2"
+                  placeholder="상세주소 (선택 입력 가능)"
+                  data-address-detail
+                />
+              </label>
+              <p class="checkout-address-status" id="profile-address-status" data-address-search-status role="status" aria-live="polite">
+                주소검색을 준비하는 중입니다.
+              </p>
+            </div>
 
             <label class="mypage-field">
               <span>전화번호</span>
