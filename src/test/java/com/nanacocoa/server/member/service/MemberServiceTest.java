@@ -1,6 +1,7 @@
 package com.nanacocoa.server.member.service;
 
 import com.nanacocoa.server.common.exception.NanacocoaException;
+import com.nanacocoa.server.common.session.ProfileVerificationSession;
 import com.nanacocoa.server.member.dto.reqeust.ChangeMemberPasswordRequest;
 import com.nanacocoa.server.member.dto.reqeust.UpdateMemberProfileRequest;
 import com.nanacocoa.server.member.dto.response.MemberProfileResponse;
@@ -18,16 +19,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static com.nanacocoa.server.common.exception.ErrorCode.MEMBER_ID_IMMUTABLE;
-import static com.nanacocoa.server.common.exception.ErrorCode.NOT_VALID_PASSWORD;
+import static com.nanacocoa.server.common.exception.ErrorCode.PROFILE_VERIFICATION_REQUIRED;
 import static com.nanacocoa.server.common.exception.ErrorCode.PASSWORD_CONFIRMATION_MISMATCH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private ProfileVerificationSession verificationSession;
 
     private PasswordEncoder passwordEncoder;
     private MemberService memberService;
@@ -36,7 +41,7 @@ class MemberServiceTest {
     @BeforeEach
     void setUp() {
         passwordEncoder = new BCryptPasswordEncoder();
-        memberService = new MemberService(memberRepository, passwordEncoder);
+        memberService = new MemberService(memberRepository, passwordEncoder, verificationSession);
         member = Member.builder()
                 .email("member@example.com")
                 .password(passwordEncoder.encode("current123!"))
@@ -63,7 +68,6 @@ class MemberServiceTest {
     void updatesProfileAfterCurrentPasswordVerification() {
         UpdateMemberProfileRequest request = new UpdateMemberProfileRequest(
                 member.getEmail(),
-                "current123!",
                 " 새 이름 ",
                 " 새 주소 ",
                 "010-3333-4444",
@@ -79,19 +83,21 @@ class MemberServiceTest {
     }
 
     @Test
-    void rejectsWrongCurrentPasswordWithoutChangingProfile() {
+    void rejectsUnverifiedSessionWithoutChangingProfile() {
         UpdateMemberProfileRequest request = new UpdateMemberProfileRequest(
                 member.getEmail(),
-                "wrong-password",
                 "변경 이름",
                 "변경 주소",
                 "010-3333-4444",
                 EmailReceiveConsent.Y
         );
 
+        doThrow(new NanacocoaException(PROFILE_VERIFICATION_REQUIRED))
+                .when(verificationSession).requireVerified(member.getEmail(), member.getPassword());
+
         assertThatThrownBy(() -> memberService.updateProfile(member.getEmail(), request))
                 .isInstanceOfSatisfying(NanacocoaException.class,
-                        exception -> assertThat(exception.getErrorCode()).isEqualTo(NOT_VALID_PASSWORD));
+                        exception -> assertThat(exception.getErrorCode()).isEqualTo(PROFILE_VERIFICATION_REQUIRED));
         assertThat(member.getName()).isEqualTo("기존 이름");
         assertThat(member.getEmailReceiveConsent()).isEqualTo(EmailReceiveConsent.N);
     }
@@ -100,7 +106,6 @@ class MemberServiceTest {
     void rejectsEmailChangeAfterCurrentPasswordVerification() {
         UpdateMemberProfileRequest request = new UpdateMemberProfileRequest(
                 "changed@example.com",
-                "current123!",
                 "변경 이름",
                 "변경 주소",
                 "010-3333-4444",

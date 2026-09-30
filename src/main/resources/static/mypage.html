@@ -116,15 +116,11 @@
 
             <fieldset class="mypage-consent">
               <legend>이메일 수신여부</legend>
-              <label><input type="radio" name="emailReceiveConsent" value="Y" required /> 수신</label>
-              <label><input type="radio" name="emailReceiveConsent" value="N" required /> 수신 거부</label>
+              <div class="mypage-consent-options">
+                <label><input type="radio" name="emailReceiveConsent" value="Y" required /> 수신</label>
+                <label><input type="radio" name="emailReceiveConsent" value="N" required /> 수신 거부</label>
+              </div>
             </fieldset>
-
-            <label class="mypage-field mypage-field-wide">
-              <span>현재 비밀번호</span>
-              <input type="password" name="currentPassword" autocomplete="current-password" maxlength="72" required />
-              <small>회원정보를 저장하려면 현재 비밀번호를 입력해 주세요.</small>
-            </label>
 
             <p class="mypage-message mypage-field-wide" data-profile-message role="alert" aria-live="polite" hidden></p>
             <button class="login-submit mypage-submit mypage-field-wide" type="submit" data-profile-submit>

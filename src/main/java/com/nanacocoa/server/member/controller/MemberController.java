@@ -6,6 +6,9 @@ import com.nanacocoa.server.member.dto.reqeust.ChangeMemberPasswordRequest;
 import com.nanacocoa.server.member.dto.reqeust.UpdateMemberProfileRequest;
 import com.nanacocoa.server.member.dto.response.MemberProfileResponse;
 import com.nanacocoa.server.member.service.MemberService;
+import com.nanacocoa.server.member.dto.reqeust.VerifyMemberPasswordRequest;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +24,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MemberController {
     private final MemberService memberService;
+
+    @PostMapping(value = "/verification", consumes = "application/json")
+    public ResponseEntity<SuccessMessage<Void>> verifyPassword(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Valid @RequestBody VerifyMemberPasswordRequest request,
+            @RequestHeader(value = "X-Mypage-Verification", defaultValue = "") String intent
+    ) {
+        memberService.verifyPassword(userDetails.getUsername(), request, intent);
+        return ResponseEntity.ok(new SuccessMessage<>("본인확인성공", null));
+    }
 
     @GetMapping
     public ResponseEntity<SuccessMessage<MemberProfileResponse>> getProfile(

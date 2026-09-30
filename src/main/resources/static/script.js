@@ -6,6 +6,7 @@ const authApi = {
 };
 const membersApi = {
   profile: "/api/members/me",
+  verification: "/api/members/me/verification",
   password: "/api/members/me/password",
 };
 const productsApi = {
@@ -549,7 +550,7 @@ function renderAuthenticatedSession(menuSession, session) {
 
   message.textContent = `${session.name || session.email}님 반갑습니다.`;
   actions.className = "menu-session-actions";
-  mypageLink.href = "mypage.html";
+  mypageLink.href = "mypage-verify.html";
   mypageLink.textContent = "마이페이지";
   logoutButton.type = "button";
   logoutButton.textContent = "로그아웃";
@@ -601,6 +602,84 @@ function renderMypageGuard(guard, message, linkHref, linkText) {
   guard.replaceChildren(text, link);
 }
 
+function redirectMypageVerification(response, body) {
+  if (response.status === 403 && body.code === "AUTH_03") {
+    window.location.replace("mypage-verify.html");
+    return true;
+  }
+  return false;
+}
+
+// 뒤로 가기 캐시로 회원정보나 입력한 비밀번호가 다시 나타나지 않게 합니다.
+function protectMypageHistory(page, content) {
+  window.addEventListener("pagehide", () => {
+    content.hidden = true;
+    page.querySelectorAll("input").forEach((input) => {
+      input.value = "";
+      input.checked = false;
+    });
+  });
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) window.location.reload();
+  });
+}
+
+async function initMypageVerification() {
+  const page = document.querySelector("[data-mypage-verification-page]");
+  if (!page) return;
+  const guard = page.querySelector("[data-mypage-guard]");
+  const content = page.querySelector("[data-verification-content]");
+  const form = page.querySelector("[data-verification-form]");
+  const message = page.querySelector("[data-verification-message]");
+  const submitButton = page.querySelector("[data-verification-submit]");
+  protectMypageHistory(page, content);
+  const session = await loadAuthSession();
+  if (session.loadFailed) {
+    renderMypageGuard(guard, "로그인 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.", "mypage-verify.html", "다시 시도");
+    return;
+  }
+  if (!session.authenticated) {
+    renderMypageGuard(guard, "본인 확인은 로그인 후 이용할 수 있습니다.", "login.html", "로그인하기");
+    return;
+  }
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (submitButton.disabled || !form.reportValidity()) return;
+    setMypageMessage(message, "");
+    submitButton.disabled = true;
+    submitButton.textContent = "확인 중";
+    try {
+      const response = await requestAuth(membersApi.verification, {
+        method: "POST",
+        headers: { "X-Mypage-Verification": "1" },
+        body: JSON.stringify({ currentPassword: form.elements.currentPassword.value }),
+      });
+      const body = await readJson(response);
+      if (response.status === 401) {
+        content.hidden = true;
+        guard.hidden = false;
+        renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+        return;
+      }
+      if (!response.ok) throw new Error(body.error || body.message || "본인 확인을 완료하지 못했습니다.");
+      window.location.replace("mypage.html");
+    } catch (error) {
+      setMypageMessage(message, error instanceof TypeError
+        ? "네트워크 연결을 확인한 후 다시 시도해 주세요."
+        : error.message || "본인 확인을 완료하지 못했습니다. 다시 시도해 주세요.");
+      form.elements.currentPassword.focus();
+    } finally {
+      form.elements.currentPassword.value = "";
+      submitButton.disabled = false;
+      submitButton.textContent = "확인하고 계속하기";
+    }
+  });
+  guard.hidden = true;
+  content.hidden = false;
+  submitButton.disabled = false;
+  form.elements.currentPassword.focus();
+}
+
 async function initMyPage() {
   const page = document.querySelector("[data-mypage-page]");
 
@@ -626,6 +705,7 @@ async function initMyPage() {
     return;
   }
 
+  protectMypageHistory(page, content);
   const session = await loadAuthSession();
 
   if (session.loadFailed) {
@@ -642,6 +722,8 @@ async function initMyPage() {
   try {
     const response = await requestAuth(membersApi.profile);
     const body = await readJson(response);
+
+    if (redirectMypageVerification(response, body)) return;
 
     if (response.status === 401) {
       renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
@@ -745,7 +827,6 @@ async function initMyPage() {
 
     const payload = {
       email: String(formData.get("email") || ""),
-      currentPassword: String(formData.get("currentPassword") || ""),
       name: String(formData.get("name") || ""),
       address,
       phoneNumber: String(formData.get("phoneNumber") || ""),
@@ -762,6 +843,11 @@ async function initMyPage() {
       });
       const body = await readJson(response);
 
+      if (redirectMypageVerification(response, body)) {
+        content.hidden = true;
+        return;
+      }
+
       if (response.status === 401 || response.status === 403) {
         content.hidden = true;
         guard.hidden = false;
@@ -775,7 +861,6 @@ async function initMyPage() {
 
       profileForm.elements.name.value = body.data.name || "";
       profileForm.elements.phoneNumber.value = body.data.phoneNumber || "";
-      profileForm.elements.currentPassword.value = "";
       storedAddress = String(body.data.address || address);
       addressDirty = false;
       postalCodeInput.required = Boolean(normalizeAddressPart(postalCodeInput.value));
@@ -817,6 +902,11 @@ async function initMyPage() {
       });
       const body = await readJson(response);
 
+      if (redirectMypageVerification(response, body)) {
+        content.hidden = true;
+        return;
+      }
+
       if (response.status === 401 || response.status === 403) {
         content.hidden = true;
         guard.hidden = false;
@@ -829,7 +919,9 @@ async function initMyPage() {
       }
 
       passwordForm.reset();
-      setMypageMessage(passwordMessage, "비밀번호가 변경되었습니다.", true);
+      content.hidden = true;
+      guard.hidden = false;
+      renderMypageGuard(guard, "비밀번호가 변경되었습니다. 새 비밀번호로 다시 본인 확인해 주세요.", "mypage-verify.html", "본인 확인하기");
     } catch (error) {
       setMypageMessage(passwordMessage, error.message || "비밀번호를 변경하지 못했습니다.");
     } finally {
@@ -1864,3 +1956,4 @@ initProductDetail();
 initProductRegisterPage();
 initCheckoutPage();
 initMyPage();
+initMypageVerification();

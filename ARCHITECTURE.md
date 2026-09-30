@@ -73,7 +73,8 @@ controller -> service/facade -> repository -> entity/database
 
 - 회원·상품·주문 변경은 Service 계층 트랜잭션을 사용합니다.
 - 회원 이메일은 수정 불가능한 로그인 아이디이며 이름·주소·전화번호·이메일
-  수신여부 변경과 비밀번호 변경은 현재 비밀번호를 다시 확인합니다.
+  수신여부 변경은 유효한 본인 확인 세션을 요구합니다. 비밀번호 변경은 현재
+  비밀번호를 다시 확인합니다.
 - 결제 처리는 외부 제공자 호출과 `PaymentTransactionalService`의
   `REQUIRES_NEW` 영속성 상태 전이를 분리합니다.
 - `PaymentFacade`는 인증, 락, 제공자 호출, 보상, 응답 매핑을 조정합니다.
@@ -98,7 +99,18 @@ Actuator health·info를 허용하며 나머지 요청은 인증된 세션이 �
 
 `/api/members/me` 조회·변경 API는 인증된 세션만 접근할 수 있습니다. 회원
 프로필 Service는 세션 이메일로 회원을 다시 조회하며 비밀번호 hash는 어떤
-응답에도 포함하지 않습니다.
+응답에도 포함하지 않습니다. 마이페이지 진입은 `mypage-verify.html`에서 현재
+비밀번호를 JSON POST `/api/members/me/verification`으로 확인한 후 허용합니다.
+확인 API는 `X-Mypage-Verification: 1`을 요구하며 CORS를 허용하지 않습니다.
+`ProfileVerificationSession`은 확인을 현재 세션·이메일·현재 credential hash에
+10분간 결합하며, 5분 시도 구간에 비밀번호 검증이 5회 실패하면 남은 구간 동안
+해당 세션의 재시도를 차단합니다. 평문 비밀번호는 세션에 저장하지 않습니다.
+`MemberPageConfig`는 미확인 페이지 요청을 확인 페이지로 보내고, `MemberService`는
+조회·수정·비밀번호 API의 직접 접근도 거부합니다. 로그인은 기존 확인을 지우며
+로그아웃은 세션을 폐기합니다. 비밀번호 변경 후 모든 기존 확인은 무효화되지만
+기존 로그인 세션은 유지합니다. 회원정보 저장은 유효한 본인 확인 세션을 사용하며
+현재 비밀번호를 다시 입력하지 않습니다. 비밀번호 변경 요청의 현재 비밀번호
+검증은 유지합니다.
 
 인증 통합 테스트에는 현재 알려진 계약 실패가 있습니다. 해당 목록은
 `harness/baselines/test-failures.txt`와 NC-TEST-001에 기록되어 있습니다.

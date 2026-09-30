@@ -6,8 +6,8 @@ AUTH-001|알려진 사용자 로그인이 예상 세션 계약을 설정함|com.
 AUTH-002|잘못된 자격 증명이 세션 없이 실패 우선으로 닫힘|com.nanacocoa.server.NanacocoaServerApplicationTests#loginRejectsInvalidPasswordWithoutCreatingSession|응답이 미인증·익명이며 세션을 생성하지 않음|docs/quality/SECURITY.md
 AUTH-003|회원가입이 완전한 프로필 검증·저장·hash를 수행함|com.nanacocoa.server.NanacocoaServerApplicationTests#signupStoresCompleteProfileWithBcryptedPassword|필수 프로필과 BCrypt 비밀번호가 저장되고 운영자 권한이 부여되지 않음|docs/design-docs/PRD.md
 MEMBER-001|인증된 회원만 자신의 프로필을 조회할 수 있음|com.nanacocoa.server.member.MemberApiIntegrationTest#profileApiRequiresAuthentication|익명 프로필 요청이 HTTP 401로 거부됨|docs/design-docs/PRD.md
-MEMBER-002|현재 비밀번호 확인 후 프로필을 변경함|com.nanacocoa.server.member.MemberApiIntegrationTest#updatesProfileAndSessionUsesLatestName|프로필이 저장되고 세션 조회가 최신 이름을 반환함|docs/design-docs/PRD.md
-MEMBER-003|프로필 변경이 비밀번호·불변 이메일·전화번호 규칙을 지킴|com.nanacocoa.server.member.MemberApiIntegrationTest#rejectsWrongPasswordEmailChangeAndInvalidPhoneWithoutSaving|잘못된 요청이 오류 코드와 함께 저장 없이 거부됨|docs/design-docs/PRD.md
+MEMBER-002|유효한 본인 확인 세션에서 비밀번호 재입력 없이 프로필을 변경함|com.nanacocoa.server.member.MemberApiIntegrationTest#updatesProfileAndSessionUsesLatestName|프로필이 저장되고 세션 조회가 최신 이름을 반환함|docs/design-docs/PRD.md
+MEMBER-003|프로필 변경이 불변 이메일·전화번호 규칙을 지킴|com.nanacocoa.server.member.MemberApiIntegrationTest#rejectsEmailChangeAndInvalidPhoneWithoutSaving|잘못된 요청이 오류 코드와 함께 저장 없이 거부됨|docs/design-docs/PRD.md
 MEMBER-004|비밀번호를 hash로 변경하고 현재 세션을 유지함|com.nanacocoa.server.member.MemberApiIntegrationTest#changesPasswordAndKeepsCurrentSession|새 비밀번호가 BCrypt hash로 저장되고 현재 세션 조회가 성공함|docs/design-docs/PRD.md
 ORDER-001|주문 합계가 서버의 상품 가격을 사용함|com.nanacocoa.server.order.service.OrderServiceTest#createsMultiItemOrderUsingServerPrices|여러 상품의 금액이 저장된 상품 가격으로 계산됨|docs/product-specs/evaluation-catalog.md
 PAY-001|승인이 제공자와 데이터베이스의 일관된 상태에 도달함|com.nanacocoa.server.payment.facade.PaymentFacadeTest#confirmsPaymentAndCompletesDatabaseState|승인이 결제와 주문 상태를 한 번만 완료함|docs/quality/RELIABILITY.md
@@ -18,3 +18,8 @@ PAY-005|결제 취소가 허용된 상태 전이를 따름|com.nanacocoa.server.
 STORAGE-001|S3 어댑터가 생성된 key와 CDN 응답을 만듦|com.nanacocoa.server.products.storage.S3ProductImageStorageTest#uploadsWithGeneratedKeyAndReturnsCdnUrl|mock S3 요청과 반환 공개 URL이 어댑터 계약을 만족함|docs/product-specs/evaluation-catalog.md
 SEC-001|익명 호출자가 인증이 필요한 주문을 생성할 수 없음|com.nanacocoa.server.NanacocoaServerApplicationTests#createOrderRequiresLogin|미인증 주문 요청이 AUTH_01로 거부됨|docs/quality/SECURITY.md
 OPS-001|애플리케이션이 기계 판독 가능한 상태 API를 제공함|com.nanacocoa.server.NanacocoaServerApplicationTests#healthApiReturnsOk|상태 API가 HTTP 200과 ok 상태를 반환함|docs/quality/OBSERVABILITY.md
+MEMBER-005|본인 확인 전 페이지와 API 직접 접근 차단|com.nanacocoa.server.member.MemberApiIntegrationTest#unverifiedPageAndApisCannotBeAccessedDirectly|페이지 redirect 및 조회·수정·비밀번호 API 거부|docs/design-docs/PRD.md
+MEMBER-006|확인 세션 격리와 재로그인·로그아웃 무효화|com.nanacocoa.server.member.MemberApiIntegrationTest#verificationIsBoundToSessionAndClearedOnLoginAndLogout|다른 세션과 재로그인한 세션에 확인이 전파되지 않음|docs/design-docs/PRD.md
+MEMBER-007|확인 재시도 제한|com.nanacocoa.server.member.MemberApiIntegrationTest#wrongPasswordRevokesGrantAndRepeatedFailuresAreLimited|5회 실패 후 확인 시도 차단|docs/design-docs/PRD.md
+MEMBER-008|확인 세션의 절대 만료|com.nanacocoa.server.common.session.ProfileVerificationSessionTest#expiresAtTenMinutesWithoutSlidingOnRead|조회로 연장되지 않고 10분 경계에서 거부|docs/design-docs/PRD.md
+SEC-002|새 확인 API의 교차 출처 요청 차단|com.nanacocoa.server.member.MemberApiIntegrationTest#verificationRequiresLoginJsonAndSameOriginHeader|익명·헤더 누락·HTML form·교차 출처 preflight 거부|docs/design-docs/PRD.md

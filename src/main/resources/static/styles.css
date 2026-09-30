@@ -2221,6 +2221,7 @@ textarea.product-register-input {
 
 .mypage-field {
   display: grid;
+  align-content: start;
   gap: 9px;
   color: #292323;
   font-size: 14px;
@@ -2267,21 +2268,40 @@ textarea.product-register-input {
 }
 
 .mypage-consent {
-  display: flex;
   min-width: 0;
-  align-items: center;
-  gap: 18px;
-  border: 1px solid #ded7d3;
-  border-radius: 8px;
-  padding: 13px 15px;
+  align-self: start;
+  margin: 0;
+  border: 0;
+  padding: 0;
   color: #292323;
   font-size: 14px;
   font-weight: 800;
 }
 
 .mypage-consent legend {
-  padding: 0 4px;
+  margin-bottom: 9px;
+  padding: 0;
   font-weight: 900;
+}
+
+.mypage-field input[type="tel"],
+.mypage-consent-options {
+  min-height: 50px;
+  line-height: 20px;
+}
+
+.mypage-consent-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px 18px;
+  border: 1px solid #ded7d3;
+  border-radius: 8px;
+  padding: 14px 15px;
+}
+
+.mypage-consent input[type="radio"] {
+  margin: 0;
 }
 
 .mypage-consent label {
@@ -2331,11 +2351,6 @@ textarea.product-register-input {
     grid-column: 1;
   }
 
-  .mypage-consent {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
-  }
 }
 
 @media (max-width: 920px) {
@@ -2624,4 +2639,9 @@ textarea.product-register-input {
   .login-links a {
     padding: 0 10px;
   }
+}
+
+.mypage-verification-page {
+  max-width: 680px;
+  margin: 0 auto;
 }

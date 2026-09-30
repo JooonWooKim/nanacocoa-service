@@ -20,10 +20,6 @@ public class UpdateMemberProfileRequest {
     private String email;
 
     @NotBlank
-    @Size(max = 72)
-    private String currentPassword;
-
-    @NotBlank
     @Size(max = 100)
     private String name;
 
