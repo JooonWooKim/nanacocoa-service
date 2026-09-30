@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>마이페이지 | nanacocoa</title>
+    <meta name="description" content="nanacocoa 회원정보와 비밀번호 관리" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="mypage-body">
+    <main class="mypage-page" data-mypage-page aria-labelledby="mypage-title">
+      <header class="login-topbar">
+        <button class="login-nav-button" type="button" aria-label="이전 페이지" onclick="history.back()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 18 9 12l6-6"></path>
+            <path d="M10 12h11"></path>
+          </svg>
+        </button>
+        <a class="login-nav-button" href="index.html" aria-label="홈으로 이동">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m3 11 9-8 9 8"></path>
+            <path d="M5 10v10h5v-6h4v6h5V10"></path>
+          </svg>
+        </a>
+      </header>
+
+      <header class="mypage-heading">
+        <p>my nanacocoa</p>
+        <h1 id="mypage-title">마이페이지</h1>
+        <span>회원정보와 비밀번호를 안전하게 관리해 주세요.</span>
+      </header>
+
+      <section class="mypage-guard" data-mypage-guard role="status" aria-live="polite">
+        로그인 상태를 확인하고 있습니다.
+      </section>
+
+      <div class="mypage-content" data-mypage-content hidden>
+        <section class="mypage-card" aria-labelledby="profile-title">
+          <div class="mypage-card-heading">
+            <p>profile</p>
+            <h2 id="profile-title">회원정보 수정</h2>
+          </div>
+
+          <form class="mypage-form" data-profile-form>
+            <label class="mypage-field">
+              <span>아이디(이메일)</span>
+              <input type="email" name="email" autocomplete="email" readonly required />
+              <small>아이디로 사용하는 이메일은 변경할 수 없습니다.</small>
+            </label>
+
+            <label class="mypage-field">
+              <span>이름</span>
+              <input type="text" name="name" autocomplete="name" maxlength="100" required />
+            </label>
+
+            <div class="mypage-field mypage-field-wide checkout-address-field" role="group" aria-labelledby="profile-address-label">
+              <span id="profile-address-label">주소</span>
+              <div class="checkout-address-search-row">
+                <label>
+                  <span class="visually-hidden">우편번호</span>
+                  <input
+                    type="text"
+                    name="addressPostalCode"
+                    maxlength="5"
+                    pattern="[0-9]{5}"
+                    inputmode="numeric"
+                    autocomplete="postal-code"
+                    placeholder="우편번호"
+                    aria-describedby="profile-address-status"
+                    data-address-postal-code
+                  />
+                </label>
+                <button type="button" data-address-search disabled>주소검색 준비 중</button>
+              </div>
+              <label>
+                <span class="visually-hidden">기본주소</span>
+                <input
+                  type="text"
+                  name="addressBasic"
+                  maxlength="500"
+                  autocomplete="address-line1"
+                  placeholder="기본주소"
+                  aria-describedby="profile-address-status"
+                  data-address-basic
+                  required
+                />
+              </label>
+              <label>
+                <span class="visually-hidden">상세주소</span>
+                <input
+                  type="text"
+                  name="addressDetail"
+                  maxlength="500"
+                  autocomplete="address-line2"
+                  placeholder="상세주소 (선택 입력 가능)"
+                  data-address-detail
+                />
+              </label>
+              <p class="checkout-address-status" id="profile-address-status" data-address-search-status role="status" aria-live="polite">
+                주소검색을 준비하는 중입니다.
+              </p>
+            </div>
+
+            <label class="mypage-field">
+              <span>전화번호</span>
+              <input
+                type="tel"
+                name="phoneNumber"
+                autocomplete="tel"
+                pattern="010-[0-9]{4}-[0-9]{4}"
+                maxlength="13"
+                placeholder="010-0000-0000"
+                required
+              />
+            </label>
+
+            <fieldset class="mypage-consent">
+              <legend>이메일 수신여부</legend>
+              <div class="mypage-consent-options">
+                <label><input type="radio" name="emailReceiveConsent" value="Y" required /> 수신</label>
+                <label><input type="radio" name="emailReceiveConsent" value="N" required /> 수신 거부</label>
+              </div>
+            </fieldset>
+
+            <p class="mypage-message mypage-field-wide" data-profile-message role="alert" aria-live="polite" hidden></p>
+            <button class="login-submit mypage-submit mypage-field-wide" type="submit" data-profile-submit>
+              회원정보 저장
+            </button>
+          </form>
+        </section>
+
+        <section class="mypage-card" aria-labelledby="password-title">
+          <div class="mypage-card-heading">
+            <p>security</p>
+            <h2 id="password-title">비밀번호 변경</h2>
+          </div>
+
+          <form class="mypage-form" data-password-form>
+            <label class="mypage-field">
+              <span>현재 비밀번호</span>
+              <input type="password" name="currentPassword" autocomplete="current-password" maxlength="72" required />
+            </label>
+
+            <label class="mypage-field">
+              <span>신규 비밀번호</span>
+              <input type="password" name="newPassword" autocomplete="new-password" minlength="8" maxlength="72" required />
+            </label>
+
+            <label class="mypage-field mypage-field-wide">
+              <span>신규 비밀번호 확인</span>
+              <input type="password" name="newPasswordConfirm" autocomplete="new-password" minlength="8" maxlength="72" required />
+              <small>8~72자로 입력하고 확인값을 동일하게 작성해 주세요.</small>
+            </label>
+
+            <p class="mypage-message mypage-field-wide" data-password-message role="alert" aria-live="polite" hidden></p>
+            <button class="login-submit mypage-submit mypage-field-wide" type="submit" data-password-submit>
+              비밀번호 변경
+            </button>
+          </form>
+        </section>
+      </div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

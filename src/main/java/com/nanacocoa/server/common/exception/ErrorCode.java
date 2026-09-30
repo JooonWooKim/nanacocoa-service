@@ -12,7 +12,11 @@ public enum ErrorCode {
 	ALREADY_EXIST_EMAIL(HttpStatus.CONFLICT, "MEMBER_01", "이미 등록된 이메일입니다."),
 	NOT_VALID_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_02", "비밀번호를 다시 확인해주세요."),
 	NOT_FOUND_EMAIL(HttpStatus.NOT_FOUND, "MEMBER_03", "이메일을 찾을 수 없습니다."),
+	MEMBER_ID_IMMUTABLE(HttpStatus.BAD_REQUEST, "MEMBER_04", "아이디는 변경할 수 없습니다."),
+	PASSWORD_CONFIRMATION_MISMATCH(HttpStatus.BAD_REQUEST, "MEMBER_05", "새 비밀번호와 확인 값이 일치하지 않습니다."),
 	AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_01", "로그인이 필요합니다."),
+	PROFILE_VERIFICATION_REQUIRED(HttpStatus.FORBIDDEN, "AUTH_03", "회원정보를 확인하려면 현재 비밀번호로 본인 확인을 해주세요."),
+	PROFILE_VERIFICATION_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_04", "본인 확인에 여러 번 실패했습니다. 5분 후 다시 시도해주세요."),
 	ADMIN_ACCESS_REQUIRED(HttpStatus.FORBIDDEN, "AUTH_02", "운영자만 접근할 수 있습니다."),
 
 	ALREADY_EXIST_PRODUCTS(HttpStatus.CONFLICT, "PRODUCTS_01", "이미 등록된 상품입니다."),

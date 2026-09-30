@@ -25,8 +25,19 @@ public class AuthService {
 
     @Transactional
     public void signUp(SignupRequest request) {
+        if (memberRepository.existsByEmail(request.getEmail())) {
+            throw new NanacocoaException(ALREADY_EXIST_EMAIL);
+        }
+
         String encodePassword = passwordEncoder.encode(request.getPassword());
-        Member member = request.toMember(request, encodePassword);
+        Member member = Member.builder()
+                .email(request.getEmail())
+                .name(request.getName().trim())
+                .password(encodePassword)
+                .address(request.getAddress().trim())
+                .phoneNumber(request.getPhoneNumber())
+                .emailReceiveConsent(request.getEmailReceiveConsent())
+                .build();
         memberRepository.save(member);
     }
 
@@ -34,7 +45,6 @@ public class AuthService {
         Member member = memberRepository.findByEmail(request.getEmail()).orElseThrow(
                 () -> new NanacocoaException(ALREADY_EXIST_EMAIL)
         );
-        member.checkEmailDuplicate(member.getEmail());
         member.checkPassword(passwordEncoder, request.getPassword());
 
         loginService.login(member.getEmail());

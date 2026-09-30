@@ -76,6 +76,45 @@
             />
           </label>
 
+          <label class="login-field">
+            <span class="visually-hidden">주소</span>
+            <textarea
+              class="login-input signup-address"
+              name="address"
+              autocomplete="street-address"
+              placeholder="주소"
+              maxlength="500"
+              rows="3"
+              required
+            ></textarea>
+          </label>
+
+          <label class="login-field">
+            <span class="visually-hidden">전화번호</span>
+            <input
+              class="login-input"
+              type="tel"
+              name="phoneNumber"
+              autocomplete="tel"
+              placeholder="전화번호 (010-0000-0000)"
+              pattern="010-[0-9]{4}-[0-9]{4}"
+              maxlength="13"
+              required
+            />
+          </label>
+
+          <fieldset class="signup-consent">
+            <legend>이메일 수신여부</legend>
+            <label>
+              <input type="radio" name="emailReceiveConsent" value="Y" required />
+              <span>수신</span>
+            </label>
+            <label>
+              <input type="radio" name="emailReceiveConsent" value="N" checked required />
+              <span>수신 거부</span>
+            </label>
+          </fieldset>
+
           <p class="login-message" role="alert" aria-live="polite" hidden></p>
 
           <button class="login-submit" type="submit">회원가입</button>

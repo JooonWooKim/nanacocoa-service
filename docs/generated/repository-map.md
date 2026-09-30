@@ -10,16 +10,16 @@
 
 | 영역 | Java 파일 | 주요 역할 |
 | --- | ---: | --- |
-| `common` | 10 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
-| `member` | 7 | 식별, 회원가입, 로그인, 세션 |
+| `common` | 11 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
+| `member` | 15 | 식별, 회원가입, 로그인, 세션 |
 | `order` | 10 | 주문, 배송, 서버 가격 계산 |
 | `payment` | 30 | 승인, 취소, 락, 복구 |
 | `products` | 14 | 상품 목록과 이미지 저장 |
 
-- 주요 Java 파일: 72
-- 테스트 Java 파일: 15
-- Flyway 마이그레이션: 3
-- 정적 자원·페이지: 17
+- 주요 Java 파일: 81
+- 테스트 Java 파일: 18
+- Flyway 마이그레이션: 4
+- 정적 자원·페이지: 19
 
 ## 주요 패키지 디렉터리
 
@@ -33,6 +33,7 @@ src/main/java/com/nanacocoa/server/common/security/config
 src/main/java/com/nanacocoa/server/common/session
 src/main/java/com/nanacocoa/server/common/userdetails
 src/main/java/com/nanacocoa/server/member
+src/main/java/com/nanacocoa/server/member/config
 src/main/java/com/nanacocoa/server/member/controller
 src/main/java/com/nanacocoa/server/member/dto
 src/main/java/com/nanacocoa/server/member/dto/reqeust
@@ -75,6 +76,9 @@ src/main/java/com/nanacocoa/server/products/storage
 
 ```text
 src/test/java/com/nanacocoa/server/NanacocoaServerApplicationTests.java
+src/test/java/com/nanacocoa/server/common/session/ProfileVerificationSessionTest.java
+src/test/java/com/nanacocoa/server/member/MemberApiIntegrationTest.java
+src/test/java/com/nanacocoa/server/member/service/MemberServiceTest.java
 src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
 src/test/java/com/nanacocoa/server/order/service/OrderServiceTest.java
@@ -95,5 +99,7 @@ src/test/java/com/nanacocoa/server/products/storage/S3ProductImageStorageTest.ja
 
 - 빌드: `./gradlew`, `build.gradle`
 - 하네스: `./scripts/harness`
+- 로컬 스택: `compose.yaml`, `Dockerfile`
 - 환경 초기화: `scripts/init-env.sh`
+- 실행 환경 설정: `src/main/resources/application.yml`
 - 지식 root: `AGENTS.md`, `ARCHITECTURE.md`, `docs/`

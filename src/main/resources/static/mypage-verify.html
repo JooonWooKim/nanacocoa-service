@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>본인 확인 | nanacocoa</title>
+    <meta name="description" content="회원정보 보호를 위한 현재 비밀번호 확인" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="mypage-body">
+    <main class="mypage-page mypage-verification-page" data-mypage-verification-page aria-labelledby="verification-title">
+      <header class="login-topbar">
+        <button class="login-nav-button" type="button" aria-label="이전 페이지" onclick="history.back()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 18 9 12l6-6"></path>
+            <path d="M10 12h11"></path>
+          </svg>
+        </button>
+        <a class="login-nav-button" href="index.html" aria-label="홈으로 이동">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m3 11 9-8 9 8"></path>
+            <path d="M5 10v10h5v-6h4v6h5V10"></path>
+          </svg>
+        </a>
+      </header>
+
+
+      <header class="mypage-heading">
+        <p>account security</p>
+        <h1 id="verification-title">본인 확인</h1>
+        <span>내 정보를 안전하게 보호하기 위해 현재 비밀번호를 입력해 주세요.</span>
+      </header>
+      <section class="mypage-guard" data-mypage-guard role="status" aria-live="polite">
+        로그인 상태를 확인하고 있습니다.
+      </section>
+      <div class="mypage-content" data-verification-content hidden>
+        <section class="mypage-card" aria-label="현재 비밀번호 확인">
+          <form class="mypage-form" data-verification-form method="post" action="/api/members/me/verification">
+            <label class="mypage-field mypage-field-wide">
+              <span>현재 비밀번호</span>
+              <input type="password" name="currentPassword" autocomplete="current-password" maxlength="72" required aria-describedby="verification-help" />
+              <small id="verification-help">확인 후 10분 동안 내 정보를 수정할 수 있습니다.</small>
+            </label>
+            <p class="mypage-message mypage-field-wide" data-verification-message role="alert" aria-live="polite" hidden></p>
+            <button class="login-submit mypage-submit mypage-field-wide" type="submit" data-verification-submit disabled>확인하고 계속하기</button>
+          </form>
+        </section>
+      </div>
+      <noscript><p class="mypage-guard">본인 확인을 위해 브라우저의 JavaScript를 활성화해 주세요.</p></noscript>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>

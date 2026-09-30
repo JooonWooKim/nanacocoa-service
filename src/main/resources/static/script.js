@@ -4,6 +4,11 @@ const authApi = {
   session: "/api/auth/session",
   logout: "/api/auth/logout",
 };
+const membersApi = {
+  profile: "/api/members/me",
+  verification: "/api/members/me/verification",
+  password: "/api/members/me/password",
+};
 const productsApi = {
   list: "/api/products",
   detail: (productId) => `/api/products/${encodeURIComponent(productId)}`,
@@ -102,6 +107,21 @@ function formatShippingAddress(postalCode, basicAddress, detailAddress) {
   return normalizedPostalCode ? `[${normalizedPostalCode}] ${address}`.trim() : address;
 }
 
+function parseStoredAddress(value) {
+  const address = normalizeAddressPart(value);
+  const match = address.match(/^\[([0-9]{5})\]\s*(.*)$/);
+
+  if (!match) {
+    return { postalCode: "", basicAddress: address, detailAddress: "" };
+  }
+
+  return {
+    postalCode: match[1],
+    basicAddress: match[2],
+    detailAddress: "",
+  };
+}
+
 function loadKakaoPostcode() {
   if (typeof window.kakao?.Postcode === "function") {
     return Promise.resolve(window.kakao.Postcode);
@@ -134,6 +154,86 @@ function loadKakaoPostcode() {
   });
 
   return kakaoPostcodePromise;
+}
+
+function setupKakaoAddressSearch({
+  postalCodeInput,
+  basicAddressInput,
+  detailAddressInput,
+  searchButton,
+  statusElement,
+  onAddressChange = () => {},
+  shouldKeepDisabled = () => false,
+}) {
+  function setStatus(message) {
+    statusElement.textContent = message || "";
+    statusElement.hidden = !message;
+  }
+
+  function disableSearch(message) {
+    searchButton.disabled = true;
+    searchButton.textContent = "주소검색 불가";
+    setStatus(message);
+  }
+
+  searchButton.addEventListener("click", () => {
+    const Postcode = window.kakao?.Postcode;
+
+    if (typeof Postcode !== "function") {
+      disableSearch("주소검색을 사용할 수 없습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+      return;
+    }
+
+    try {
+      new Postcode({
+        oncomplete(data) {
+          const postalCode = normalizeAddressPart(data.zonecode);
+          const selectedAddress = data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
+          const basicAddress = normalizeAddressPart(selectedAddress || data.address);
+
+          if (!postalCode || !basicAddress) {
+            setStatus("선택한 주소를 입력하지 못했습니다. 다시 검색하거나 직접 입력해 주세요.");
+            return;
+          }
+
+          postalCodeInput.value = postalCode;
+          basicAddressInput.value = basicAddress;
+          detailAddressInput.value = "";
+          postalCodeInput.setCustomValidity("");
+          basicAddressInput.setCustomValidity("");
+          detailAddressInput.setCustomValidity("");
+          onAddressChange();
+          setStatus("");
+          detailAddressInput.focus();
+        },
+      }).open();
+    } catch {
+      disableSearch("주소검색 창을 열지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+    }
+  });
+
+  [postalCodeInput, basicAddressInput, detailAddressInput].forEach((input) => {
+    input.addEventListener("input", () => {
+      input.setCustomValidity("");
+      onAddressChange();
+    });
+  });
+
+  loadKakaoPostcode()
+    .then(() => {
+      if (shouldKeepDisabled()) {
+        return;
+      }
+      searchButton.disabled = false;
+      searchButton.textContent = "주소검색";
+      setStatus("");
+    })
+    .catch(() => {
+      if (shouldKeepDisabled()) {
+        return;
+      }
+      disableSearch("주소검색을 불러오지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
+    });
 }
 
 function loadTossPaymentsSdk() {
@@ -401,6 +501,9 @@ function initSignupPage() {
       email: String(formData.get("email") || ""),
       password: String(formData.get("password") || ""),
       name: String(formData.get("name") || ""),
+      address: String(formData.get("address") || ""),
+      phoneNumber: String(formData.get("phoneNumber") || ""),
+      emailReceiveConsent: String(formData.get("emailReceiveConsent") || ""),
     };
 
     submitButton.disabled = true;
@@ -413,11 +516,11 @@ function initSignupPage() {
       });
       const data = await readJson(response);
 
-      if (!response.ok || !data.authenticated) {
-        throw new Error(data.message || "회원가입 정보를 확인해 주세요.");
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "회원가입 정보를 확인해 주세요.");
       }
 
-      window.location.href = loginRedirectUrl;
+      window.location.href = "login.html";
     } catch (error) {
       setAuthMessage(error.message || "회원가입 중 문제가 발생했습니다.");
     } finally {
@@ -441,9 +544,14 @@ function renderAnonymousSession(menuSession) {
 
 function renderAuthenticatedSession(menuSession, session) {
   const message = document.createElement("p");
+  const actions = document.createElement("span");
+  const mypageLink = document.createElement("a");
   const logoutButton = document.createElement("button");
 
   message.textContent = `${session.name || session.email}님 반갑습니다.`;
+  actions.className = "menu-session-actions";
+  mypageLink.href = "mypage-verify.html";
+  mypageLink.textContent = "마이페이지";
   logoutButton.type = "button";
   logoutButton.textContent = "로그아웃";
   logoutButton.addEventListener("click", async () => {
@@ -465,7 +573,362 @@ function renderAuthenticatedSession(menuSession, session) {
     }
   });
 
-  menuSession.replaceChildren(message, logoutButton);
+  actions.append(mypageLink, logoutButton);
+  menuSession.replaceChildren(message, actions);
+}
+
+function setMypageMessage(messageBox, message, success = false) {
+  if (!messageBox) {
+    return;
+  }
+
+  messageBox.textContent = message || "";
+  messageBox.hidden = !message;
+  messageBox.classList.toggle("is-success", Boolean(message && success));
+}
+
+function renderMypageGuard(guard, message, linkHref, linkText) {
+  const text = document.createElement("p");
+  text.textContent = message;
+
+  if (!linkHref || !linkText) {
+    guard.replaceChildren(text);
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = linkHref;
+  link.textContent = linkText;
+  guard.replaceChildren(text, link);
+}
+
+function redirectMypageVerification(response, body) {
+  if (response.status === 403 && body.code === "AUTH_03") {
+    window.location.replace("mypage-verify.html");
+    return true;
+  }
+  return false;
+}
+
+// 뒤로 가기 캐시로 회원정보나 입력한 비밀번호가 다시 나타나지 않게 합니다.
+function protectMypageHistory(page, content) {
+  window.addEventListener("pagehide", () => {
+    content.hidden = true;
+    page.querySelectorAll("input").forEach((input) => {
+      input.value = "";
+      input.checked = false;
+    });
+  });
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) window.location.reload();
+  });
+}
+
+async function initMypageVerification() {
+  const page = document.querySelector("[data-mypage-verification-page]");
+  if (!page) return;
+  const guard = page.querySelector("[data-mypage-guard]");
+  const content = page.querySelector("[data-verification-content]");
+  const form = page.querySelector("[data-verification-form]");
+  const message = page.querySelector("[data-verification-message]");
+  const submitButton = page.querySelector("[data-verification-submit]");
+  protectMypageHistory(page, content);
+  const session = await loadAuthSession();
+  if (session.loadFailed) {
+    renderMypageGuard(guard, "로그인 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.", "mypage-verify.html", "다시 시도");
+    return;
+  }
+  if (!session.authenticated) {
+    renderMypageGuard(guard, "본인 확인은 로그인 후 이용할 수 있습니다.", "login.html", "로그인하기");
+    return;
+  }
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (submitButton.disabled || !form.reportValidity()) return;
+    setMypageMessage(message, "");
+    submitButton.disabled = true;
+    submitButton.textContent = "확인 중";
+    try {
+      const response = await requestAuth(membersApi.verification, {
+        method: "POST",
+        headers: { "X-Mypage-Verification": "1" },
+        body: JSON.stringify({ currentPassword: form.elements.currentPassword.value }),
+      });
+      const body = await readJson(response);
+      if (response.status === 401) {
+        content.hidden = true;
+        guard.hidden = false;
+        renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+        return;
+      }
+      if (!response.ok) throw new Error(body.error || body.message || "본인 확인을 완료하지 못했습니다.");
+      window.location.replace("mypage.html");
+    } catch (error) {
+      setMypageMessage(message, error instanceof TypeError
+        ? "네트워크 연결을 확인한 후 다시 시도해 주세요."
+        : error.message || "본인 확인을 완료하지 못했습니다. 다시 시도해 주세요.");
+      form.elements.currentPassword.focus();
+    } finally {
+      form.elements.currentPassword.value = "";
+      submitButton.disabled = false;
+      submitButton.textContent = "확인하고 계속하기";
+    }
+  });
+  guard.hidden = true;
+  content.hidden = false;
+  submitButton.disabled = false;
+  form.elements.currentPassword.focus();
+}
+
+async function initMyPage() {
+  const page = document.querySelector("[data-mypage-page]");
+
+  if (!page) {
+    return;
+  }
+
+  const guard = page.querySelector("[data-mypage-guard]");
+  const content = page.querySelector("[data-mypage-content]");
+  const profileForm = page.querySelector("[data-profile-form]");
+  const passwordForm = page.querySelector("[data-password-form]");
+  const profileMessage = page.querySelector("[data-profile-message]");
+  const passwordMessage = page.querySelector("[data-password-message]");
+  const postalCodeInput = profileForm?.querySelector("[data-address-postal-code]");
+  const basicAddressInput = profileForm?.querySelector("[data-address-basic]");
+  const detailAddressInput = profileForm?.querySelector("[data-address-detail]");
+  const addressSearchButton = profileForm?.querySelector("[data-address-search]");
+  const addressSearchStatus = profileForm?.querySelector("[data-address-search-status]");
+
+  if (!guard || !content || !profileForm || !passwordForm || !postalCodeInput
+      || !basicAddressInput || !detailAddressInput || !addressSearchButton
+      || !addressSearchStatus) {
+    return;
+  }
+
+  protectMypageHistory(page, content);
+  const session = await loadAuthSession();
+
+  if (session.loadFailed) {
+    renderMypageGuard(guard, "로그인 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.", "index.html", "홈으로");
+    return;
+  }
+
+  if (!session.authenticated) {
+    renderMypageGuard(guard, "마이페이지는 로그인 후 이용할 수 있습니다.", "login.html", "로그인하기");
+    return;
+  }
+
+  let profile;
+  try {
+    const response = await requestAuth(membersApi.profile);
+    const body = await readJson(response);
+
+    if (redirectMypageVerification(response, body)) return;
+
+    if (response.status === 401) {
+      renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+      return;
+    }
+
+    if (!response.ok || !body.data) {
+      throw new Error(body.error || body.message || "회원정보를 불러오지 못했습니다.");
+    }
+
+    profile = body.data;
+  } catch (error) {
+    renderMypageGuard(guard, error.message || "회원정보를 불러오지 못했습니다.", "index.html", "홈으로");
+    return;
+  }
+
+  profileForm.elements.email.value = profile.email || "";
+  profileForm.elements.name.value = profile.name || "";
+  profileForm.elements.phoneNumber.value = profile.phoneNumber || "";
+  let storedAddress = String(profile.address || "");
+  let addressDirty = false;
+
+  function showStoredAddress(address) {
+    const parsedAddress = parseStoredAddress(address);
+    storedAddress = String(address || "");
+    addressDirty = false;
+    postalCodeInput.value = parsedAddress.postalCode;
+    basicAddressInput.value = parsedAddress.basicAddress;
+    detailAddressInput.value = parsedAddress.detailAddress;
+    postalCodeInput.required = Boolean(parsedAddress.postalCode);
+    postalCodeInput.setCustomValidity("");
+    basicAddressInput.setCustomValidity("");
+    detailAddressInput.setCustomValidity("");
+  }
+
+  function markAddressChanged() {
+    addressDirty = true;
+    postalCodeInput.required = true;
+  }
+
+  function readProfileAddress() {
+    if (!addressDirty) {
+      return storedAddress;
+    }
+
+    const postalCode = normalizeAddressPart(postalCodeInput.value);
+    const basicAddress = normalizeAddressPart(basicAddressInput.value);
+    const detailAddress = normalizeAddressPart(detailAddressInput.value);
+    const address = formatShippingAddress(postalCode, basicAddress, detailAddress);
+
+    postalCodeInput.setCustomValidity("");
+    basicAddressInput.setCustomValidity("");
+    detailAddressInput.setCustomValidity("");
+
+    if (!/^[0-9]{5}$/.test(postalCode)) {
+      postalCodeInput.setCustomValidity("우편번호 5자리를 입력해 주세요.");
+    }
+
+    if (!basicAddress) {
+      basicAddressInput.setCustomValidity("기본주소를 입력해 주세요.");
+    }
+
+    if (address.length > 500) {
+      const invalidInput = detailAddress ? detailAddressInput : basicAddressInput;
+      invalidInput.setCustomValidity("우편번호와 상세주소를 포함한 전체 주소는 500자 이하로 입력해 주세요.");
+    }
+
+    return address;
+  }
+
+  showStoredAddress(storedAddress);
+  setupKakaoAddressSearch({
+    postalCodeInput,
+    basicAddressInput,
+    detailAddressInput,
+    searchButton: addressSearchButton,
+    statusElement: addressSearchStatus,
+    onAddressChange: markAddressChanged,
+  });
+
+  const consentInput = profileForm.querySelector(`input[name="emailReceiveConsent"][value="${profile.emailReceiveConsent || "N"}"]`);
+  if (consentInput) {
+    consentInput.checked = true;
+  }
+
+  guard.hidden = true;
+  content.hidden = false;
+
+  profileForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setMypageMessage(profileMessage, "");
+
+    const formData = new FormData(profileForm);
+    const submitButton = profileForm.querySelector("[data-profile-submit]");
+    const defaultText = submitButton.textContent;
+    const address = readProfileAddress();
+
+    if (!profileForm.reportValidity()) {
+      return;
+    }
+
+    const payload = {
+      email: String(formData.get("email") || ""),
+      name: String(formData.get("name") || ""),
+      address,
+      phoneNumber: String(formData.get("phoneNumber") || ""),
+      emailReceiveConsent: String(formData.get("emailReceiveConsent") || ""),
+    };
+
+    submitButton.disabled = true;
+    submitButton.textContent = "저장 중";
+
+    try {
+      const response = await requestAuth(membersApi.profile, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+      const body = await readJson(response);
+
+      if (redirectMypageVerification(response, body)) {
+        content.hidden = true;
+        return;
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        content.hidden = true;
+        guard.hidden = false;
+        renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+        return;
+      }
+
+      if (!response.ok || !body.data) {
+        throw new Error(body.error || body.message || "회원정보를 저장하지 못했습니다.");
+      }
+
+      profileForm.elements.name.value = body.data.name || "";
+      profileForm.elements.phoneNumber.value = body.data.phoneNumber || "";
+      storedAddress = String(body.data.address || address);
+      addressDirty = false;
+      postalCodeInput.required = Boolean(normalizeAddressPart(postalCodeInput.value));
+      setMypageMessage(profileMessage, "회원정보가 수정되었습니다.", true);
+      authSessionPromise = null;
+    } catch (error) {
+      setMypageMessage(profileMessage, error.message || "회원정보를 저장하지 못했습니다.");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = defaultText;
+    }
+  });
+
+  passwordForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setMypageMessage(passwordMessage, "");
+
+    const formData = new FormData(passwordForm);
+    const payload = {
+      currentPassword: String(formData.get("currentPassword") || ""),
+      newPassword: String(formData.get("newPassword") || ""),
+      newPasswordConfirm: String(formData.get("newPasswordConfirm") || ""),
+    };
+
+    if (payload.newPassword !== payload.newPasswordConfirm) {
+      setMypageMessage(passwordMessage, "새 비밀번호와 확인 값을 동일하게 입력해 주세요.");
+      return;
+    }
+
+    const submitButton = passwordForm.querySelector("[data-password-submit]");
+    const defaultText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "변경 중";
+
+    try {
+      const response = await requestAuth(membersApi.password, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+      const body = await readJson(response);
+
+      if (redirectMypageVerification(response, body)) {
+        content.hidden = true;
+        return;
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        content.hidden = true;
+        guard.hidden = false;
+        renderMypageGuard(guard, "로그인이 만료되었습니다. 다시 로그인해 주세요.", "login.html", "로그인하기");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(body.error || body.message || "비밀번호를 변경하지 못했습니다.");
+      }
+
+      passwordForm.reset();
+      content.hidden = true;
+      guard.hidden = false;
+      renderMypageGuard(guard, "비밀번호가 변경되었습니다. 새 비밀번호로 다시 본인 확인해 주세요.", "mypage-verify.html", "본인 확인하기");
+    } catch (error) {
+      setMypageMessage(passwordMessage, error.message || "비밀번호를 변경하지 못했습니다.");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = defaultText;
+    }
+  });
 }
 
 function renderAdminProductRegisterLink(session) {
@@ -1330,11 +1793,6 @@ async function initCheckoutPage() {
     return customerRequestPreset.value || null;
   }
 
-  function setAddressSearchStatus(message) {
-    addressSearchStatus.textContent = message || "";
-    addressSearchStatus.hidden = !message;
-  }
-
   function validateShippingAddress() {
     const postalCode = normalizeAddressPart(postalCodeInput.value);
     const basicAddress = normalizeAddressPart(shippingAddressInput.value);
@@ -1361,66 +1819,14 @@ async function initCheckoutPage() {
     return shippingAddress;
   }
 
-  function disableAddressSearch(message) {
-    addressSearchButton.disabled = true;
-    addressSearchButton.textContent = "주소검색 불가";
-    setAddressSearchStatus(message);
-  }
-
-  addressSearchButton.addEventListener("click", () => {
-    const Postcode = window.kakao?.Postcode;
-
-    if (typeof Postcode !== "function") {
-      disableAddressSearch("주소검색을 사용할 수 없습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
-      return;
-    }
-
-    try {
-      new Postcode({
-        oncomplete(data) {
-          const postalCode = normalizeAddressPart(data.zonecode);
-          const selectedAddress = data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
-          const basicAddress = normalizeAddressPart(selectedAddress || data.address);
-
-          if (!postalCode || !basicAddress) {
-            setAddressSearchStatus("선택한 주소를 입력하지 못했습니다. 다시 검색하거나 직접 입력해 주세요.");
-            return;
-          }
-
-          postalCodeInput.value = postalCode;
-          shippingAddressInput.value = basicAddress;
-          shippingAddressDetailInput.value = "";
-          postalCodeInput.setCustomValidity("");
-          shippingAddressInput.setCustomValidity("");
-          shippingAddressDetailInput.setCustomValidity("");
-          setAddressSearchStatus("");
-          shippingAddressDetailInput.focus();
-        },
-      }).open();
-    } catch {
-      disableAddressSearch("주소검색 창을 열지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
-    }
+  setupKakaoAddressSearch({
+    postalCodeInput,
+    basicAddressInput: shippingAddressInput,
+    detailAddressInput: shippingAddressDetailInput,
+    searchButton: addressSearchButton,
+    statusElement: addressSearchStatus,
+    shouldKeepDisabled: () => Boolean(createdPaymentContext),
   });
-
-  postalCodeInput.addEventListener("input", () => postalCodeInput.setCustomValidity(""));
-  shippingAddressInput.addEventListener("input", () => shippingAddressInput.setCustomValidity(""));
-  shippingAddressDetailInput.addEventListener("input", () => shippingAddressDetailInput.setCustomValidity(""));
-
-  loadKakaoPostcode()
-    .then(() => {
-      if (createdPaymentContext) {
-        return;
-      }
-      addressSearchButton.disabled = false;
-      addressSearchButton.textContent = "주소검색";
-      setAddressSearchStatus("");
-    })
-    .catch(() => {
-      if (createdPaymentContext) {
-        return;
-      }
-      disableAddressSearch("주소검색을 불러오지 못했습니다. 우편번호와 기본주소를 직접 입력해 주세요.");
-    });
 
   customerRequestPreset.addEventListener("change", () => {
     const isCustom = customerRequestPreset.value === "custom";
@@ -1549,3 +1955,5 @@ initProductsPage();
 initProductDetail();
 initProductRegisterPage();
 initCheckoutPage();
+initMyPage();
+initMypageVerification();

@@ -17,10 +17,12 @@ import java.util.Collections;
 public class SessionLoginService implements LoginService{
 	private static final String USER_ID = "user_id";
 	private final HttpSession session;
+	private final ProfileVerificationSession verificationSession;
 	private final UserDetailsServiceImpl userDetailsService;
 
 	@Override
 	public void login(String email) {
+		verificationSession.clear();
 		session.setAttribute(USER_ID, email);
 		setAuthenticationContext(email);
 	}
