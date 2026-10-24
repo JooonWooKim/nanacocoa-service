@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
         String error = "중복된 데이터가 존재합니다.";
         String message = e.getMostSpecificCause().getMessage();
 
-        if (message.contains("uk_email")) {
+        if (message != null && (message.contains("uk_members_email") || message.contains("uk_email"))) {
             code = ALREADY_EXIST_EMAIL.getCode();
             error = ALREADY_EXIST_EMAIL.getError();
         }

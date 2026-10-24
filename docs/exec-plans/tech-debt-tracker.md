@@ -5,7 +5,7 @@
 
 | ID | 상태 | 영역 | 증거 | 다음 행동 | 제거 조건 |
 | --- | --- | --- | --- | --- | --- |
-| NC-TEST-001 | 활성 | 인증·상태 확인 통합 | `NanacocoaServerApplicationTests`에서 9개가 실패하며 정확한 목록은 `harness/baselines/test-failures.txt`로 래칫됩니다. | 전용 제품 계획에서 API 테스트, frontend 기대값, validation, health route, demo 사용자 fixture를 조정합니다. | 엄격한 `./gradlew test`가 통과하고 기준선 파일이 비어 있습니다. |
+| NC-TEST-001 | 활성 | 인증·상태 확인 통합 | 마이페이지 작업에서 회원가입 검증·저장 실패 4개를 해소했고 `NanacocoaServerApplicationTests`의 데모 로그인·세션·상태 확인 실패 5개가 정확한 fingerprint로 남아 있습니다. | demo 사용자 fixture와 로그인 오류 응답 계약을 정리하고 health route를 구현합니다. | 엄격한 `./gradlew test`가 통과하고 기준선 파일이 비어 있습니다. |
 | NC-ARCH-001 | 활성 | 의존 방향 | `common.userdetails`가 `member` Entity·Repository class를 import합니다. | 세션 동작을 바꾸지 않고 common 소유 identity port를 도입하거나 어댑터를 member·security로 이동합니다. | `common`에 비즈니스 도메인 import가 없고 아키텍처 예외 파일이 비어 있습니다. |
 | NC-SEC-001 | 활성 | CSRF | `SecurityConfig`가 세션 인증 브라우저 애플리케이션의 CSRF를 비활성화합니다. | 브라우저·API CSRF 계약을 정의하고 보호를 활성화하며 성공·실패 요청 테스트를 추가합니다. | 상태 변경 세션 요청에 CSRF가 활성화되고 보안 기준선 항목이 제거됩니다. |
 | NC-SEC-002 | 활성 | 로그아웃 의미 | `AuthController`가 세션을 변경하는 로그아웃에 GET과 POST를 허용합니다. | client를 확인한 뒤 GET을 제거하고 method·CSRF 회귀 테스트를 추가합니다. | 검토된 상태 변경 method만 허용되고 기준선 항목이 제거됩니다. |

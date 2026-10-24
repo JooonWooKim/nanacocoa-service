@@ -1,6 +1,6 @@
 # Nanacocoa 아키텍처
 
-상태: 2026-07-25 작업 트리 기준 검증됨
+상태: 2026-09-14 작업 트리 기준 검증됨
 갱신 조건: 도메인, 계층 경계, 외부 연동, 영속성 모델, 인증·결제 흐름 변경
 
 ## 시스템 구성
@@ -26,7 +26,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 
 | 영역 | 책임 | 진입 경계 | 영속성 |
 | --- | --- | --- | --- |
-| `member` | 회원가입, 로그인, 세션 식별 | `AuthController` / `AuthService` | `MemberRepository` |
+| `member` | 회원가입, 로그인, 세션 식별, 마이페이지 프로필·비밀번호 관리 | `AuthController` / `MemberController` | `MemberRepository` |
 | `products` | 상품 목록과 이미지 등록 | `ProductsController` / `ProductsService` | `ProductsRepository` |
 | `order` | 서버 가격 기반 주문과 배송 정보 | `OrderController` / `OrderService` | `OrderRepository` |
 | `payment` | 승인, 취소, 멱등성, 락, 복구 | `PaymentController` / `PaymentFacade` | 결제 Repository |
@@ -72,6 +72,12 @@ controller -> service/facade -> repository -> entity/database
 ## 트랜잭션과 데이터
 
 - 회원·상품·주문 변경은 Service 계층 트랜잭션을 사용합니다.
+- 회원 이메일은 수정 불가능한 로그인 아이디이며 이름·주소·전화번호·이메일
+  수신여부 변경은 유효한 본인 확인 세션을 요구합니다. 비밀번호 변경은 현재
+  비밀번호를 다시 확인합니다.
+- 회원 프로필·비밀번호 변경은 동일 회원 행의 비관적 쓰기 락을 획득한 뒤 최신
+  credential로 본인 확인을 검증합니다. 잠금 획득 실패는 `MEMBER_06` / HTTP 409로
+  반환하며 자동 재시도 없이 DB 잠금 대기 설정을 따릅니다.
 - 결제 처리는 외부 제공자 호출과 `PaymentTransactionalService`의
   `REQUIRES_NEW` 영속성 상태 전이를 분리합니다.
 - `PaymentFacade`는 인증, 락, 제공자 호출, 보상, 응답 매핑을 조정합니다.
@@ -93,6 +99,21 @@ Actuator health·info를 허용하며 나머지 요청은 인증된 세션이 �
 `SessionLoginService`는 Spring Security context를 HTTP 세션에 저장합니다.
 상품·주문·결제 Service는 현재 DB 인가 상태가 중요한 경우 회원을 다시
 조회합니다.
+
+`/api/members/me` 조회·변경 API는 인증된 세션만 접근할 수 있습니다. 회원
+프로필 Service는 세션 이메일로 회원을 다시 조회하며 비밀번호 hash는 어떤
+응답에도 포함하지 않습니다. 마이페이지 진입은 `mypage-verify.html`에서 현재
+비밀번호를 JSON POST `/api/members/me/verification`으로 확인한 후 허용합니다.
+확인 API는 `X-Mypage-Verification: 1`을 요구하며 CORS를 허용하지 않습니다.
+`ProfileVerificationSession`은 확인을 현재 세션·이메일·현재 credential hash에
+10분간 결합하며, 5분 시도 구간에 비밀번호 검증이 5회 실패하면 남은 구간 동안
+해당 세션의 재시도를 차단합니다. 평문 비밀번호는 세션에 저장하지 않습니다.
+`MemberPageConfig`는 미확인 페이지 요청을 확인 페이지로 보내고, `MemberService`는
+조회·수정·비밀번호 API의 직접 접근도 거부합니다. 로그인은 기존 확인을 지우며
+로그아웃은 세션을 폐기합니다. 비밀번호 변경 후 모든 기존 확인은 무효화되지만
+기존 로그인 세션은 유지합니다. 회원정보 저장은 유효한 본인 확인 세션을 사용하며
+현재 비밀번호를 다시 입력하지 않습니다. 비밀번호 변경 요청의 현재 비밀번호
+검증은 유지합니다.
 
 인증 통합 테스트에는 현재 알려진 계약 실패가 있습니다. 해당 목록은
 `harness/baselines/test-failures.txt`와 NC-TEST-001에 기록되어 있습니다.
