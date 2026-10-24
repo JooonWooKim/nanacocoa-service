@@ -9,11 +9,13 @@ import com.nanacocoa.server.member.dto.response.MemberProfileResponse;
 import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_REQUEST;
+import static com.nanacocoa.server.common.exception.ErrorCode.MEMBER_UPDATE_CONFLICT;
 import static com.nanacocoa.server.common.exception.ErrorCode.MEMBER_ID_IMMUTABLE;
 import static com.nanacocoa.server.common.exception.ErrorCode.NOT_FOUND_EMAIL;
 import static com.nanacocoa.server.common.exception.ErrorCode.PASSWORD_CONFIRMATION_MISMATCH;
@@ -51,7 +53,7 @@ public class MemberService {
 
     @Transactional
     public MemberProfileResponse updateProfile(String email, UpdateMemberProfileRequest request) {
-        Member member = findMember(email);
+        Member member = findMemberForUpdate(email);
         verificationSession.requireVerified(email, member.getPassword());
 
         if (!member.getEmail().equals(request.getEmail())) {
@@ -69,7 +71,7 @@ public class MemberService {
 
     @Transactional
     public void changePassword(String email, ChangeMemberPasswordRequest request) {
-        Member member = findMember(email);
+        Member member = findMemberForUpdate(email);
         verificationSession.requireVerified(email, member.getPassword());
         member.checkPassword(passwordEncoder, request.getCurrentPassword());
 
@@ -79,6 +81,15 @@ public class MemberService {
 
         member.changePassword(passwordEncoder.encode(request.getNewPassword()));
         verificationSession.clear();
+    }
+
+    private Member findMemberForUpdate(String email) {
+        try {
+            return memberRepository.findByEmailForUpdate(email)
+                    .orElseThrow(() -> new NanacocoaException(NOT_FOUND_EMAIL));
+        } catch (PessimisticLockingFailureException exception) {
+            throw new NanacocoaException(MEMBER_UPDATE_CONFLICT);
+        }
     }
 
     private Member findMember(String email) {

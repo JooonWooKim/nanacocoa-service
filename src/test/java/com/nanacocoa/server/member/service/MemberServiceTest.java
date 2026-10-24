@@ -1,5 +1,19 @@
 package com.nanacocoa.server.member.service;
 
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import com.nanacocoa.server.member.controller.MemberController;
+import com.nanacocoa.server.common.exception.GlobalExceptionHandler;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.core.MethodParameter;
+import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
+import org.springframework.web.method.support.ModelAndViewContainer;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.mockito.Mockito;
 import com.nanacocoa.server.common.exception.NanacocoaException;
 import com.nanacocoa.server.common.session.ProfileVerificationSession;
 import com.nanacocoa.server.member.dto.reqeust.ChangeMemberPasswordRequest;
@@ -50,11 +64,11 @@ class MemberServiceTest {
                 .phoneNumber("010-1111-2222")
                 .emailReceiveConsent(EmailReceiveConsent.N)
                 .build();
-        when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
     }
 
     @Test
     void returnsProfileWithoutPassword() {
+        when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
         MemberProfileResponse response = memberService.getProfile(member.getEmail());
 
         assertThat(response.getEmail()).isEqualTo("member@example.com");
@@ -66,6 +80,7 @@ class MemberServiceTest {
 
     @Test
     void updatesProfileAfterCurrentPasswordVerification() {
+        when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
         UpdateMemberProfileRequest request = new UpdateMemberProfileRequest(
                 member.getEmail(),
                 " 새 이름 ",
@@ -84,6 +99,7 @@ class MemberServiceTest {
 
     @Test
     void rejectsUnverifiedSessionWithoutChangingProfile() {
+        when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
         UpdateMemberProfileRequest request = new UpdateMemberProfileRequest(
                 member.getEmail(),
                 "변경 이름",
@@ -104,6 +120,7 @@ class MemberServiceTest {
 
     @Test
     void rejectsEmailChangeAfterCurrentPasswordVerification() {
+        when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
         UpdateMemberProfileRequest request = new UpdateMemberProfileRequest(
                 "changed@example.com",
                 "변경 이름",
@@ -121,6 +138,7 @@ class MemberServiceTest {
 
     @Test
     void changesPasswordAsBcryptHash() {
+        when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
         memberService.changePassword(
                 member.getEmail(),
                 new ChangeMemberPasswordRequest("current123!", "new-password123!", "new-password123!")
@@ -132,6 +150,7 @@ class MemberServiceTest {
 
     @Test
     void rejectsPasswordConfirmationMismatchWithoutChangingHash() {
+        when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
         String originalPassword = member.getPassword();
 
         assertThatThrownBy(() -> memberService.changePassword(
@@ -141,5 +160,47 @@ class MemberServiceTest {
                 exception -> assertThat(exception.getErrorCode()).isEqualTo(PASSWORD_CONFIRMATION_MISMATCH));
 
         assertThat(member.getPassword()).isEqualTo(originalPassword);
+    }
+
+    @Test
+    void lockFailureReturnsConflictForBothWritesWithoutVerification() throws Exception {
+        when(memberRepository.findByEmailForUpdate(member.getEmail()))
+                .thenThrow(new CannotAcquireLockException("busy"));
+        // 실제 Service와 전역 예외 처리기를 연결해 HTTP 오류 계약도 검증합니다.
+        var mvc = MockMvcBuilders
+                .standaloneSetup(new MemberController(memberService))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new HandlerMethodArgumentResolver() {
+                    public boolean supportsParameter(MethodParameter parameter) {
+                        return parameter.getParameterType() == UserDetailsImpl.class;
+                    }
+                    public Object resolveArgument(MethodParameter parameter,
+                            ModelAndViewContainer container,
+                            NativeWebRequest request,
+                            WebDataBinderFactory factory) {
+                        return new UserDetailsImpl(member, member.getEmail());
+                    }
+                }).build();
+        String[] paths = {"/api/members/me", "/api/members/me/password"};
+        String[] bodies = {
+                "{\"email\":\"member@example.com\",\"name\":\"updated\",\"address\":\"address\",\"phoneNumber\":\"010-3333-4444\",\"emailReceiveConsent\":\"Y\"}",
+                "{\"currentPassword\":\"current123!\",\"newPassword\":\"changed123!\",\"newPasswordConfirm\":\"changed123!\"}"
+        };
+        for (int i = 0; i < paths.length; i++) {
+            mvc.perform(MockMvcRequestBuilders.put(paths[i])
+                            .contentType(MediaType.APPLICATION_JSON).content(bodies[i]))
+                    .andExpect(MockMvcResultMatchers.status().isConflict())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("MEMBER_06"));
+        }
+        Mockito.verifyNoInteractions(verificationSession);
+    }
+
+    @Test
+    void missingMemberIsRejectedForLockedLookup() {
+        when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> memberService.changePassword(member.getEmail(),
+                new ChangeMemberPasswordRequest("current123!", "changed123!", "changed123!")))
+                .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(com.nanacocoa.server.common.exception.ErrorCode.NOT_FOUND_EMAIL));
     }
 }

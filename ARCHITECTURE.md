@@ -75,6 +75,9 @@ controller -> service/facade -> repository -> entity/database
 - 회원 이메일은 수정 불가능한 로그인 아이디이며 이름·주소·전화번호·이메일
   수신여부 변경은 유효한 본인 확인 세션을 요구합니다. 비밀번호 변경은 현재
   비밀번호를 다시 확인합니다.
+- 회원 프로필·비밀번호 변경은 동일 회원 행의 비관적 쓰기 락을 획득한 뒤 최신
+  credential로 본인 확인을 검증합니다. 잠금 획득 실패는 `MEMBER_06` / HTTP 409로
+  반환하며 자동 재시도 없이 DB 잠금 대기 설정을 따릅니다.
 - 결제 처리는 외부 제공자 호출과 `PaymentTransactionalService`의
   `REQUIRES_NEW` 영속성 상태 전이를 분리합니다.
 - `PaymentFacade`는 인증, 락, 제공자 호출, 보상, 응답 매핑을 조정합니다.
