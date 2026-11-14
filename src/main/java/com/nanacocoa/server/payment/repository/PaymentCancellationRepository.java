@@ -21,13 +21,7 @@ public interface PaymentCancellationRepository extends JpaRepository<PaymentCanc
 			CancellationStatus status);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@Query("""
-			select c from PaymentCancellation c
-			join fetch c.payment p
-			join fetch p.order o
-			join fetch o.member
-			where c.id = :cancellationId
-			""")
+	@Query("select c from PaymentCancellation c where c.id = :cancellationId")
 	Optional<PaymentCancellation> findByIdForUpdate(@Param("cancellationId") Long cancellationId);
 
 	@Query("""

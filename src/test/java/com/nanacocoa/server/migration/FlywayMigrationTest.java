@@ -30,11 +30,16 @@ class FlywayMigrationTest {
 					""");
 		}
 
+		try (Connection connection = DriverManager.getConnection(url, "sa", ""); Statement statement = connection.createStatement()) {
+			statement.executeUpdate("insert into products (name, price, summary, detail_title, description, created_at) values ('legacy product', 41000, 'summary', 'detail', 'description', current_timestamp)");
+			statement.executeUpdate("insert into orders (order_id, member_id, total_amount, status, version, created_at, updated_at) select 'legacy-order', id, 41000, 'CREATED', 0, current_timestamp, current_timestamp from members where email = 'legacy@example.com'");
+		}
+
 		Flyway allMigrations = Flyway.configure()
 				.dataSource(url, "sa", "")
 				.locations("classpath:db/migration")
 				.load();
-		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(1);
+		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(2);
 
 		try (Connection connection = DriverManager.getConnection(url, "sa", "");
 			 Statement statement = connection.createStatement();
@@ -45,8 +50,18 @@ class FlywayMigrationTest {
 
 		try (Connection connection = DriverManager.getConnection(url, "sa", "");
 			 Statement statement = connection.createStatement();
-			 ResultSet resultSet = statement.executeQuery("select recipient_name, phone_number, shipping_address, customer_request from orders")) {
-			assertThat(resultSet.next()).isFalse();
+			 ResultSet resultSet = statement.executeQuery("select stock_state, reservation_expires_at from orders where order_id = 'legacy-order'")) {
+			assertThat(resultSet.next()).isTrue();
+			assertThat(resultSet.getString("stock_state")).isEqualTo("LEGACY");
+			assertThat(resultSet.getObject("reservation_expires_at")).isNull();
+		}
+
+		try (Connection connection = DriverManager.getConnection(url, "sa", ""); Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery("select stock_quantity, reserved_quantity, sale_status from products where name = 'legacy product'")) {
+			assertThat(resultSet.next()).isTrue();
+			assertThat(resultSet.getLong("stock_quantity")).isZero();
+			assertThat(resultSet.getLong("reserved_quantity")).isZero();
+			assertThat(resultSet.getString("sale_status")).isEqualTo("STOPPED");
 		}
 
 		try (Connection connection = DriverManager.getConnection(url, "sa", "");

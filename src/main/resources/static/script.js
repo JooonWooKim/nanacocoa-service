@@ -950,6 +950,12 @@ function renderAdminProductRegisterLink(session) {
   registerLink.textContent = "상품 등록";
   registerLink.dataset.adminProductRegister = "";
   drawerNav.append(registerLink);
+  const inventoryLink = document.createElement("a");
+  inventoryLink.className = "drawer-link";
+  inventoryLink.href = "inventory.html";
+  inventoryLink.textContent = "재고 관리";
+  inventoryLink.dataset.adminProductRegister = "";
+  drawerNav.append(inventoryLink);
 }
 
 function loadAuthSession() {
@@ -1123,7 +1129,7 @@ function createProductCard(product) {
   name.className = "product-name";
   price.className = "product-price";
   name.textContent = product.name;
-  price.textContent = formatPrice(product.price);
+  price.textContent = `${formatPrice(product.price)} · ${inventoryLabel(product)}`;
 
   info.append(name, price);
   link.append(image, info);
@@ -1251,6 +1257,11 @@ async function initProductDetail() {
   }
 
   setDetailText(product);
+  const purchasable = product.availability === "ON_SALE";
+  buyButton.disabled = !purchasable;
+  cartButton.disabled = !purchasable;
+  buyButton.textContent = purchasable ? "구매하기" : inventoryLabel(product);
+  document.querySelector("#product-summary").textContent = `${product.summary} · ${inventoryLabel(product)}`;
 
   function renderSlide() {
     const view = galleryViews[activeSlide];
@@ -1450,6 +1461,7 @@ async function initCheckoutPage() {
   const resultTotal = resultPanel?.querySelector("[data-payment-order-total]");
   const statusCheckButton = resultPanel?.querySelector("[data-payment-status-check]");
   const paymentRetryButton = resultPanel?.querySelector("[data-payment-retry]");
+  const cancelOrderButton = resultPanel?.querySelector("[data-order-cancel]");
   const paymentReturnLink = resultPanel?.querySelector("[data-payment-return]");
 
   if (!form || !guard || !messageBox || !submitButton || !paymentMethodToggle
@@ -1517,6 +1529,7 @@ async function initCheckoutPage() {
   }) {
     guard.hidden = true;
     form.hidden = true;
+    if (cancelOrderButton) cancelOrderButton.hidden = true;
     resultEyebrow.textContent = eyebrow;
     resultTitle.textContent = title;
     resultMessage.textContent = message;
@@ -1556,12 +1569,19 @@ async function initCheckoutPage() {
     resultMessage.textContent = "동일한 주문으로 토스페이 결제를 다시 요청하고 있습니다.";
 
     try {
+      const reservationResponse = await requestAuth(`/api/orders/${encodeURIComponent(context.orderId)}/reservation`, { method: "POST" });
+      const reservationBody = await readJson(reservationResponse);
+      if (!reservationResponse.ok) {
+        const error = new Error(checkoutApiError(reservationBody, "주문 재고를 확인하지 못했습니다. 주문서에서 다시 시도해 주세요."));
+        error.canRetry = reservationResponse.status !== 409;
+        throw error;
+      }
       const payment = await prepareTossPayment();
       renewCheckoutPaymentAttempt(context);
       resultMessage.textContent = "토스페이 결제창으로 이동하고 있습니다.";
       await requestTossPay(payment, context);
     } catch (error) {
-      renderPaymentFailure(error.message || "토스페이 결제창을 열지 못했습니다.", context, true);
+      renderPaymentFailure(error.message || "토스페이 결제창을 열지 못했습니다.", context, error.canRetry !== false);
     }
   }
 
@@ -1579,6 +1599,20 @@ async function initCheckoutPage() {
       ? () => retryTossPayment(context)
       : null;
     paymentReturnLink.onclick = includeLogin ? null : () => clearCheckoutPaymentContext();
+    if (cancelOrderButton && context && !includeLogin) {
+      cancelOrderButton.hidden = false;
+      cancelOrderButton.disabled = false;
+      cancelOrderButton.onclick = async () => {
+        cancelOrderButton.disabled = true;
+        try {
+          const response = await requestAuth(`/api/orders/${encodeURIComponent(context.orderId)}/cancel`, { method: "POST" });
+          const body = await readJson(response);
+          if (!response.ok) throw new Error(checkoutApiError(body, "주문을 취소하지 못했습니다."));
+          clearCheckoutPaymentContext();
+          renderPaymentResult({ eyebrow: "ORDER CANCELED", title: "미결제 주문을 취소했습니다.", message: "확보한 재고를 해제했습니다.", context });
+        } catch (error) { resultMessage.textContent = error.message; cancelOrderButton.disabled = false; }
+      };
+    }
   }
 
   function renderPaymentPending(context, message = "결제사 응답을 확인하고 있습니다. 잠시 후 상태를 다시 확인해 주세요.") {
@@ -1757,6 +1791,11 @@ async function initCheckoutPage() {
     return;
   }
 
+  if (product.availability !== "ON_SALE") {
+    renderCheckoutGuard(guard, `${inventoryLabel(product)} 상품입니다. 다른 상품을 선택해 주세요.`, "products.html", "상품 목록으로 이동");
+    return;
+  }
+
   let submissionInProgress = false;
   let createdPaymentContext = null;
 
@@ -1911,6 +1950,18 @@ async function initCheckoutPage() {
 
         const serverAmount = Number(body.data?.totalAmount);
         if (!response.ok || !body.data?.orderId || !Number.isSafeInteger(serverAmount) || serverAmount <= 0) {
+          if (response.status === 409) {
+            const latest = await requestAuth(productsApi.detail(product.id));
+            const latestBody = await readJson(latest);
+            if (latest.ok && latestBody.data) {
+              product = latestBody.data;
+              if (product.availability !== "ON_SALE") {
+                renderCheckoutGuard(guard, `${inventoryLabel(product)} 상품입니다.`, "products.html", "상품 목록으로 이동");
+                form.hidden = true;
+                guard.hidden = false;
+              }
+            }
+          }
           throw new Error(checkoutApiError(body, "주문을 생성하지 못했습니다."));
         }
 
@@ -1931,6 +1982,9 @@ async function initCheckoutPage() {
       submitButton.textContent = "토스페이 여는 중";
       await requestTossPay(payment, createdPaymentContext);
     } catch (error) {
+      if (createdPaymentContext) {
+        renderPaymentFailure(error.message || "결제창을 열지 못했습니다.", createdPaymentContext, true);
+      }
       submissionInProgress = false;
       setCheckoutMessage(
         messageBox,
@@ -1957,3 +2011,89 @@ initProductRegisterPage();
 initCheckoutPage();
 initMyPage();
 initMypageVerification();
+
+function inventoryLabel(product) {
+  return product.availability === "STOPPED" ? "판매 중지"
+    : product.availability === "SOLD_OUT" ? "품절" : "판매 중";
+}
+
+async function initInventoryPage() {
+  const page = document.querySelector("[data-inventory-page]");
+  if (!page) return;
+  const message = page.querySelector("[data-inventory-message]");
+  const content = page.querySelector("[data-inventory-content]");
+  const grid = page.querySelector("[data-inventory-grid]");
+  const session = await loadAuthSession();
+  if (session.loadFailed || !session.authenticated || !session.admin) {
+    message.textContent = session.loadFailed ? "로그인 상태를 확인하지 못했습니다. 새로고침해 주세요." : "운영자 로그인이 필요합니다.";
+    return;
+  }
+  content.hidden = false;
+
+  async function loadInventory() {
+    const response = await requestAuth("/api/products/inventory");
+    const body = await readJson(response);
+    if (!response.ok || !Array.isArray(body.data)) throw new Error("상품 재고를 불러오지 못했습니다.");
+    grid.replaceChildren();
+    for (const product of body.data) {
+      const form = document.createElement("form");
+      form.className = "inventory-card";
+      const heading = document.createElement("h2");
+      heading.textContent = product.name;
+      const status = document.createElement("p");
+      status.textContent = `${inventoryLabel(product)} · 판매 가능 재고 ${product.stockQuantity}개 · 결제 대기 재고 ${product.reservedQuantity}개`;
+      const label = document.createElement("label");
+      label.textContent = "판매 가능 재고 ";
+      const input = document.createElement("input");
+      input.type = "number"; input.min = "0"; input.max = "1000000000"; input.step = "1"; input.required = true;
+      input.value = String(product.stockQuantity);
+      label.append(input);
+      const saleLabel = document.createElement("label");
+      saleLabel.textContent = "판매 상태 ";
+      const select = document.createElement("select");
+      for (const [value, text] of [["ON_SALE", "판매 중"], ["STOPPED", "판매 중지"]]) {
+        const option = document.createElement("option"); option.value = value; option.textContent = text; select.append(option);
+      }
+      select.value = product.availability === "STOPPED" ? "STOPPED" : "ON_SALE";
+      saleLabel.append(select);
+      const button = document.createElement("button"); button.type = "submit"; button.textContent = "재고 저장";
+      form.append(heading, status, label, saleLabel, button);
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault(); button.disabled = true;
+        try {
+          const response = await requestAuth(`${productsApi.detail(product.id)}/inventory`, {
+            method: "PUT", body: JSON.stringify({stockQuantity: Number(input.value), saleStatus: select.value, expectedVersion: product.stockVersion}),
+          });
+          const body = await readJson(response);
+          if (!response.ok) throw new Error(checkoutApiError(body, "재고를 저장하지 못했습니다."));
+          message.textContent = `${product.name} 재고를 저장했습니다.`;
+          await loadInventory();
+        } catch (error) {
+          message.textContent = error.message;
+          if (error.message.includes("새로고침")) await loadInventory().catch(() => {});
+        } finally { button.disabled = false; }
+      });
+      grid.append(form);
+    }
+  }
+  page.querySelector("[data-inventory-refresh]").addEventListener("click", () => loadInventory().catch(error => message.textContent = error.message));
+  const restockForm = page.querySelector("[data-restock-form]");
+  restockForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = restockForm.querySelector("button"); button.disabled = true;
+    try {
+      const values = new FormData(restockForm);
+      const response = await requestAuth(`/api/orders/${encodeURIComponent(String(values.get("orderId")).trim())}/restock`, {
+        method: "POST", body: JSON.stringify({reason: String(values.get("reason")).trim()}),
+      });
+      const body = await readJson(response);
+      if (!response.ok) throw new Error(checkoutApiError(body, "검수 재입고를 처리하지 못했습니다."));
+      message.textContent = "취소 주문의 검수 재입고를 처리했습니다. 동일 주문은 중복 반영하지 않습니다.";
+      restockForm.reset(); await loadInventory();
+    } catch (error) { message.textContent = error.message; }
+    finally { button.disabled = false; }
+  });
+  try { await loadInventory(); message.textContent = "입고·재고 조정은 판매 가능 수량에 반영됩니다. 결제 대기 재고는 별도로 유지됩니다."; }
+  catch (error) { message.textContent = error.message; }
+}
+initInventoryPage();

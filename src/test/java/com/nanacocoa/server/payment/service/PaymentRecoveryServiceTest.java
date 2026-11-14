@@ -28,7 +28,10 @@ import java.util.function.Supplier;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -110,6 +113,51 @@ class PaymentRecoveryServiceTest {
 		verify(transactionalService).completeApproval(10L, done);
 	}
 
+	@Test
+	void releasesTerminalFailuresBeforeVerificationOrCompensation() {
+		Payment payment = recoverablePayment(10L, "NC_order-123");
+		when(paymentRepository.findRecoverable(eq(PaymentRecoveryAction.NONE), any(), any(Pageable.class)))
+				.thenReturn(List.of(payment));
+		LocalDateTime createdAt = LocalDateTime.now();
+		when(transactionalService.getRecoveryApproval(10L))
+				.thenReturn(work(createdAt), work(createdAt, PaymentRecoveryAction.COMPENSATE_APPROVAL));
+		when(tossPaymentsClient.findByOrderId("NC_order-123")).thenReturn(
+				new TossPaymentResponse("payment-key", "NC_order-123", 38000L, "ABORTED", null, null, List.of()),
+				new TossPaymentResponse("payment-key", "NC_order-123", 38000L, "EXPIRED", null, null, List.of()));
+
+		recoveryService.reconcileDueApprovals(100);
+		recoveryService.reconcileDueApprovals(100);
+
+		verify(transactionalService).failApproval(eq(10L), eq("ABORTED"), any());
+		verify(transactionalService).failApproval(eq(10L), eq("EXPIRED"), any());
+		verify(transactionalService, never()).requestCompensation(any(), any(), any());
+		verify(tossPaymentsClient, times(2)).findByOrderId("NC_order-123");
+		verifyNoMoreInteractions(tossPaymentsClient);
+	}
+
+	@Test
+	void preservesRecoveryActionWhenLookupIdentifiersDoNotMatch() {
+		Payment payment = recoverablePayment(10L, "NC_order-123");
+		when(paymentRepository.findRecoverable(eq(PaymentRecoveryAction.NONE), any(), any(Pageable.class)))
+				.thenReturn(List.of(payment));
+		LocalDateTime createdAt = LocalDateTime.now();
+		when(transactionalService.getRecoveryApproval(10L))
+				.thenReturn(work(createdAt), work(createdAt, PaymentRecoveryAction.COMPENSATE_APPROVAL));
+		when(tossPaymentsClient.findByOrderId("NC_order-123")).thenReturn(
+				new TossPaymentResponse("other-key", "NC_order-123", 38000L, "ABORTED", null, null, List.of()),
+				new TossPaymentResponse("payment-key", "other-order", 38000L, "EXPIRED", null, null, List.of()),
+				new TossPaymentResponse("payment-key", "NC_order-123", 39000L, "EXPIRED", null, null, List.of()));
+
+		for (int attempt = 0; attempt < 3; attempt++) {
+			recoveryService.reconcileDueApprovals(100);
+		}
+
+		verify(transactionalService).recordUncertainApproval(eq(10L), eq("PG_PAYMENT_MISMATCH"), any());
+		verify(transactionalService, times(2))
+				.requestCompensation(eq(10L), eq("PG_PAYMENT_MISMATCH"), any());
+		verify(transactionalService, never()).failApproval(any(), any(), any());
+	}
+
 	private Payment recoverablePayment(Long paymentId, String orderId) {
 		Payment payment = mock(Payment.class);
 		Order order = mock(Order.class);
@@ -120,6 +168,10 @@ class PaymentRecoveryServiceTest {
 	}
 
 	private ApprovalWork work(LocalDateTime createdAt) {
+		return work(createdAt, PaymentRecoveryAction.VERIFY_APPROVAL);
+	}
+
+	private ApprovalWork work(LocalDateTime createdAt, PaymentRecoveryAction recoveryAction) {
 		return new ApprovalWork(
 				10L,
 				"payment-key",
@@ -128,7 +180,7 @@ class PaymentRecoveryServiceTest {
 				"idem-key",
 				"compensation-key",
 				PaymentStatus.PENDING,
-				PaymentRecoveryAction.VERIFY_APPROVAL,
+				recoveryAction,
 				createdAt,
 				true,
 				new PaymentResponse(10L, "NC_order-123", 38000L, PaymentStatus.PENDING, null, null, null, null)

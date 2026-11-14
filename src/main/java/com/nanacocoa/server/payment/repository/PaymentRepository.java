@@ -22,7 +22,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 	Optional<Payment> findDetailsById(@Param("paymentId") Long paymentId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@Query("select p from Payment p join fetch p.order o join fetch o.member where p.id = :paymentId")
+	@Query("select p from Payment p where p.id = :paymentId")
 	Optional<Payment> findByIdForUpdate(@Param("paymentId") Long paymentId);
 
 	@Query("""

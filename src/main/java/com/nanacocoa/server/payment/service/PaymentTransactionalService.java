@@ -1,5 +1,6 @@
 package com.nanacocoa.server.payment.service;
 
+import com.nanacocoa.server.order.service.OrderInventoryService;
 import com.nanacocoa.server.common.exception.NanacocoaException;
 import com.nanacocoa.server.order.entity.Order;
 import com.nanacocoa.server.order.entity.OrderStatus;
@@ -42,16 +43,19 @@ public class PaymentTransactionalService {
 	private final PaymentCancellationRepository cancellationRepository;
 	private final OrderRepository orderRepository;
 	private final Duration retryDelay;
+	private final OrderInventoryService inventoryService;
 
 	public PaymentTransactionalService(
 			PaymentRepository paymentRepository,
 			PaymentCancellationRepository cancellationRepository,
 			OrderRepository orderRepository,
-			@Value("${payment.reconciliation.retry-delay:30s}") Duration retryDelay) {
+			@Value("${payment.reconciliation.retry-delay:30s}") Duration retryDelay,
+			OrderInventoryService inventoryService) {
 		this.paymentRepository = paymentRepository;
 		this.cancellationRepository = cancellationRepository;
 		this.orderRepository = orderRepository;
 		this.retryDelay = retryDelay;
+		this.inventoryService = inventoryService;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -85,6 +89,7 @@ public class PaymentTransactionalService {
 			throw new NanacocoaException(PAYMENT_ALREADY_PROCESSED);
 		}
 
+		inventoryService.prepareApproval(order);
 		order.startPayment();
 		Payment payment = Payment.pending(
 				order,
@@ -124,6 +129,7 @@ public class PaymentTransactionalService {
 			return PaymentResponse.from(payment);
 		}
 		validateApprovalResponse(payment, pgResponse);
+		inventoryService.complete(payment.getOrder());
 		payment.complete(pgResponse.getStatus(), pgResponse.getMethod(), pgResponse.approvedAtLocal());
 		paymentRepository.flush();
 		return PaymentResponse.from(payment);
@@ -134,6 +140,7 @@ public class PaymentTransactionalService {
 		Payment payment = paymentForUpdate(paymentId);
 		if (payment.getStatus() == PaymentStatus.PENDING) {
 			payment.fail(code, message);
+			inventoryService.release(payment.getOrder());
 		}
 	}
 
@@ -162,6 +169,7 @@ public class PaymentTransactionalService {
 		}
 		validateCanceledResponse(payment, pgResponse);
 		payment.canceledByCompensation(pgResponse.getStatus(), pgResponse.canceledAtLocal());
+		inventoryService.release(payment.getOrder());
 		return PaymentResponse.from(payment);
 	}
 
@@ -296,13 +304,18 @@ public class PaymentTransactionalService {
 	}
 
 	private Payment paymentForUpdate(Long paymentId) {
-		return paymentRepository.findByIdForUpdate(paymentId)
+		Payment payment = paymentRepository.findByIdForUpdate(paymentId)
 				.orElseThrow(() -> new NanacocoaException(NOT_FOUND_PAYMENT));
+		orderRepository.findByOrderIdForUpdate(payment.getOrder().getOrderId())
+			.orElseThrow(() -> new NanacocoaException(NOT_FOUND_ORDER));
+		return payment;
 	}
 
 	private PaymentCancellation cancellationForUpdate(Long cancellationId) {
-		return cancellationRepository.findByIdForUpdate(cancellationId)
+		PaymentCancellation cancellation = cancellationRepository.findByIdForUpdate(cancellationId)
 				.orElseThrow(() -> new NanacocoaException(NOT_FOUND_PAYMENT));
+		paymentForUpdate(cancellation.getPayment().getId());
+		return cancellation;
 	}
 
 	private void validateApprovalResponse(Payment payment, TossPaymentResponse response) {

@@ -70,6 +70,46 @@ public class Order {
 	@Column(nullable = false)
 	private Long version;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "stock_state", nullable = false, length = 32)
+	private StockState stockState = StockState.LEGACY;
+
+	@Column(name = "reservation_expires_at")
+	private LocalDateTime reservationExpiresAt;
+
+	@Column(name = "restock_reason", length = 500)
+	private String restockReason;
+
+	public void reserveStock(LocalDateTime expiresAt) {
+		if (stockState != StockState.LEGACY && stockState != StockState.RELEASED)
+			throw new NanacocoaException(INVALID_PAYMENT_STATUS);
+		stockState = StockState.RESERVED;
+		reservationExpiresAt = expiresAt;
+	}
+
+	public void sellStock() {
+		if (stockState != StockState.RESERVED) throw new NanacocoaException(INVALID_PAYMENT_STATUS);
+		stockState = StockState.SOLD;
+	}
+
+	public void releaseStock() {
+		if (stockState != StockState.RESERVED) throw new NanacocoaException(INVALID_PAYMENT_STATUS);
+		stockState = StockState.RELEASED;
+	}
+
+	public void restockAfterInspection(String reason) {
+		if (status != OrderStatus.CANCELED || stockState != StockState.SOLD)
+			throw new NanacocoaException(INVALID_PAYMENT_STATUS);
+		stockState = StockState.RETURNED;
+		restockReason = reason;
+	}
+
+	public void cancelUnpaid() { changeStatus(OrderStatus.CREATED, OrderStatus.CANCELED); }
+
+	public boolean reservationExpired(LocalDateTime now) {
+		return reservationExpiresAt != null && !reservationExpiresAt.isAfter(now);
+	}
+
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
