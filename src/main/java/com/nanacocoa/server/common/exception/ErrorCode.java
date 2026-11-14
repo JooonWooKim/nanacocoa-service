@@ -26,6 +26,10 @@ public enum ErrorCode {
 	PRODUCT_IMAGE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "PRODUCTS_04", "상품 이미지는 5MB 이하만 등록할 수 있습니다."),
 	PRODUCT_IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "PRODUCTS_05", "상품 이미지 업로드에 실패했습니다."),
 
+	INSUFFICIENT_STOCK(HttpStatus.CONFLICT, "PRODUCTS_06", "판매 가능 재고가 부족하거나 판매 중지된 상품입니다."),
+	STOCK_CONFLICT(HttpStatus.CONFLICT, "PRODUCTS_07", "재고가 변경되었습니다. 새로고침 후 다시 시도해 주세요."),
+	ORDER_RESERVATION_EXPIRED(HttpStatus.CONFLICT, "ORDER_04", "주문 유효 시간이 만료되었거나 재고 미확인 주문입니다. 새 주문을 생성해 주세요."),
+
 	NOT_FOUND_ORDER(HttpStatus.NOT_FOUND, "ORDER_01", "주문을 찾을 수 없습니다."),
 	INVALID_ORDER_ITEMS(HttpStatus.BAD_REQUEST, "ORDER_02", "주문 상품 정보를 확인해주세요."),
 	ORDER_AMOUNT_OVERFLOW(HttpStatus.BAD_REQUEST, "ORDER_03", "주문 금액이 허용 범위를 초과했습니다."),

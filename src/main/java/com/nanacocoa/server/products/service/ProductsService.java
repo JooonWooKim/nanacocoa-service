@@ -1,11 +1,13 @@
 package com.nanacocoa.server.products.service;
 
+import com.nanacocoa.server.products.dto.reqeust.UpdateInventoryRequest;
 import com.nanacocoa.server.common.exception.NanacocoaException;
 import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
 import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
 import com.nanacocoa.server.products.dto.reqeust.RegisterProductsRequest;
 import com.nanacocoa.server.products.dto.response.ProductsResponse;
+import com.nanacocoa.server.products.dto.response.InventoryResponse;
 import com.nanacocoa.server.products.entity.Products;
 import com.nanacocoa.server.products.repository.ProductsRepository;
 import com.nanacocoa.server.products.storage.ProductImageFormat;
@@ -54,6 +56,28 @@ public class ProductsService {
 
 		Products savedProduct = productsRepository.saveAndFlush(request.toProducts(storedImage.publicUrl()));
 		return ProductsResponse.from(savedProduct);
+	}
+
+	@Transactional
+	public InventoryResponse updateInventory(Long productId,
+			UpdateInventoryRequest request, UserDetailsImpl userDetails) {
+		if (userDetails == null) throw new NanacocoaException(AUTHENTICATION_REQUIRED);
+		memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new NanacocoaException(AUTHENTICATION_REQUIRED)).checkAdmin();
+		Products product = productsRepository.findByIdForUpdate(productId)
+			.orElseThrow(() -> new NanacocoaException(NOT_FOUND_PRODUCTS));
+		product.updateInventory(request.stockQuantity(), request.saleStatus(), request.expectedVersion());
+		productsRepository.flush();
+		return InventoryResponse.from(product);
+	}
+
+	@Transactional(readOnly = true)
+	public List<InventoryResponse> getInventory(UserDetailsImpl userDetails) {
+		if (userDetails == null) throw new NanacocoaException(AUTHENTICATION_REQUIRED);
+		memberRepository.findByEmail(userDetails.getUsername())
+			.orElseThrow(() -> new NanacocoaException(AUTHENTICATION_REQUIRED)).checkAdmin();
+		return productsRepository.findAllByOrderByCreatedAtDescIdDesc().stream()
+			.map(InventoryResponse::from).toList();
 	}
 
 	private void validateRegistration(RegisterProductsRequest request, UserDetailsImpl userDetails) {

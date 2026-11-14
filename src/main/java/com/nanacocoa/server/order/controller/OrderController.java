@@ -1,5 +1,7 @@
 package com.nanacocoa.server.order.controller;
 
+import org.springframework.web.bind.annotation.PathVariable;
+import com.nanacocoa.server.order.dto.reqeust.RestockOrderRequest;
 import com.nanacocoa.server.common.response.SuccessMessage;
 import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
 import com.nanacocoa.server.order.dto.reqeust.CreateOrderRequest;
@@ -20,6 +22,27 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OrderController {
 	private final OrderService orderService;
+
+	@PostMapping("/{orderId}/reservation")
+	public ResponseEntity<SuccessMessage<OrderResponse>> reserveForRetry(
+			@PathVariable String orderId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+		return ResponseEntity.ok(new SuccessMessage<>("주문재고확인성공", orderService.reserveForRetry(orderId, userDetails)));
+	}
+
+	@PostMapping("/{orderId}/cancel")
+	public ResponseEntity<SuccessMessage<OrderResponse>> cancelUnpaid(
+			@PathVariable String orderId,
+			@AuthenticationPrincipal UserDetailsImpl userDetails) {
+		return ResponseEntity.ok(new SuccessMessage<>("미결제주문취소성공", orderService.cancelUnpaid(orderId, userDetails)));
+	}
+
+	@PostMapping("/{orderId}/restock")
+	public ResponseEntity<SuccessMessage<OrderResponse>> restock(
+			@PathVariable String orderId,
+			@Valid @RequestBody RestockOrderRequest request,
+			@AuthenticationPrincipal UserDetailsImpl userDetails) {
+		return ResponseEntity.ok(new SuccessMessage<>("검수후재입고성공", orderService.restock(orderId, request.reason(), userDetails)));
+	}
 
 	@PostMapping
 	public ResponseEntity<SuccessMessage<OrderResponse>> createOrder(

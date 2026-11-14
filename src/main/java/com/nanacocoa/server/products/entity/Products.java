@@ -1,5 +1,7 @@
 package com.nanacocoa.server.products.entity;
 
+import com.nanacocoa.server.common.exception.NanacocoaException;
+import com.nanacocoa.server.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,6 +39,67 @@ public class Products {
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
+
+	@Column(name = "stock_quantity", nullable = false)
+	@Setter(AccessLevel.NONE)
+	private long stockQuantity;
+
+	@Column(name = "reserved_quantity", nullable = false)
+	@Setter(AccessLevel.NONE)
+	private long reservedQuantity;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "sale_status", nullable = false, length = 32)
+	@Setter(AccessLevel.NONE)
+	private SaleStatus saleStatus = SaleStatus.STOPPED;
+
+	@Version
+	@Column(name = "stock_version", nullable = false)
+	@Setter(AccessLevel.NONE)
+	private long stockVersion;
+
+	public String getAvailability() {
+		return saleStatus == SaleStatus.STOPPED ? "STOPPED" : stockQuantity == 0 ? "SOLD_OUT" : "ON_SALE";
+	}
+
+	public void updateInventory(long quantity, SaleStatus status, long expectedVersion) {
+		if (quantity < 0 || quantity > 1_000_000_000L || status == null) throw new NanacocoaException(
+			ErrorCode.INVALID_REQUEST);
+		if (stockVersion != expectedVersion) throw new NanacocoaException(
+			ErrorCode.STOCK_CONFLICT);
+		stockQuantity = quantity;
+		saleStatus = status;
+	}
+
+	public void reserve(int quantity) {
+		if (quantity <= 0 || saleStatus != SaleStatus.ON_SALE || stockQuantity < quantity)
+			throw new NanacocoaException(
+				ErrorCode.INSUFFICIENT_STOCK);
+		stockQuantity -= quantity;
+		reservedQuantity = Math.addExact(reservedQuantity, quantity);
+	}
+
+	public void release(int quantity) {
+		requireReserved(quantity);
+		reservedQuantity -= quantity;
+		stockQuantity = Math.addExact(stockQuantity, quantity);
+	}
+
+	public void sellReserved(int quantity) {
+		requireReserved(quantity);
+		reservedQuantity -= quantity;
+	}
+
+	public void restock(int quantity) {
+		if (quantity <= 0) throw new IllegalArgumentException("quantity must be positive");
+		stockQuantity = Math.addExact(stockQuantity, quantity);
+	}
+
+	private void requireReserved(int quantity) {
+		if (quantity <= 0 || reservedQuantity < quantity)
+			throw new NanacocoaException(
+				ErrorCode.STOCK_CONFLICT);
+	}
 
 	@Builder
 	public Products(String name, Long price, String summary, String detailTitle, String description, String imageUrl) {

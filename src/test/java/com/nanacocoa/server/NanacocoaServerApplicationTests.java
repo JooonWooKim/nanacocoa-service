@@ -727,6 +727,9 @@ class NanacocoaServerApplicationTests {
             .description("주문 API 테스트 상품 설명입니다.")
             .build());
 
+        product.updateInventory(10, com.nanacocoa.server.products.entity.SaleStatus.ON_SALE, product.getStockVersion());
+        productsRepository.saveAndFlush(product);
+
         mockMvc.perform(post("/api/orders")
                 .session(memberSession)
                 .contentType(MediaType.APPLICATION_JSON)

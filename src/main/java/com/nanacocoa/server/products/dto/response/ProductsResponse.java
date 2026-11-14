@@ -14,6 +14,7 @@ public class ProductsResponse {
 	private String detailTitle;
 	private String description;
 	private String imageUrl;
+	private String availability;
 
 	public static ProductsResponse from(Products products) {
 		return new ProductsResponse(
@@ -23,7 +24,7 @@ public class ProductsResponse {
 				products.getSummary(),
 				products.getDetailTitle(),
 				products.getDescription(),
-				products.getImageUrl()
+				products.getImageUrl(), products.getAvailability()
 		);
 	}
 }

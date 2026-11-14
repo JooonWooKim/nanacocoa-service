@@ -1,5 +1,6 @@
 package com.nanacocoa.server.order.dto.response;
 
+import com.nanacocoa.server.order.entity.StockState;
 import com.nanacocoa.server.order.entity.Order;
 import com.nanacocoa.server.order.entity.OrderStatus;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,8 @@ public class OrderResponse {
 	private OrderStatus status;
 	private List<OrderItemResponse> items;
 	private LocalDateTime createdAt;
+	private LocalDateTime reservationExpiresAt;
+	private StockState stockState;
 
 	public static OrderResponse from(Order order) {
 		return new OrderResponse(
@@ -31,7 +34,7 @@ public class OrderResponse {
 				order.getTotalAmount(),
 				order.getStatus(),
 				order.getItems().stream().map(OrderItemResponse::from).toList(),
-				order.getCreatedAt()
+				order.getCreatedAt(), order.getReservationExpiresAt(), order.getStockState()
 		);
 	}
 }

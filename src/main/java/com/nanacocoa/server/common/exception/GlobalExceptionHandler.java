@@ -60,6 +60,13 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(INVALID_REQUEST.getHttpStatus()).body(errorMessage);
 	}
 
+	@ExceptionHandler({org.springframework.dao.PessimisticLockingFailureException.class,
+			org.springframework.orm.ObjectOptimisticLockingFailureException.class})
+	public ResponseEntity<ErrorMessage> handleConcurrentUpdate(Exception exception) {
+		ErrorCode error = ErrorCode.STOCK_CONFLICT;
+		return ResponseEntity.status(error.getHttpStatus()).body(new ErrorMessage(error.getCode(), error.getError()));
+	}
+
 	@ExceptionHandler(MaxUploadSizeExceededException.class)
 	public ResponseEntity<ErrorMessage> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
 		ErrorMessage errorMessage = new ErrorMessage(

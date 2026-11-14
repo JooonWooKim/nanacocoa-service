@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class PaymentRecoveryService {
@@ -101,6 +102,18 @@ public class PaymentRecoveryService {
 			return;
 		}
 
+		if (!Objects.equals(work.paymentKey(), response.getPaymentKey())
+				|| !Objects.equals(work.orderId(), response.getOrderId())
+				|| !Objects.equals(work.amount(), response.getTotalAmount())) {
+			rescheduleApproval(work, "PG_PAYMENT_MISMATCH", "결제사 조회 결과가 요청한 결제와 일치하지 않습니다.");
+			return;
+		}
+
+		if ("ABORTED".equals(response.getStatus()) || "EXPIRED".equals(response.getStatus())) {
+			transactionalService.failApproval(work.paymentId(), response.getStatus(), "결제사가 승인 실패를 확인했습니다.");
+			return;
+		}
+
 		if (response.isCanceled()) {
 			transactionalService.completeCompensation(work.paymentId(), response);
 			return;
@@ -140,10 +153,14 @@ public class PaymentRecoveryService {
 			}
 			return;
 		}
+		rescheduleApproval(work, exception.getCode(), exception.getMessage());
+	}
+
+	private void rescheduleApproval(ApprovalWork work, String code, String message) {
 		if (work.recoveryAction() == PaymentRecoveryAction.COMPENSATE_APPROVAL) {
-			transactionalService.requestCompensation(work.paymentId(), exception.getCode(), exception.getMessage());
+			transactionalService.requestCompensation(work.paymentId(), code, message);
 		} else {
-			transactionalService.recordUncertainApproval(work.paymentId(), exception.getCode(), exception.getMessage());
+			transactionalService.recordUncertainApproval(work.paymentId(), code, message);
 		}
 	}
 

@@ -1,9 +1,12 @@
 package com.nanacocoa.server.products.controller;
 
+import org.springframework.web.bind.annotation.PutMapping;
+import com.nanacocoa.server.products.dto.reqeust.UpdateInventoryRequest;
 import com.nanacocoa.server.common.response.SuccessMessage;
 import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
 import com.nanacocoa.server.products.dto.reqeust.RegisterProductsRequest;
 import com.nanacocoa.server.products.dto.response.ProductsResponse;
+import com.nanacocoa.server.products.dto.response.InventoryResponse;
 import com.nanacocoa.server.products.service.ProductsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +46,20 @@ public class ProductsController {
 			@AuthenticationPrincipal UserDetailsImpl userDetails) {
 		ProductsResponse response = productsService.registerProducts(request, image, userDetails);
 		return new ResponseEntity<>(new SuccessMessage<>("상품등록성공", response), HttpStatus.CREATED);
+	}
+
+	@PutMapping("/{productId}/inventory")
+	public ResponseEntity<SuccessMessage<InventoryResponse>> updateInventory(
+			@PathVariable Long productId,
+			@Valid @RequestBody UpdateInventoryRequest request,
+			@AuthenticationPrincipal UserDetailsImpl userDetails) {
+		return ResponseEntity.ok(new SuccessMessage<>("재고변경성공", productsService.updateInventory(productId, request, userDetails)));
+	}
+
+	@GetMapping("/inventory")
+	public ResponseEntity<SuccessMessage<List<InventoryResponse>>> getInventory(
+			@AuthenticationPrincipal UserDetailsImpl userDetails) {
+		return ResponseEntity.ok(new SuccessMessage<>("재고조회성공", productsService.getInventory(userDetails)));
 	}
 
 	@GetMapping({"", "/"})

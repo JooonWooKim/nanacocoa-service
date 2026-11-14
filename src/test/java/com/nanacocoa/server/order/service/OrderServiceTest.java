@@ -44,7 +44,7 @@ class OrderServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		orderService = new OrderService(orderRepository, productsRepository, memberRepository);
+		orderService = new OrderService(orderRepository, productsRepository, memberRepository, new OrderInventoryService(productsRepository));
 		member = Member.builder()
 				.email("buyer@example.com")
 				.name("구매자")
@@ -60,7 +60,8 @@ class OrderServiceTest {
 		setId(cocoa, 1L);
 		setId(cake, 2L);
 		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
-		when(productsRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(cocoa, cake));
+		when(productsRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cocoa));
+		when(productsRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(cake));
 		when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		OrderResponse response = orderService.createOrder(
@@ -93,13 +94,13 @@ class OrderServiceTest {
 				.isInstanceOfSatisfying(NanacocoaException.class,
 						exception -> assertThat(exception.getErrorCode()).isEqualTo(INVALID_ORDER_ITEMS));
 
-		verify(productsRepository, never()).findAllById(any());
+		verify(productsRepository, never()).findByIdForUpdate(any());
 	}
 
 	@Test
 	void rejectsOrderWhenRequestedProductDoesNotExist() {
 		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
-		when(productsRepository.findAllById(List.of(999L))).thenReturn(List.of());
+		when(productsRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> orderService.createOrder(
 				request(null, List.of(new OrderItemRequest(999L, 1))),
@@ -125,7 +126,7 @@ class OrderServiceTest {
 		Products product = product("코코아", 12000L);
 		setId(product, 1L);
 		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
-		when(productsRepository.findAllById(List.of(1L))).thenReturn(List.of(product));
+		when(productsRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
 		when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		OrderResponse response = orderService.createOrder(
@@ -147,13 +148,15 @@ class OrderServiceTest {
 	}
 
 	private Products product(String name, long price) {
-		return Products.builder()
+		Products product = Products.builder()
 				.name(name)
 				.price(price)
 				.summary("요약")
 				.detailTitle("상세")
 				.description("설명")
 				.build();
+		product.updateInventory(10, com.nanacocoa.server.products.entity.SaleStatus.ON_SALE, 0);
+		return product;
 	}
 
 	private void setId(Products product, Long id) {
