@@ -341,6 +341,119 @@ class InventoryIntegrationTest {
         Products product = products.saveAndFlush(Products.builder().name("new-"+UUID.randomUUID()).price(1L).summary("요약").detailTitle("상세").description("설명").build());
         stock(product, 0, 0); assertThat(product.getAvailability()).isEqualTo("STOPPED");
     }
+    @Test
+    void orderHistoryPaginatesInStableOrderAndReturnsOnlyTheOwnersSummaries() throws Exception {
+        MockHttpSession buyerSession = session(buyer);
+        mvc.perform(get("/api/orders").session(buyerSession)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.orders").isEmpty()).andExpect(jsonPath("$.data.hasNext").value(false));
+        Products cocoa = product(25);
+        Products second = product(1);
+        for (int count = 0; count < 20; count++) {
+            order(cocoa, 1);
+        }
+        var newest = orderService.createOrder(request(List.of(
+            new OrderItemRequest(second.getId(), 1), new OrderItemRequest(cocoa.getId(), 1))), buyer);
+        var owner = members.findByEmail(buyer.getUsername()).orElseThrow();
+        jdbc.update("update orders set created_at = ? where member_id = ?",
+            LocalDateTime.of(2026, 1, 1, 12, 0), owner.getId());
+        orderService.cancelUnpaid(newest.getOrderId(), buyer);
+        orderService.createOrder(request(List.of(new OrderItemRequest(cocoa.getId(), 1))), admin);
+
+        mvc.perform(get("/api/orders").session(buyerSession)).andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.data.page").value(0)).andExpect(jsonPath("$.data.hasNext").value(true))
+            .andExpect(jsonPath("$.data.orders.length()").value(20))
+            .andExpect(jsonPath("$.data.orders[0].orderId").value(newest.getOrderId()))
+            .andExpect(jsonPath("$.data.orders[0].productName").value(second.getName()))
+            .andExpect(jsonPath("$.data.orders[0].status").value("CANCELED"))
+            .andExpect(jsonPath("$.data.orders[0].totalAmount").value(82000))
+            .andExpect(jsonPath("$.data.orders[0].phoneNumber").doesNotHaveJsonPath())
+            .andExpect(jsonPath("$.data.orders[0].shippingAddress").doesNotHaveJsonPath());
+        mvc.perform(get("/api/orders").param("page", "1").session(buyerSession)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.page").value(1)).andExpect(jsonPath("$.data.hasNext").value(false))
+            .andExpect(jsonPath("$.data.orders.length()").value(1))
+            .andExpect(jsonPath("$.data.orders[0].status").value("CREATED"));
+        for (String page : List.of("2", "2147483647")) {
+            mvc.perform(get("/api/orders").param("page", page).session(buyerSession)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.orders").isEmpty());
+        }
+        for (String page : List.of("-1", "bad", "", "2147483648")) {
+            mvc.perform(get("/api/orders").param("page", page).session(buyerSession)).andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void orderHistoryProtectsDetailsAndReadsStoredPurchaseInformation() throws Exception {
+        Products cocoa = product(2);
+        var purchased = order(cocoa, 2);
+        String path = "/api/orders/" + purchased.getOrderId();
+        mvc.perform(get("/api/orders")).andExpect(status().isUnauthorized());
+        mvc.perform(get(path)).andExpect(status().isUnauthorized());
+        String missing = mvc.perform(get("/api/orders/nonexistent").session(session(admin)))
+            .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value(NOT_FOUND_ORDER.getCode()))
+            .andReturn().getResponse().getContentAsString();
+        mvc.perform(get(path).session(session(admin))).andExpect(status().isNotFound())
+            .andExpect(content().string(missing));
+
+        jdbc.update("update products set name = ?, price = ? where id = ?", "바뀐 이름", 555L, cocoa.getId());
+        jdbc.update("update members set address = ? where email = ?", "바뀐 주소", buyer.getUsername());
+        mvc.perform(get(path).session(session(buyer))).andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.data.shippingAddress").value("테스트 배송지"))
+            .andExpect(jsonPath("$.data.items[0].productName").value(cocoa.getName()))
+            .andExpect(jsonPath("$.data.items[0].unitPrice").value(41000))
+            .andExpect(jsonPath("$.data.items[0].quantity").value(2))
+            .andExpect(jsonPath("$.data.items[0].lineAmount").value(82000))
+            .andExpect(jsonPath("$.data.paymentResult").value("UNPAID"));
+
+        jdbc.update("update orders set phone_number = '', shipping_address = '', stock_state = 'LEGACY' where order_id = ?",
+            purchased.getOrderId());
+        mvc.perform(get(path).session(session(buyer))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.phoneNumber").value(""))
+            .andExpect(jsonPath("$.data.shippingAddress").value(""));
+    }
+
+    @Test
+    void orderHistoryDistinguishesApprovalFailureCompensationAndCustomerCancellation() throws Exception {
+        Products cocoa = product(3);
+        var purchased = order(cocoa, 1);
+        MockHttpSession buyerSession = session(buyer);
+
+        var first = approval(purchased);
+        expectOrderPaymentResult(purchased, buyerSession, "PENDING");
+        payments.failApproval(first.paymentId(), "DECLINED", "테스트 제공자 오류");
+        expectOrderPaymentResult(purchased, buyerSession, "FAILED");
+
+        var second = approval(purchased);
+        expectOrderPaymentResult(purchased, buyerSession, "PENDING");
+        payments.completeApproval(second.paymentId(), response(second, "DONE"));
+        expectOrderPaymentResult(purchased, buyerSession, "PAID");
+        var cancellation = payments.prepareCancellation(
+            second.paymentId(), "테스트", UUID.randomUUID().toString(), "cancel-fingerprint", buyer.getUsername());
+        expectOrderPaymentResult(purchased, buyerSession, "CANCELLATION_PENDING");
+        payments.completeCancellation(cancellation.cancellationId(), response(second, "CANCELED"));
+        expectOrderPaymentResult(purchased, buyerSession, "PAYMENT_CANCELED");
+
+        var compensated = order(cocoa, 1);
+        var payment = approval(compensated);
+        payments.requestCompensation(payment.paymentId(), "ERROR", "테스트 보상");
+        expectOrderPaymentResult(compensated, buyerSession, "PENDING");
+        payments.completeCompensation(payment.paymentId(), response(payment, "CANCELED"));
+        expectOrderPaymentResult(compensated, buyerSession, "FAILED");
+        orderService.cancelUnpaid(compensated.getOrderId(), buyer);
+        expectOrderPaymentResult(compensated, buyerSession, "ORDER_CANCELED");
+
+        org.mockito.Mockito.verifyNoInteractions(tossPaymentsClient);
+    }
+
+    private void expectOrderPaymentResult(OrderResponse order, MockHttpSession session, String result) throws Exception {
+        mvc.perform(get("/api/orders/" + order.getOrderId()).session(session)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.paymentResult").value(result))
+            .andExpect(jsonPath("$.data.paymentKey").doesNotHaveJsonPath())
+            .andExpect(jsonPath("$.data.approvalIdempotencyKey").doesNotHaveJsonPath())
+            .andExpect(jsonPath("$.data.failureMessage").doesNotHaveJsonPath());
+    }
+
     MockHttpSession session(UserDetailsImpl identity) {
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(new UsernamePasswordAuthenticationToken(identity, null, identity.getAuthorities()));

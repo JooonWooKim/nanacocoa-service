@@ -119,6 +119,12 @@ Actuator health·info를 허용하며 나머지 요청은 인증된 세션이 �
 `harness/baselines/test-failures.txt`와 NC-TEST-001에 기록되어 있습니다.
 기준선은 현재 동작이 올바르다는 의미가 아닙니다.
 
+마이페이지의 주문 내역은 `orders.html`과 인증된 `GET /api/orders`,
+`GET /api/orders/{orderId}`를 사용합니다. 주문 조회는 세션 회원의 주문만
+읽으며 상세에서는 주문 당시 구매·배송 정보와 저장된 결제 결과를 제공합니다.
+세션 만료 후 로그인하면 허용된 주문 화면으로 돌아갑니다.
+[주문 목록·상세 PRD](docs/product-specs/order-history-prd.md).
+
 ## 결제 흐름
 
 ### 브라우저 결제 요청

@@ -431,6 +431,30 @@ function setAuthMessage(message) {
   messageBox.hidden = !message;
 }
 
+function orderHistoryLocation(params) {
+  const rawPage = params.get("page") ?? "0";
+  const page = Number(rawPage);
+  const orderId = params.get("orderId");
+  if (!/^[0-9]+$/.test(rawPage) || page > 2147483647
+      || (orderId !== null && !/^[A-Za-z0-9_-]{1,64}$/.test(orderId))) {
+    return null;
+  }
+  return { page, orderId };
+}
+
+function orderHistoryQuery({ page, orderId }) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (orderId !== null) params.set("orderId", orderId);
+  return params.toString();
+}
+
+function orderHistoryLoginReturnUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("return") !== "orders") return null;
+  const target = orderHistoryLocation(params);
+  return target ? `orders.html?${orderHistoryQuery(target)}` : null;
+}
+
 function initLoginPage() {
   const form = document.querySelector("[data-login-form]");
   const socialButtons = document.querySelectorAll("[data-social-login]");
@@ -472,7 +496,8 @@ function initLoginPage() {
         throw new Error(data.message || "이메일 또는 비밀번호를 확인해 주세요.");
       }
 
-      window.location.href = takePaymentCallbackLoginReturnUrl() || loginRedirectUrl;
+      const paymentReturnUrl = takePaymentCallbackLoginReturnUrl();
+      window.location.href = orderHistoryLoginReturnUrl() || paymentReturnUrl || loginRedirectUrl;
     } catch (error) {
       setAuthMessage(error.message || "로그인 중 문제가 발생했습니다.");
     } finally {

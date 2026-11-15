@@ -2654,3 +2654,39 @@ textarea.product-register-input {
 .inventory-card input, .inventory-card select, .inventory-card textarea { display: block; width: 100%; box-sizing: border-box; padding: 10px; margin-top: 6px; }
 .inventory-card button, .inventory-page > section > button { padding: 12px 18px; cursor: pointer; }
 .inventory-card button:disabled { opacity: .5; cursor: wait; }
+
+.order-history-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-block: 16px;
+}
+
+.order-history-nav a,
+.order-history-list a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.order-history-list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.order-history-fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 16px;
+}
+
+.order-history-fields dt {
+  font-weight: 700;
+}
+
+.order-history-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

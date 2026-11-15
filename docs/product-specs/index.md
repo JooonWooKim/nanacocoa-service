@@ -9,6 +9,10 @@
 - [아키텍처](../../ARCHITECTURE.md)는 경계와 데이터 흐름의 기준입니다.
 - [평가 카탈로그](evaluation-catalog.md)는 주요 동작과 위험을 실행 가능한
   테스트에 연결합니다.
+- [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
+  출시 승인 조건을 정의합니다.
+- [마이페이지 주문 목록·상세 PRD](order-history-prd.md)는 본인 주문 조회,
+  주문 당시 정보와 결제 결과 표시, 인수 테스트를 정의합니다.
 - [마이페이지 PRD](../design-docs/PRD.md)는 회원 프로필·비밀번호 관리의
   인수 조건과 범위 경계를 정의합니다.
 - [기술부채 NC-TEST-001](../exec-plans/tech-debt-tracker.md)은 현재 인증·상태
