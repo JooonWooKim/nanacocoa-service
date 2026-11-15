@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>주문 내역 · 나나코코아</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="mypage-body">
+    <main class="mypage-page" data-order-history aria-labelledby="order-history-title">
+      <nav class="order-history-nav" aria-label="주문 내역 탐색">
+        <a href="mypage.html">마이페이지</a>
+        <a href="orders.html" data-order-history-back hidden>목록으로</a>
+      </nav>
+      <header class="mypage-heading">
+        <h1 id="order-history-title" data-order-history-title>주문 내역</h1>
+      </header>
+      <p class="mypage-guard" data-order-history-message role="status">주문을 조회하고 있습니다.</p>
+      <button class="login-submit mypage-submit" type="button" data-order-history-retry hidden>다시 조회</button>
+      <a href="login.html" data-order-history-login hidden>로그인하기</a>
+      <div data-order-history-content></div>
+    </main>
+    <script src="script.js"></script>
+    <script src="orders.js"></script>
+  </body>
+</html>

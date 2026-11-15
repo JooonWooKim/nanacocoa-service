@@ -916,9 +916,13 @@ class NanacocoaServerApplicationTests {
                 "removeCheckoutSessionValue(paymentCallbackLoginReturnUrlKey);",
                 "return isPaymentSuccessCallbackUrl(callbackUrl) ? callbackUrl.toString() : null;"
             );
-        assertThat(login).contains(
-            "window.location.href = takePaymentCallbackLoginReturnUrl() || loginRedirectUrl;"
+        assertThat(login).containsSubsequence(
+            "const paymentReturnUrl = takePaymentCallbackLoginReturnUrl();",
+            "window.location.href = orderHistoryLoginReturnUrl() || paymentReturnUrl || loginRedirectUrl;"
         );
+        mockMvc.perform(get("/orders.html"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-order-history")));
 
         assertThat(renewal).containsSubsequence(
             "context.idempotencyKey = randomUuid();",

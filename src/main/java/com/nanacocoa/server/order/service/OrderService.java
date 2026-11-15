@@ -9,12 +9,20 @@ import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
 import com.nanacocoa.server.order.dto.reqeust.CreateOrderRequest;
 import com.nanacocoa.server.order.dto.reqeust.OrderItemRequest;
+import com.nanacocoa.server.order.dto.response.OrderHistoryResponse;
+import com.nanacocoa.server.order.dto.response.OrderHistoryResponse.PaymentResult;
 import com.nanacocoa.server.order.dto.response.OrderResponse;
+import com.nanacocoa.server.payment.entity.CancellationStatus;
+import com.nanacocoa.server.payment.entity.PaymentStatus;
+import com.nanacocoa.server.payment.repository.PaymentCancellationRepository;
+import com.nanacocoa.server.payment.repository.PaymentRepository;
 import com.nanacocoa.server.order.entity.Order;
 import com.nanacocoa.server.order.repository.OrderRepository;
 import com.nanacocoa.server.products.entity.Products;
 import com.nanacocoa.server.products.repository.ProductsRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +34,80 @@ import java.util.UUID;
 
 import static com.nanacocoa.server.common.exception.ErrorCode.AUTHENTICATION_REQUIRED;
 import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_REQUEST;
+import static com.nanacocoa.server.common.exception.ErrorCode.NOT_FOUND_ORDER;
 import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_ORDER_ITEMS;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+	private static final int HISTORY_PAGE_SIZE = 20;
+	private static final Sort HISTORY_SORT = Sort.by(Sort.Direction.DESC, "createdAt", "id");
+
 	private final OrderRepository orderRepository;
 	private final ProductsRepository productsRepository;
 	private final MemberRepository memberRepository;
 	private final OrderInventoryService inventoryService;
+	private final PaymentRepository paymentRepository;
+	private final PaymentCancellationRepository paymentCancellationRepository;
+
+	@Transactional(readOnly = true)
+	public OrderHistoryResponse.OrderPage listOrders(String pageValue, UserDetailsImpl userDetails) {
+		Member member = authenticatedMember(userDetails);
+		int page = parsePage(pageValue);
+		PageRequest pageable = PageRequest.of(page, HISTORY_PAGE_SIZE, HISTORY_SORT);
+		if (pageable.getOffset() > Integer.MAX_VALUE) {
+			return new OrderHistoryResponse.OrderPage(List.of(), page, false);
+		}
+
+		var orders = orderRepository.findByMemberId(member.getId(), pageable);
+		if (orders.isEmpty()) {
+			return new OrderHistoryResponse.OrderPage(List.of(), page, false);
+		}
+		List<Long> ids = orders.getContent().stream().map(Order::getId).toList();
+		Map<Long, String> names = new HashMap<>();
+		for (var item : orderRepository.findRepresentativeItems(ids)) {
+			names.put(item.getOrderId(), item.getProductName());
+		}
+		var summaries = orders.map(order -> OrderHistoryResponse.Summary.from(order, names.get(order.getId())));
+		return new OrderHistoryResponse.OrderPage(summaries.getContent(), page, summaries.hasNext());
+	}
+
+	@Transactional(readOnly = true)
+	public OrderHistoryResponse getOrder(String orderId, UserDetailsImpl userDetails) {
+		Member member = authenticatedMember(userDetails);
+		Order order = orderRepository.findByOrderIdAndMemberId(orderId, member.getId())
+				.orElseThrow(() -> new NanacocoaException(NOT_FOUND_ORDER));
+		return OrderHistoryResponse.from(order, paymentResult(order));
+	}
+
+	private int parsePage(String value) {
+		if (value == null) {
+			return 0;
+		}
+		try {
+			if (value.matches("[0-9]+")) {
+				return Integer.parseInt(value);
+			}
+		} catch (NumberFormatException ignored) {
+			// int 범위를 넘는 페이지 번호도 동일한 요청 오류로 응답합니다.
+		}
+		throw new NanacocoaException(INVALID_REQUEST);
+	}
+
+	private PaymentResult paymentResult(Order order) {
+		Long orderId = order.getId();
+		return switch (order.getStatus()) {
+			case PAYMENT_PENDING -> PaymentResult.PENDING;
+			case PAID -> paymentRepository.existsByOrderIdAndStatus(orderId, PaymentStatus.CANCEL_PENDING)
+					? PaymentResult.CANCELLATION_PENDING : PaymentResult.PAID;
+			case CANCELED -> paymentCancellationRepository.existsByPaymentOrderIdAndStatus(
+					orderId, CancellationStatus.SUCCESS)
+					? PaymentResult.PAYMENT_CANCELED : PaymentResult.ORDER_CANCELED;
+			case CREATED -> paymentRepository.existsByOrderIdAndStatusIn(
+					orderId, List.of(PaymentStatus.FAILED, PaymentStatus.CANCELED))
+					? PaymentResult.FAILED : PaymentResult.UNPAID;
+		};
+	}
 
 	@Transactional
 	public OrderResponse createOrder(CreateOrderRequest request, UserDetailsImpl userDetails) {

@@ -9,6 +9,8 @@ import com.nanacocoa.server.order.dto.reqeust.OrderItemRequest;
 import com.nanacocoa.server.order.dto.response.OrderResponse;
 import com.nanacocoa.server.order.entity.Order;
 import com.nanacocoa.server.order.repository.OrderRepository;
+import com.nanacocoa.server.payment.repository.PaymentCancellationRepository;
+import com.nanacocoa.server.payment.repository.PaymentRepository;
 import com.nanacocoa.server.products.entity.Products;
 import com.nanacocoa.server.products.repository.ProductsRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,13 +40,19 @@ class OrderServiceTest {
 	@Mock
 	private MemberRepository memberRepository;
 
+	@Mock
+	private PaymentRepository paymentRepository;
+	@Mock
+	private PaymentCancellationRepository paymentCancellationRepository;
+
 	private OrderService orderService;
 	private Member member;
 	private UserDetailsImpl userDetails;
 
 	@BeforeEach
 	void setUp() {
-		orderService = new OrderService(orderRepository, productsRepository, memberRepository, new OrderInventoryService(productsRepository));
+		orderService = new OrderService(orderRepository, productsRepository, memberRepository,
+				new OrderInventoryService(productsRepository), paymentRepository, paymentCancellationRepository);
 		member = Member.builder()
 				.email("buyer@example.com")
 				.name("구매자")

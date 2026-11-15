@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface PaymentCancellationRepository extends JpaRepository<PaymentCancellation, Long> {
 	Optional<PaymentCancellation> findByIdempotencyKey(String idempotencyKey);
 
+	boolean existsByPaymentOrderIdAndStatus(Long orderId, CancellationStatus status);
+
 	Optional<PaymentCancellation> findFirstByPaymentIdAndStatusOrderByCreatedAtDesc(
 			Long paymentId,
 			CancellationStatus status);

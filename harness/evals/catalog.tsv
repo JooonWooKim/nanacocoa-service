@@ -10,6 +10,9 @@ MEMBER-002|유효한 본인 확인 세션에서 비밀번호 재입력 없이 �
 MEMBER-003|프로필 변경이 불변 이메일·전화번호 규칙을 지킴|com.nanacocoa.server.member.MemberApiIntegrationTest#rejectsEmailChangeAndInvalidPhoneWithoutSaving|잘못된 요청이 오류 코드와 함께 저장 없이 거부됨|docs/design-docs/PRD.md
 MEMBER-004|비밀번호를 hash로 변경하고 현재 세션을 유지함|com.nanacocoa.server.member.MemberApiIntegrationTest#changesPasswordAndKeepsCurrentSession|새 비밀번호가 BCrypt hash로 저장되고 현재 세션 조회가 성공함|docs/design-docs/PRD.md
 ORDER-001|주문 합계가 서버의 상품 가격을 사용함|com.nanacocoa.server.order.service.OrderServiceTest#createsMultiItemOrderUsingServerPrices|여러 상품의 금액이 저장된 상품 가격으로 계산됨|docs/product-specs/evaluation-catalog.md
+ORDER-002|다른 회원 주문 노출과 페이지 순서|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#orderHistoryPaginatesInStableOrderAndReturnsOnlyTheOwnersSummaries|본인 주문만 안정적인 순서로 표시하고 배송 개인정보 생략|docs/product-specs/order-history-prd.md
+ORDER-003|타인 주문 접근과 과거 구매 정보 변경|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#orderHistoryProtectsDetailsAndReadsStoredPurchaseInformation|타인과 미존재 주문 동일 응답 및 주문 당시 값 유지|docs/product-specs/order-history-prd.md
+ORDER-004|결제 보상과 고객 취소 혼동|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#orderHistoryDistinguishesApprovalFailureCompensationAndCustomerCancellation|저장 상태에 따른 결제 결과 구분 및 외부 PG 미호출|docs/product-specs/order-history-prd.md
 PAY-001|승인이 제공자와 데이터베이스의 일관된 상태에 도달함|com.nanacocoa.server.payment.facade.PaymentFacadeTest#confirmsPaymentAndCompletesDatabaseState|승인이 결제와 주문 상태를 한 번만 완료함|docs/quality/RELIABILITY.md
 PAY-002|승인 멱등성이 중복 제공자 호출을 방지함|com.nanacocoa.server.payment.facade.PaymentFacadeTest#idempotentSuccessReplayDoesNotCallProvider|재실행이 추가 제공자 호출 없이 이전 성공을 반환함|docs/quality/RELIABILITY.md
 PAY-003|동시 결제 시도가 실패 우선으로 닫힘|com.nanacocoa.server.payment.lock.PaymentLockManagerTest#rejectsConcurrentRequestWhenWaitTimeExpires|두 번째 경합 요청이 제한된 대기 후 거부됨|docs/quality/RELIABILITY.md
