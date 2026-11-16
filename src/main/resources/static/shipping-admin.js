@@ -86,7 +86,7 @@ async function loadShippingView({ orderId, page = shippingPage } = {}) {
     const { data } = await response.json();
     if (request.signal.aborted) return;
     shippingMessage.textContent = "";
-    if (orderId) renderShippingDetail(data, response.headers.get("X-CSRF-TOKEN"));
+    if (orderId) renderShippingDetail(data);
     else renderShippingList(data);
   } catch {
     if (!request.signal.aborted) showShippingError();
@@ -110,7 +110,7 @@ function renderShippingList(data) {
   if (data.hasNext) shippingButton(nav, "다음 페이지", () => loadShippingView({ page: data.page + 1 }));
 }
 
-function renderShippingDetail(detail, csrf) {
+function renderShippingDetail(detail) {
   shippingContent.replaceChildren();
   shippingButton(shippingContent, "목록으로", () => loadShippingView());
   const card = shippingElement(shippingContent, "article");
@@ -127,7 +127,7 @@ function renderShippingDetail(detail, csrf) {
   shippingElement(card, "h3", "품목");
   const items = shippingElement(card, "ul");
   for (const item of detail.items) shippingElement(items, "li", `${item.productName} × ${item.quantity}`);
-  if (detail.actions.length) renderShippingActions(card, detail, csrf);
+  if (detail.actions.length) renderShippingActions(card, detail);
   shippingElement(card, "h3", "배송 이력");
   const history = shippingElement(card, "ol");
   if (!detail.history.length) shippingElement(history, "li", "기록 없음");
@@ -143,7 +143,7 @@ function renderShippingDetail(detail, csrf) {
   }
 }
 
-function renderShippingActions(card, detail, csrf) {
+function renderShippingActions(card, detail) {
   const form = shippingElement(card, "form");
   form.className = "inventory-card";
   const action = shippingElement(shippingElement(form, "label", "처리 "), "select");
@@ -211,7 +211,7 @@ function renderShippingActions(card, detail, csrf) {
     shippingMessage.textContent = "배송 정보를 저장하고 있습니다.";
     try {
       const response = await requestAuth(`${shippingEndpoint}/${encodeURIComponent(detail.order.orderId)}`, {
-        method: "POST", headers: { "X-CSRF-TOKEN": csrf || "" },
+        method: "POST",
         body: JSON.stringify({ ...payload, requestKey }),
       });
       if (!form.isConnected) return;
@@ -229,10 +229,10 @@ function renderShippingActions(card, detail, csrf) {
       }
       shippingRetry.hidden = true;
       shippingMessage.textContent = "배송 정보를 저장했습니다.";
-      renderShippingDetail(body.data, csrf);
-    } catch {
+      renderShippingDetail(body.data);
+    } catch (error) {
       if (form.isConnected) {
-        shippingMessage.textContent = "저장 결과를 확인할 수 없습니다. 다시 조회하거나 같은 입력으로 재시도해 주세요.";
+        shippingMessage.textContent = error.message || "저장 결과를 확인할 수 없습니다. 다시 조회하거나 같은 입력으로 재시도해 주세요.";
         shippingRetry.hidden = false;
       }
     } finally {

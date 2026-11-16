@@ -28,14 +28,14 @@
 이 검사는 의도적으로 `.env`를 읽지 않습니다. 경량 검사는 심층 방어 수단이며
 성숙한 hosted secret scanner를 대체하지 않습니다.
 
+세션 기반 상태 변경 요청에 CSRF를 검사합니다. 로그인 시 세션 ID를 회전하고
+POST 로그아웃에서 세션을 폐기합니다. [세션 보안 PRD](../product-specs/session-security-prd.md)
+
 ## 검토된 미해결 위험
 
 다음 위험이 남아 있는 동안 보안 게이트는 PASS만이 아니라 BASELINED를
 보고합니다.
 
-- NC-SEC-001: 배송 관리자 쓰기에 CSRF 보호를 적용합니다. 기존 세션 쓰기 경로의 CSRF 보호가 남아 있습니다.
-- NC-SEC-002: 로그아웃이 POST뿐 아니라 GET도 허용합니다.
-- NC-SEC-003: 로그인 성공 시 명시적 세션 ID 회전이 없습니다.
 - NC-DATA-001: Flyway가 비어 있지 않은 스키마를 버전 1로 기준화할 수 있습니다.
 - NC-OPS-001/002: 애플리케이션과 Compose 기본값이 실제 Toss URL과 자동
   reconciliation을 함께 사용할 수 있습니다.

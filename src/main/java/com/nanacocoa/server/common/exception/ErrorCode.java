@@ -15,6 +15,7 @@ public enum ErrorCode {
 	MEMBER_ID_IMMUTABLE(HttpStatus.BAD_REQUEST, "MEMBER_04", "아이디는 변경할 수 없습니다."),
 	PASSWORD_CONFIRMATION_MISMATCH(HttpStatus.BAD_REQUEST, "MEMBER_05", "새 비밀번호와 확인 값이 일치하지 않습니다."),
 	MEMBER_UPDATE_CONFLICT(HttpStatus.CONFLICT, "MEMBER_06", "회원정보 변경 요청이 처리 중입니다. 잠시 후 다시 시도해주세요."),
+	CSRF_INVALID(HttpStatus.FORBIDDEN, "CSRF_INVALID", "보안 토큰이 만료되었거나 유효하지 않습니다. 다시 시도해 주세요."),
 	AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_01", "로그인이 필요합니다."),
 	PROFILE_VERIFICATION_REQUIRED(HttpStatus.FORBIDDEN, "AUTH_03", "회원정보를 확인하려면 현재 비밀번호로 본인 확인을 해주세요."),
 	PROFILE_VERIFICATION_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_04", "본인 확인에 여러 번 실패했습니다. 5분 후 다시 시도해주세요."),

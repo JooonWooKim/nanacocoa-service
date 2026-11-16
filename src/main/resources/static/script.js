@@ -2,6 +2,7 @@ const authApi = {
   signup: "/api/auth/signup",
   login: "/api/auth/login",
   session: "/api/auth/session",
+  csrf: "/api/auth/csrf",
   logout: "/api/auth/logout",
 };
 const membersApi = {
@@ -397,7 +398,10 @@ function sanitizeCssUrl(url) {
   return String(url || "").replace(/["\\\n\r]/g, "");
 }
 
-function requestAuth(url, options = {}) {
+async function requestAuth(url, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const sameOrigin = new URL(url, window.location.href).origin === window.location.origin;
+  const protectedWrite = sameOrigin && !["GET", "HEAD", "OPTIONS", "TRACE"].includes(method);
   const headers = new Headers(options.headers || {});
   headers.set("Accept", "application/json");
 
@@ -405,11 +409,41 @@ function requestAuth(url, options = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(url, {
+  if (protectedWrite) {
+    let csrf;
+    try {
+      const response = await fetch(authApi.csrf, {
+        mode: "same-origin",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+        signal: options.signal,
+      });
+      if (response.ok) csrf = (await readJson(response)).data;
+    } catch (error) {
+      if (options.signal?.aborted) throw error;
+    }
+    if (!csrf?.headerName || !csrf?.token) {
+      throw new Error("보안 토큰을 가져오지 못했습니다. 다시 시도해 주세요.");
+    }
+    headers.set(csrf.headerName, csrf.token);
+  }
+
+  const response = await fetch(url, {
     ...options,
     credentials: "same-origin",
+    ...(protectedWrite ? { mode: "same-origin" } : {}),
     headers,
   });
+  if (protectedWrite && response.status === 403) {
+    const body = await readJson(response.clone());
+    if (body.code === "CSRF_INVALID") {
+      const error = new Error(body.error || "보안 토큰을 다시 발급받으려면 다시 시도해 주세요.");
+      error.code = body.code;
+      throw error;
+    }
+  }
+  return response;
 }
 
 async function readJson(response) {
@@ -592,7 +626,8 @@ function renderAuthenticatedSession(menuSession, session) {
 
       renderAnonymousSession(menuSession);
       authSessionPromise = Promise.resolve({ authenticated: false, admin: false });
-    } catch {
+    } catch (error) {
+      message.textContent = error.message || "로그아웃에 실패했습니다. 다시 시도해 주세요.";
       logoutButton.disabled = false;
       logoutButton.textContent = "로그아웃";
     }
@@ -1759,6 +1794,15 @@ async function initCheckoutPage() {
         response.status === 422 || response.status === 503,
       );
     } catch (error) {
+      if (error.code === "CSRF_INVALID") {
+        authSessionPromise = null;
+        const currentSession = await loadAuthSession();
+        if (!currentSession.loadFailed && !currentSession.authenticated) {
+          preservePaymentCallbackLoginReturnUrl();
+          renderPaymentFailure("로그인이 만료되었습니다. 다시 로그인해 결제 승인을 확인해 주세요.", context, false, true);
+          return;
+        }
+      }
       renderPaymentResult({
         eyebrow: "PAYMENT APPROVAL",
         title: "결제 승인 결과를 확인하지 못했습니다.",

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.mock.web.MockHttpSession;
@@ -26,6 +27,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.nanacocoa.server.CsrfRequests.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -35,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @SpringBootTest(properties = {
     "spring.datasource.url=jdbc:h2:mem:nanacocoa-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
@@ -72,7 +74,7 @@ class NanacocoaServerApplicationTests {
         member.setAdmin(admin);
         memberRepository.saveAndFlush(member);
 
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
+        MvcResult login = mockMvc.perform(post("/api/auth/login").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -128,45 +130,31 @@ class NanacocoaServerApplicationTests {
     }
 
     @Test
-    void loginCreatesAuthenticatedSessionForDemoUser() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "email": "hello@nanacocoa.kr",
-                      "password": "nanacocoa123!"
-                    }
-                    """))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.authenticated").value(true))
-            .andExpect(jsonPath("$.email").value("hello@nanacocoa.kr"))
-            .andExpect(jsonPath("$.name").value("nanacocoa"))
-            .andReturn();
-
-        assertThat(result.getRequest().getSession(false)).isNotNull();
+    void loginCreatesAuthenticatedSessionForRegisteredUser() throws Exception {
+        MockHttpSession session = loginMember("demo@example.test", "fixture-password", "테스트 회원", false);
+        assertThat(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY)).isNotNull();
     }
 
     @Test
-    void loginRejectsInvalidPasswordWithoutCreatingSession() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
+    void loginRejectsInvalidPasswordWithoutAuthenticatingSession() throws Exception {
+        loginMember("invalid-login@example.test", "fixture-password", "테스트 회원", false);
+        MvcResult result = mockMvc.perform(post("/api/auth/login").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {
-                      "email": "hello@nanacocoa.kr",
-                      "password": "wrong-password"
-                    }
+                    {"email":"invalid-login@example.test","password":"wrong-password"}
                     """))
-            .andExpect(status().isUnauthorized())
-            .andExpect(jsonPath("$.authenticated").value(false))
-            .andExpect(jsonPath("$.message").value("이메일 또는 비밀번호를 확인해 주세요."))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("MEMBER_02"))
             .andReturn();
 
-        assertThat(result.getRequest().getSession(false)).isNull();
+        var session = (MockHttpSession) result.getRequest().getSession(false);
+        mockMvc.perform(get("/api/auth/session").session(session))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.authenticated").value(false));
     }
 
     @Test
     void signupStoresCompleteProfileWithBcryptedPassword() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/signup")
+        MvcResult result = mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -182,7 +170,9 @@ class NanacocoaServerApplicationTests {
             .andExpect(jsonPath("$.message").value("회원가입성공"))
             .andReturn();
 
-        assertThat(result.getRequest().getSession(false)).isNull();
+        var session = (MockHttpSession) result.getRequest().getSession(false);
+        mockMvc.perform(get("/api/auth/session").session(session))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.authenticated").value(false));
 
         Member member = memberRepository.findByEmail("signup-success@example.com").orElseThrow();
         assertThat(member.getName()).isEqualTo("가입자");
@@ -245,7 +235,7 @@ class NanacocoaServerApplicationTests {
     void adminRegistersProductWithMultipartImageInMockMode() throws Exception {
         mockMvc.perform(multipart("/api/products")
                 .file(productPart("multipart 이미지 상품"))
-                .file(pngImagePart(validPngBytes(16)))
+                .file(pngImagePart(validPngBytes(16))).with(csrf(mockMvc))
                 .session(adminSession()))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.message").value("상품등록성공"))
@@ -268,7 +258,7 @@ class NanacocoaServerApplicationTests {
 
         mockMvc.perform(multipart("/api/products")
                 .file(productPart("일반 회원 multipart 상품"))
-                .file(pngImagePart(validPngBytes(16)))
+                .file(pngImagePart(validPngBytes(16))).with(csrf(mockMvc))
                 .session(memberSession))
             .andExpect(status().isForbidden())
             .andExpect(jsonPath("$.code").value("AUTH_02"));
@@ -283,7 +273,7 @@ class NanacocoaServerApplicationTests {
 
         mockMvc.perform(multipart("/api/products")
                 .file(productPart("잘못된 이미지 상품"))
-                .file(invalidImage)
+                .file(invalidImage).with(csrf(mockMvc))
                 .session(adminSession()))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("PRODUCTS_03"));
@@ -293,7 +283,7 @@ class NanacocoaServerApplicationTests {
     void multipartRegistrationRejectsImageLargerThanFiveMegabytes() throws Exception {
         mockMvc.perform(multipart("/api/products")
                 .file(productPart("대용량 이미지 상품"))
-                .file(pngImagePart(validPngBytes(5 * 1024 * 1024 + 1)))
+                .file(pngImagePart(validPngBytes(5 * 1024 * 1024 + 1))).with(csrf(mockMvc))
                 .session(adminSession()))
             .andExpect(status().isPayloadTooLarge())
             .andExpect(jsonPath("$.code").value("PRODUCTS_04"));
@@ -301,7 +291,7 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void signupMemberCanLoginWithEmailAndPassword() throws Exception {
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -315,7 +305,7 @@ class NanacocoaServerApplicationTests {
                     """))
             .andExpect(status().isCreated());
 
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
+        MvcResult login = mockMvc.perform(post("/api/auth/login").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -349,12 +339,12 @@ class NanacocoaServerApplicationTests {
             }
             """;
 
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(signupBody))
             .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(signupBody))
             .andExpect(status().isConflict())
@@ -364,7 +354,7 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void signupRejectsInvalidInput() throws Exception {
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -376,7 +366,7 @@ class NanacocoaServerApplicationTests {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("COMMON_01"));
 
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -388,7 +378,7 @@ class NanacocoaServerApplicationTests {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("COMMON_01"));
 
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -403,7 +393,7 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void registerProductStoresDetailPageFields() throws Exception {
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -441,7 +431,7 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void getProductsReturnsRegisteredProductsInNewestOrder() throws Exception {
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -456,7 +446,7 @@ class NanacocoaServerApplicationTests {
                     """))
             .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -485,7 +475,7 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void getProductReturnsDetailFieldsById() throws Exception {
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -538,13 +528,13 @@ class NanacocoaServerApplicationTests {
             }
             """;
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(productBody))
             .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(productBody))
@@ -555,7 +545,7 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void registerProductRejectsInvalidInput() throws Exception {
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -569,7 +559,7 @@ class NanacocoaServerApplicationTests {
                     """))
             .andExpect(status().isBadRequest());
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -583,7 +573,7 @@ class NanacocoaServerApplicationTests {
                     """))
             .andExpect(status().isBadRequest());
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .session(adminSession())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -602,7 +592,7 @@ class NanacocoaServerApplicationTests {
     void registerProductRequiresLogin() throws Exception {
         long productCount = productsRepository.count();
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post("/api/products").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -627,7 +617,7 @@ class NanacocoaServerApplicationTests {
             "products-member@example.com", "member123!", "일반 회원", false);
 
         mockMvc.perform(post("/api/products")
-                .session(memberSession)
+                .session(memberSession).with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -655,7 +645,7 @@ class NanacocoaServerApplicationTests {
         memberRepository.saveAndFlush(member);
 
         mockMvc.perform(post("/api/products")
-                .session(memberSession)
+                .session(memberSession).with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -673,42 +663,21 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void sessionReturnsAuthenticatedUserAfterLogin() throws Exception {
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "email": "hello@nanacocoa.kr",
-                      "password": "nanacocoa123!"
-                    }
-                    """))
-            .andExpect(status().isOk())
-            .andReturn();
-        MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
-
+        MockHttpSession session = loginMember("session@example.test", "fixture-password", "테스트 회원", false);
         mockMvc.perform(get("/api/auth/session").session(session))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.authenticated").value(true))
-            .andExpect(jsonPath("$.email").value("hello@nanacocoa.kr"))
-            .andExpect(jsonPath("$.name").value("nanacocoa"));
+            .andExpect(jsonPath("$.email").value("session@example.test"))
+            .andExpect(jsonPath("$.name").value("테스트 회원"));
     }
 
     @Test
     void logoutClearsAuthenticatedSession() throws Exception {
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "email": "hello@nanacocoa.kr",
-                      "password": "nanacocoa123!"
-                    }
-                    """))
-            .andExpect(status().isOk())
-            .andReturn();
-        MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
-
-        mockMvc.perform(post("/api/auth/logout").session(session))
+        MockHttpSession session = loginMember("logout@example.test", "fixture-password", "테스트 회원", false);
+        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf(mockMvc)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.authenticated").value(false));
+        assertThat(session.isInvalid()).isTrue();
 
         mockMvc.perform(get("/api/auth/session"))
             .andExpect(status().isOk())
@@ -731,7 +700,7 @@ class NanacocoaServerApplicationTests {
         productsRepository.saveAndFlush(product);
 
         mockMvc.perform(post("/api/orders")
-                .session(memberSession)
+                .session(memberSession).with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -761,7 +730,7 @@ class NanacocoaServerApplicationTests {
             "invalid-order-member@example.com", "order123!", "주문 검증 회원", false);
 
         mockMvc.perform(post("/api/orders")
-                .session(memberSession)
+                .session(memberSession).with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -777,7 +746,7 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void createOrderRequiresLogin() throws Exception {
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/orders").with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
