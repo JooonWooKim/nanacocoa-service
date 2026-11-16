@@ -9,6 +9,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Configuration
 public class SecurityConfig {
@@ -20,8 +22,11 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        var shippingWrites = PathPatternRequestMatcher.withDefaults()
+                .matcher(HttpMethod.POST, "/api/admin/shipping/orders/{orderId}");
         return http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.requireCsrfProtectionMatcher(request ->
+                shippingWrites.matches(request) && SecurityContextHolder.getContext().getAuthentication() != null))
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .exceptionHandling(exceptions -> exceptions

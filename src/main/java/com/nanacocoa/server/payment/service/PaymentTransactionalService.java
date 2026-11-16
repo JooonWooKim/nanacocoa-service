@@ -17,7 +17,9 @@ import com.nanacocoa.server.payment.repository.PaymentCancellationRepository;
 import com.nanacocoa.server.payment.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
+import com.nanacocoa.server.order.service.ShippingService;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -44,18 +46,20 @@ public class PaymentTransactionalService {
 	private final OrderRepository orderRepository;
 	private final Duration retryDelay;
 	private final OrderInventoryService inventoryService;
+	private final ShippingService shippingService;
 
 	public PaymentTransactionalService(
 			PaymentRepository paymentRepository,
 			PaymentCancellationRepository cancellationRepository,
 			OrderRepository orderRepository,
 			@Value("${payment.reconciliation.retry-delay:30s}") Duration retryDelay,
-			OrderInventoryService inventoryService) {
+			OrderInventoryService inventoryService, ShippingService shippingService) {
 		this.paymentRepository = paymentRepository;
 		this.cancellationRepository = cancellationRepository;
 		this.orderRepository = orderRepository;
 		this.retryDelay = retryDelay;
 		this.inventoryService = inventoryService;
+		this.shippingService = shippingService;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -173,7 +177,7 @@ public class PaymentTransactionalService {
 		return PaymentResponse.from(payment);
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
 	public CancellationWork prepareCancellation(
 			Long paymentId,
 			String reason,
@@ -204,6 +208,7 @@ public class PaymentTransactionalService {
 			throw new NanacocoaException(INVALID_PAYMENT_STATUS);
 		}
 
+		shippingService.checkDirectCancellation(payment.getOrder());
 		payment.startCancellation();
 		PaymentCancellation cancellation = PaymentCancellation.pending(
 				payment,

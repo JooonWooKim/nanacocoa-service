@@ -7,6 +7,7 @@ import com.nanacocoa.server.member.repository.MemberRepository;
 import com.nanacocoa.server.order.dto.reqeust.*;
 import com.nanacocoa.server.order.dto.response.OrderResponse;
 import com.nanacocoa.server.order.entity.*;
+import com.nanacocoa.server.order.entity.ShipmentEvent.Action;
 import com.nanacocoa.server.order.repository.OrderRepository;
 import com.nanacocoa.server.order.service.*;
 import com.nanacocoa.server.payment.dto.reqeust.ConfirmPaymentRequest;
@@ -49,13 +50,17 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.http.MediaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** 같은 테스트를 임시 MySQL과 H2에서 실행합니다. 외부 PG는 호출하지 않습니다. */
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @SpringBootTest(properties = {
     "spring.jpa.hibernate.ddl-auto=validate", "spring.jpa.open-in-view=false",
-    "spring.flyway.enabled=true", "spring.sql.init.mode=never"
+    "spring.flyway.enabled=true", "spring.sql.init.mode=never",
+    "shipping.carriers.test.name=테스트 택배",
+    "shipping.carriers.test.tracking-pattern=[0-9]{10}",
+    "shipping.carriers.test.tracking-url=https://carrier.example.test/track/{tracking}"
 })
 class InventoryIntegrationTest {
     @DynamicPropertySource
@@ -79,6 +84,8 @@ class InventoryIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired com.nanacocoa.server.payment.repository.PaymentRepository paymentRepository;
     @Autowired MockMvc mvc;
+    @Autowired ObjectMapper json;
+    @Autowired ShippingService shipping;
     UserDetailsImpl buyer;
     UserDetailsImpl admin;
 
@@ -444,6 +451,153 @@ class InventoryIntegrationTest {
         expectOrderPaymentResult(compensated, buyerSession, "ORDER_CANCELED");
 
         org.mockito.Mockito.verifyNoInteractions(tossPaymentsClient);
+    }
+
+    @Test
+    void shippingHttpLifecyclePreservesHistoryAndProtectsOrderData() throws Exception {
+        var order = order(product(1), 1);
+        var work = approval(order);
+        payments.completeApproval(work.paymentId(), response(work, "DONE"));
+        String collection = "/api/admin/shipping/orders";
+        String endpoint = collection + "/" + order.getOrderId();
+        var operatorSession = session(admin);
+
+        mvc.perform(get(collection).param("orderNumber", order.getOrderId()).session(operatorSession))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.orders[0].shippingStatus").value("PREPARING"))
+            .andExpect(jsonPath("$.data.orders[0].shippingAddress").doesNotHaveJsonPath());
+        mvc.perform(get(endpoint)).andExpect(status().isUnauthorized());
+        mvc.perform(get(endpoint).session(session(buyer))).andExpect(status().isForbidden());
+        String csrf = mvc.perform(get(endpoint).session(operatorSession)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.actions[0]").value("SHIP"))
+            .andReturn().getResponse().getHeader("X-CSRF-TOKEN");
+        assertThat(csrf).isNotBlank();
+
+        var ship = shippingChange(Action.SHIP, 0L, "0000000123");
+        String body = json.writeValueAsString(ship);
+        mvc.perform(post(endpoint).contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(post(endpoint).session(operatorSession).contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(endpoint).session(operatorSession).header("X-CSRF-TOKEN", "wrong")
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(endpoint).session(operatorSession).header("X-CSRF-TOKEN", csrf)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(shippingChange(Action.SHIP, 0L, "invalid"))))
+            .andExpect(status().isBadRequest());
+        for (int retry = 0; retry < 2; retry++) {
+            mvc.perform(post(endpoint).session(operatorSession).header("X-CSRF-TOKEN", csrf)
+                    .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.tracking.status").value("SHIPPED"))
+                .andExpect(jsonPath("$.data.history.length()").value(1));
+        }
+
+        var original = shipping.get(order.getOrderId(), admin).tracking().shippedAt();
+        var reusedKey = new ShippingChangeRequest(Action.SHIP, ship.requestKey(), 0L, "test",
+            "0000000987", "다른 입력", null, null);
+        assertThatThrownBy(() -> shipping.change(order.getOrderId(), reusedKey, admin))
+            .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(IDEMPOTENCY_KEY_REUSED));
+        var auditInsertFailure = new ShippingChangeRequest(Action.CORRECT_TRACKING, UUID.randomUUID(), 1L, "test",
+            "0000000987", "x".repeat(501), null, null);
+        assertThatThrownBy(() -> shipping.change(order.getOrderId(), auditInsertFailure, admin))
+            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        var afterRollback = shipping.get(order.getOrderId(), admin);
+        assertThat(afterRollback.tracking().trackingNumber()).isEqualTo("0000000123");
+        assertThat(afterRollback.history()).hasSize(1);
+        assertThat(afterRollback.revision()).isEqualTo(1);
+        shipping.change(order.getOrderId(), shippingChange(Action.CORRECT_TRACKING, 1L, "0000000456"), admin);
+        assertThatThrownBy(() -> shipping.change(order.getOrderId(), shippingChange(Action.DELIVER, 1L, null), admin))
+            .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(SHIPPING_CONFLICT));
+        var delivered = shipping.change(order.getOrderId(), shippingChange(Action.DELIVER, 2L, null), admin);
+        assertThat(delivered.tracking().shippedAt()).isEqualTo(original);
+        assertThat(delivered.history().get(1).previousTracking()).isEqualTo("0000000123");
+
+        mvc.perform(get("/api/orders/" + order.getOrderId()).session(session(buyer)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.shipping.status").value("DELIVERED"))
+            .andExpect(jsonPath("$.data.shipping.trackingNumber").value("0000000456"))
+            .andExpect(jsonPath("$.data.shipping.trackingUrl").value("https://carrier.example.test/track/0000000456"))
+            .andExpect(jsonPath("$.data.shipping.history").doesNotHaveJsonPath());
+        mvc.perform(get("/api/orders/" + order.getOrderId()).session(operatorSession)).andExpect(status().isNotFound());
+        jdbc.update("update members set is_admin = false where email = ?", admin.getUsername());
+        mvc.perform(get(endpoint).session(operatorSession)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shippingAndCancellationRaceAndPendingRecoveryHaveOneWinner() throws Exception {
+        var order = order(product(1), 1);
+        var work = approval(order);
+        payments.completeApproval(work.paymentId(), response(work, "DONE"));
+        var succeeded = new AtomicInteger();
+        parallel(() -> {
+            try {
+                shipping.change(order.getOrderId(), shippingChange(Action.SHIP, 0L, "0000000123"), admin);
+                succeeded.incrementAndGet();
+            } catch (NanacocoaException expected) {
+                assertThat(expected.getErrorCode()).isEqualTo(SHIPPING_CONFLICT);
+            }
+        }, () -> {
+            try {
+                payments.prepareCancellation(work.paymentId(), "취소", "race-" + UUID.randomUUID(), "fp", buyer.getUsername());
+                succeeded.incrementAndGet();
+            } catch (NanacocoaException expected) {
+                assertThat(expected.getErrorCode()).isEqualTo(SHIPPING_CANCEL_BLOCKED);
+            }
+        });
+        assertThat(succeeded.get()).isEqualTo(1);
+
+        var second = order(product(1), 1);
+        var secondPayment = approval(second);
+        assertThatThrownBy(() -> shipping.change(second.getOrderId(), shippingChange(Action.SHIP, 0L, "0000000123"), admin))
+            .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(SHIPPING_CONFLICT));
+        payments.completeApproval(secondPayment.paymentId(), response(secondPayment, "DONE"));
+        String key = "pending-" + UUID.randomUUID();
+        var cancellation = payments.prepareCancellation(secondPayment.paymentId(), "취소", key, "fp", buyer.getUsername());
+        payments.recordUncertainCancellation(cancellation.cancellationId(), "TIMEOUT", "결과 확인 중");
+        assertThat(shipping.get(second.getOrderId(), admin).tracking().status()).isEqualTo(ShippingStatus.ON_HOLD);
+        assertThatThrownBy(() -> shipping.change(second.getOrderId(), shippingChange(Action.SHIP, 0L, "0000000123"), admin))
+            .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(SHIPPING_CONFLICT));
+        assertThat(payments.prepareCancellation(secondPayment.paymentId(), "취소", key, "fp", buyer.getUsername()).cancellationId())
+            .isEqualTo(cancellation.cancellationId());
+        payments.failCancellation(cancellation.cancellationId(), "DECLINED", "확정 실패");
+        shipping.change(second.getOrderId(), shippingChange(Action.SHIP, 0L, "0000000123"), admin);
+        assertThatThrownBy(() -> payments.prepareCancellation(secondPayment.paymentId(), "취소", key + "-new", "fp", buyer.getUsername()))
+            .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(SHIPPING_CANCEL_BLOCKED));
+    }
+
+    @Test
+    void oldOrdersRequireVerifiedShippingEvidence() {
+        var order = order(product(1), 1);
+        var work = approval(order);
+        payments.completeApproval(work.paymentId(), response(work, "DONE"));
+        jdbc.update("update orders set legacy_shipping_review = true where order_id = ?", order.getOrderId());
+        var held = shipping.get(order.getOrderId(), admin);
+        assertThat(held.tracking().status()).isEqualTo(ShippingStatus.ON_HOLD);
+        assertThat(held.history()).isEmpty();
+        String key = "legacy-" + UUID.randomUUID();
+        assertThatThrownBy(() -> payments.prepareCancellation(work.paymentId(), "취소", key, "fp", buyer.getUsername()))
+            .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(SHIPPING_CANCEL_BLOCKED));
+        var verified = shipping.change(order.getOrderId(), shippingChange(Action.VERIFY_UNSHIPPED, 0L, null), admin);
+        assertThat(verified.tracking().status()).isEqualTo(ShippingStatus.PREPARING);
+        assertThat(verified.tracking().shippedAt()).isNull();
+        assertThat(payments.prepareCancellation(work.paymentId(), "취소", key, "fp", buyer.getUsername()).cancellationId())
+            .isNotNull();
+
+        var imported = order(product(1), 1);
+        var importedPayment = approval(imported);
+        payments.completeApproval(importedPayment.paymentId(), response(importedPayment, "DONE"));
+        jdbc.update("update orders set legacy_shipping_review = true where order_id = ?", imported.getOrderId());
+        LocalDateTime shippedAt = LocalDateTime.now().minusDays(2).withNano(0);
+        LocalDateTime deliveredAt = shippedAt.plusDays(1);
+        var confirmed = shipping.change(imported.getOrderId(), new ShippingChangeRequest(Action.IMPORT_DELIVERED,
+            UUID.randomUUID(), 0L, "test", "0000000321", "기존 송장 대조", shippedAt, deliveredAt), admin);
+        assertThat(confirmed.tracking().shippedAt()).isEqualTo(shippedAt);
+        assertThat(confirmed.tracking().deliveredAt()).isEqualTo(deliveredAt);
+        assertThat(confirmed.tracking().status()).isEqualTo(ShippingStatus.DELIVERED);
+    }
+
+    private ShippingChangeRequest shippingChange(Action action, long revision, String tracking) {
+        return new ShippingChangeRequest(action, UUID.randomUUID(), revision, tracking == null ? null : "test",
+            tracking, "운영 기록 확인", null, null);
     }
 
     private void expectOrderPaymentResult(OrderResponse order, MockHttpSession session, String result) throws Exception {

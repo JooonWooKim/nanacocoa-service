@@ -77,6 +77,9 @@ public class Order {
 	@Column(name = "reservation_expires_at")
 	private LocalDateTime reservationExpiresAt;
 
+	@Column(name = "legacy_shipping_review", nullable = false)
+	private boolean legacyShippingReview;
+
 	@Column(name = "restock_reason", length = 500)
 	private String restockReason;
 

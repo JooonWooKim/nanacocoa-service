@@ -39,7 +39,7 @@ class FlywayMigrationTest {
 				.dataSource(url, "sa", "")
 				.locations("classpath:db/migration")
 				.load();
-		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(2);
+		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(3);
 
 		try (Connection connection = DriverManager.getConnection(url, "sa", "");
 			 Statement statement = connection.createStatement();
@@ -50,10 +50,11 @@ class FlywayMigrationTest {
 
 		try (Connection connection = DriverManager.getConnection(url, "sa", "");
 			 Statement statement = connection.createStatement();
-			 ResultSet resultSet = statement.executeQuery("select stock_state, reservation_expires_at from orders where order_id = 'legacy-order'")) {
+			 ResultSet resultSet = statement.executeQuery("select stock_state, reservation_expires_at, legacy_shipping_review from orders where order_id = 'legacy-order'")) {
 			assertThat(resultSet.next()).isTrue();
 			assertThat(resultSet.getString("stock_state")).isEqualTo("LEGACY");
 			assertThat(resultSet.getObject("reservation_expires_at")).isNull();
+			assertThat(resultSet.getBoolean("legacy_shipping_review")).isTrue();
 		}
 
 		try (Connection connection = DriverManager.getConnection(url, "sa", ""); Statement statement = connection.createStatement();

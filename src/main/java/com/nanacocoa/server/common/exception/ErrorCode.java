@@ -30,6 +30,9 @@ public enum ErrorCode {
 	STOCK_CONFLICT(HttpStatus.CONFLICT, "PRODUCTS_07", "재고가 변경되었습니다. 새로고침 후 다시 시도해 주세요."),
 	ORDER_RESERVATION_EXPIRED(HttpStatus.CONFLICT, "ORDER_04", "주문 유효 시간이 만료되었거나 재고 미확인 주문입니다. 새 주문을 생성해 주세요."),
 
+	SHIPPING_CONFLICT(HttpStatus.CONFLICT, "SHIP_01", "현재 배송 상태에서는 처리할 수 없습니다. 주문 상세를 다시 확인해주세요."),
+	SHIPPING_CANCEL_BLOCKED(HttpStatus.CONFLICT, "SHIP_02", "출고 여부 확인 또는 반품 안내는 고객 문의를 이용해주세요."),
+
 	NOT_FOUND_ORDER(HttpStatus.NOT_FOUND, "ORDER_01", "주문을 찾을 수 없습니다."),
 	INVALID_ORDER_ITEMS(HttpStatus.BAD_REQUEST, "ORDER_02", "주문 상품 정보를 확인해주세요."),
 	ORDER_AMOUNT_OVERFLOW(HttpStatus.BAD_REQUEST, "ORDER_03", "주문 금액이 허용 범위를 초과했습니다."),

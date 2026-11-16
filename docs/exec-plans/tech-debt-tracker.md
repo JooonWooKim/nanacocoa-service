@@ -7,7 +7,7 @@
 | --- | --- | --- | --- | --- | --- |
 | NC-TEST-001 | 활성 | 인증·상태 확인 통합 | 마이페이지 작업에서 회원가입 검증·저장 실패 4개를 해소했고 `NanacocoaServerApplicationTests`의 데모 로그인·세션·상태 확인 실패 5개가 정확한 fingerprint로 남아 있습니다. | demo 사용자 fixture와 로그인 오류 응답 계약을 정리하고 health route를 구현합니다. | 엄격한 `./gradlew test`가 통과하고 기준선 파일이 비어 있습니다. |
 | NC-ARCH-001 | 활성 | 의존 방향 | `common.userdetails`가 `member` Entity·Repository class를 import합니다. | 세션 동작을 바꾸지 않고 common 소유 identity port를 도입하거나 어댑터를 member·security로 이동합니다. | `common`에 비즈니스 도메인 import가 없고 아키텍처 예외 파일이 비어 있습니다. |
-| NC-SEC-001 | 활성 | CSRF | `SecurityConfig`가 세션 인증 브라우저 애플리케이션의 CSRF를 비활성화합니다. | 브라우저·API CSRF 계약을 정의하고 보호를 활성화하며 성공·실패 요청 테스트를 추가합니다. | 상태 변경 세션 요청에 CSRF가 활성화되고 보안 기준선 항목이 제거됩니다. |
+| NC-SEC-001 | 활성 | CSRF | `SecurityConfig`가 배송 관리자 쓰기에만 CSRF를 적용합니다. 기존 세션 쓰기에는 CSRF 보호가 없습니다. | 브라우저·API CSRF 계약을 정의하고 보호를 활성화하며 성공·실패 요청 테스트를 추가합니다. | 상태 변경 세션 요청에 CSRF가 활성화되고 보안 기준선 항목이 제거됩니다. |
 | NC-SEC-002 | 활성 | 로그아웃 의미 | `AuthController`가 세션을 변경하는 로그아웃에 GET과 POST를 허용합니다. | client를 확인한 뒤 GET을 제거하고 method·CSRF 회귀 테스트를 추가합니다. | 검토된 상태 변경 method만 허용되고 기준선 항목이 제거됩니다. |
 | NC-SEC-003 | 활성 | 세션 fixation | `SessionLoginService`가 명시적 세션 ID 회전 없이 인증을 설정합니다. | Spring Security 인증·세션 전략 또는 검토된 회전 방식을 선택하고 세션 ID 전이를 테스트합니다. | 로그인 성공 시 세션 ID가 회전하고 기준선 항목이 제거됩니다. |
 | NC-OPS-001 | 활성 | 제공자 안전 | `application.yml`은 실제 Toss URL과 활성화된 reconciliation을 기본값으로 사용합니다. | 명시적 운영 프로필·활성화 flag와 실제 제공자가 아닌 로컬·테스트 대상을 요구합니다. | 기본 시작으로 Toss를 호출할 수 없고 운영은 의도적인 제공자 설정을 요구합니다. |

@@ -13,6 +13,8 @@
   출시 승인 조건을 정의합니다.
 - [마이페이지 주문 목록·상세 PRD](order-history-prd.md)는 본인 주문 조회,
   주문 당시 정보와 결제 결과 표시, 인수 테스트를 정의합니다.
+- [배송관리 구현 PRD](shipping-management-prd.md)는 관리자 출고, 구매자
+  배송 조회, 결제 취소와의 경계, 인수 기준을 정의합니다.
 - [마이페이지 PRD](../design-docs/PRD.md)는 회원 프로필·비밀번호 관리의
   인수 조건과 범위 경계를 정의합니다.
 - [기술부채 NC-TEST-001](../exec-plans/tech-debt-tracker.md)은 현재 인증·상태
