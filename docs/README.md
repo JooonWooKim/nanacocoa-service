@@ -28,6 +28,7 @@
 - [테스트](runbooks/testing.md)
 - [재고·품절 운영과 데이터 이행](runbooks/inventory.md)
 - [배송 운영 절차](runbooks/shipping.md)
+- [결제 환경 운영 절차](runbooks/payment-environment.md)
 - [데이터베이스 마이그레이션](runbooks/database-migrations.md)
 - [장애 디버깅](runbooks/incident-debugging.md)
 - [CI 계약](runbooks/ci.md)

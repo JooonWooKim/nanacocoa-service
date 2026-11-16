@@ -40,13 +40,10 @@ docker compose ps
 ```
 
 초기화 스크립트는 기존 값을 보존하고 요청한 경우에만 `.env`를 만들며 로컬
-파일 권한을 설정합니다. `.env`를 출력하거나 커밋하지 않습니다. 템플릿은
-의도적으로 `TOSS_PAYMENTS_BASE_URL`을 연결할 수 없는 loopback으로 설정하고
-결제 reconciliation을 비활성화합니다. 하네스 전용 스택에서는 해당 값을
-바꾸거나 결제 endpoint를 실행하지 않습니다. 실제 제공자는 명시적 배포
-결정과 자격 증명이 필요합니다. `TOSS_PAYMENTS_CLIENT_KEY`도 기본값이 비어
-있어 checkout은 주문 생성 전에 결제 설정 오류를 안내합니다. 결제 활성화에는
-서로 매칭되는 클라이언트·시크릿 키가 필요합니다.
+파일 권한을 설정합니다. `.env`를 출력하거나 커밋하지 않습니다. 기본으로
+`TOSS_PAYMENTS_ENABLED=false`와 `PAYMENT_RECONCILIATION_ENABLED=false`를 사용합니다.
+checkout은 주문 생성과 SDK 로딩 전에 결제 불가를 안내합니다.
+결제 테스트와 운영 설정은 [결제 환경 운영 절차](payment-environment.md)를 참고합니다.
 
 하네스는 기존 스택을 중지하거나 볼륨을 삭제하지 않습니다.
 [README.md](../../README.md)의 운영자 소유 종료 절차를 따르며 일상 자동화에

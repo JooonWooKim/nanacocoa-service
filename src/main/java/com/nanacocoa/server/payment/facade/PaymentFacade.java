@@ -42,6 +42,7 @@ public class PaymentFacade {
 			String idempotencyKey,
 			UserDetailsImpl userDetails) {
 		String email = authenticatedEmail(userDetails);
+		requireProvider();
 		String fingerprint = fingerprintService.approval(email, request);
 		return paymentLockManager.withOrderLock(
 				request.getOrderId(),
@@ -59,6 +60,7 @@ public class PaymentFacade {
 			String idempotencyKey,
 			UserDetailsImpl userDetails) {
 		String email = authenticatedEmail(userDetails);
+		requireProvider();
 		String orderId = transactionalService.getOwnedOrderId(paymentId, email);
 		String fingerprint = fingerprintService.cancellation(email, paymentId, request.getCancelReason());
 		return paymentLockManager.withOrderLock(
@@ -219,6 +221,12 @@ public class PaymentFacade {
 				exception.getCode(),
 				exception.getMessage()
 		);
+	}
+
+	private void requireProvider() {
+		if (tossPaymentsClient.isDisabled()) {
+			throw new NanacocoaException(PAYMENT_PROVIDER_UNAVAILABLE);
+		}
 	}
 
 	private String authenticatedEmail(UserDetailsImpl userDetails) {

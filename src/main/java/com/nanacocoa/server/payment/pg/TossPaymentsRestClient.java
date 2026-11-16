@@ -5,7 +5,6 @@ import com.nanacocoa.server.payment.config.TossPaymentsProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -13,12 +12,16 @@ import org.springframework.web.client.RestClientResponseException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-@Component
 @RequiredArgsConstructor
 public class TossPaymentsRestClient implements TossPaymentsClient {
 	private final RestClient tossPaymentsRestClient;
 	private final TossPaymentsProperties properties;
 	private final ObjectMapper objectMapper;
+
+	@Override
+	public boolean isDisabled() {
+		return false;
+	}
 
 	@Override
 	public TossPaymentResponse confirm(

@@ -1411,29 +1411,24 @@ function checkoutApiError(body, fallback) {
 }
 
 async function createTossPayment() {
-  const configPromise = (async () => {
-    const response = await requestAuth(paymentsApi.clientConfig);
-    const body = await readJson(response);
+  const response = await requestAuth(paymentsApi.clientConfig);
+  const body = await readJson(response);
 
-    if (response.status === 401) {
-      const error = new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
-      error.requiresLogin = true;
-      throw error;
-    }
+  if (response.status === 401) {
+    const error = new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+    error.requiresLogin = true;
+    throw error;
+  }
 
-    if (response.status === 503) {
-      throw new Error("토스페이 설정을 사용할 수 없습니다. 관리자에게 문의해 주세요.");
-    }
+  if (response.status === 503) {
+    throw new Error("현재 토스페이 결제를 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+  }
+  if (!response.ok || !body.data?.clientKey) {
+    throw new Error(checkoutApiError(body, "토스페이 설정을 불러오지 못했습니다."));
+  }
 
-    if (!response.ok || !body.data?.clientKey) {
-      throw new Error(checkoutApiError(body, "토스페이 설정을 불러오지 못했습니다."));
-    }
-
-    return body.data.clientKey;
-  })();
-
-  const [TossPayments, clientKey] = await Promise.all([loadTossPaymentsSdk(), configPromise]);
-  return TossPayments(clientKey).payment({ customerKey: checkoutCustomerKey() });
+  const TossPayments = await loadTossPaymentsSdk();
+  return TossPayments(body.data.clientKey).payment({ customerKey: checkoutCustomerKey() });
 }
 
 function checkoutPaymentCallbackUrl(result, context) {

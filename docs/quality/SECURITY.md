@@ -37,14 +37,12 @@ POST 로그아웃에서 세션을 폐기합니다. [세션 보안 PRD](../produc
 보고합니다.
 
 - NC-DATA-001: Flyway가 비어 있지 않은 스키마를 버전 1로 기준화할 수 있습니다.
-- NC-OPS-001/002: 애플리케이션과 Compose 기본값이 실제 Toss URL과 자동
-  reconciliation을 함께 사용할 수 있습니다.
 - NC-OPS-003: 기본 설정과 debug profile 중 어디에 둘지 결정하기 전까지
   MySQL을 의도적으로 host loopback에 공개합니다.
 
-`.env.example`은 새 로컬 환경에서 연결할 수 없는 loopback Toss URL을 사용하고
-reconciliation을 비활성화합니다. 이는 로컬 위험을 줄이지만 안전하지 않은
-애플리케이션·Compose 기본값을 해결하거나 기존 `.env`를 변경하지 않습니다.
+애플리케이션, Compose, `.env.example`의 기본 설정은 실제 Toss 연동과 자동
+복구를 비활성화합니다. 활성화 조건과 검증은
+[결제 환경 운영 절차](../runbooks/payment-environment.md)를 참고합니다.
 Redis 시작 과정은 비밀번호를 권한 600의 tmpfs 설정 파일에 쓰고 해당 파일
 경로만으로 Redis를 실행하므로 비밀값이 컨테이너 프로세스 인자에 직접
 들어가지 않습니다.
