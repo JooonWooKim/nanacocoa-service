@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -29,10 +28,9 @@ public class ShippingController {
 
     @GetMapping("/{orderId}")
     public ResponseEntity<SuccessMessage<ShippingResponse.Detail>> get(
-            @PathVariable String orderId, @AuthenticationPrincipal UserDetailsImpl user,
-            @RequestAttribute("_csrf") CsrfToken token) {
+            @PathVariable String orderId, @AuthenticationPrincipal UserDetailsImpl user) {
         ShippingResponse.Detail detail = shippingService.get(orderId, user);
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).header(token.getHeaderName(), token.getToken())
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(new SuccessMessage<>("배송 상세 조회 성공", detail));
     }
 

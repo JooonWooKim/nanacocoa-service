@@ -27,10 +27,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -42,9 +44,13 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import static com.nanacocoa.server.CsrfRequests.csrf;
 import static com.nanacocoa.server.common.exception.ErrorCode.*;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -54,7 +60,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** 같은 테스트를 임시 MySQL과 H2에서 실행합니다. 외부 PG는 호출하지 않습니다. */
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @SpringBootTest(properties = {
     "spring.jpa.hibernate.ddl-auto=validate", "spring.jpa.open-in-view=false",
     "spring.flyway.enabled=true", "spring.sql.init.mode=never",
@@ -86,6 +92,7 @@ class InventoryIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired ShippingService shipping;
+    @Autowired PasswordEncoder passwordEncoder;
     UserDetailsImpl buyer;
     UserDetailsImpl admin;
 
@@ -226,11 +233,20 @@ class InventoryIntegrationTest {
         assertThatThrownBy(() -> approval(order)).isInstanceOf(NanacocoaException.class);
     }
 
-    @Test void ownerCancellationDoesNotAllowAnotherMembersOrder() {
-        Products product = product(1); var order = order(product, 1);
-        assertThatThrownBy(() -> orderService.cancelUnpaid(order.getOrderId(), identity(false))).isInstanceOfSatisfying(NanacocoaException.class,
-            e -> assertThat(e.getErrorCode()).isEqualTo(NOT_FOUND_ORDER));
-        stock(product, 0, 1); orderService.cancelUnpaid(order.getOrderId(), buyer); stock(product, 1, 0);
+    @Test void ownerCancellationDoesNotAllowAnotherMembersOrder() throws Exception {
+        Products product = product(1);
+        var order = order(product, 1);
+        var endpoint = "/api/orders/" + order.getOrderId() + "/cancel";
+        var ownerSession = session(buyer);
+
+        mvc.perform(post(endpoint).session(ownerSession))
+            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+        mvc.perform(post(endpoint).session(session(identity(false))).with(csrf(mvc)))
+            .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("ORDER_01"));
+        stock(product, 0, 1);
+
+        mvc.perform(post(endpoint).session(ownerSession).with(csrf(mvc))).andExpect(status().isOk());
+        stock(product, 1, 0);
     }
 
     @Test void canceledSaleRequiresAdminInspectionAndConcurrentRestockIsIdempotent() throws Exception {
@@ -312,10 +328,10 @@ class InventoryIntegrationTest {
     @Test void inventoryHttpApiEnforcesRoleValidationAndPersistsAvailability() throws Exception {
         Products product = product(0); String path = "/api/products/"+product.getId()+"/inventory";
         String payload = "{\"stockQuantity\":2,\"saleStatus\":\"ON_SALE\",\"expectedVersion\":0}";
-        mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isUnauthorized());
-        mvc.perform(put(path).session(session(buyer)).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isForbidden());
-        mvc.perform(put(path).session(session(admin)).contentType(MediaType.APPLICATION_JSON).content(payload.replace(":2,", ":-1,"))).andExpect(status().isBadRequest());
-        mvc.perform(put(path).session(session(admin)).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isOk())
+        mvc.perform(put(path).with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isUnauthorized());
+        mvc.perform(put(path).session(session(buyer)).with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isForbidden());
+        mvc.perform(put(path).session(session(admin)).with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(payload.replace(":2,", ":-1,"))).andExpect(status().isBadRequest());
+        mvc.perform(put(path).session(session(admin)).with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isOk())
             .andExpect(jsonPath("$.data.stockQuantity").value(2)).andExpect(jsonPath("$.data.availability").value("ON_SALE"));
         for (MockHttpSession identity : List.of(session(buyer), session(admin))) {
             mvc.perform(get("/api/products/"+product.getId()).session(identity)).andExpect(status().isOk())
@@ -454,6 +470,49 @@ class InventoryIntegrationTest {
     }
 
     @Test
+    void paymentApprovalResumesWithNewSessionAndCallsProviderOnce() throws Exception {
+        var member = members.saveAndFlush(Member.builder().email("checkout-session@example.test")
+                .name("결제 테스트").password(passwordEncoder.encode("fixture-password")).build());
+        buyer = new UserDetailsImpl(member, member.getEmail());
+        var product = product(1);
+        var order = order(product, 1);
+        var request = new ConfirmPaymentRequest("fixture-payment", order.getOrderId(), order.getTotalAmount());
+        var endpoint = "/api/payments/confirm";
+        var idempotencyKey = UUID.randomUUID().toString();
+        var body = json.writeValueAsString(request);
+
+        mvc.perform(post(endpoint).contentType(MediaType.APPLICATION_JSON).content(body)
+                .header("Idempotency-Key", idempotencyKey))
+            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+        mvc.perform(post(endpoint).with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(body)
+                .header("Idempotency-Key", idempotencyKey))
+            .andExpect(status().isUnauthorized());
+        stock(product, 0, 1);
+        verifyNoInteractions(tossPaymentsClient);
+
+        var result = mvc.perform(post("/api/auth/login").with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"email":"checkout-session@example.test","password":"fixture-password"}
+                    """))
+            .andExpect(status().isOk()).andReturn();
+        var renewed = (MockHttpSession) result.getRequest().getSession(false);
+
+        when(tossPaymentsClient.confirm(eq(request.getPaymentKey()), eq(order.getOrderId()),
+                eq(order.getTotalAmount()), anyString()))
+            .thenReturn(new TossPaymentResponse(request.getPaymentKey(), order.getOrderId(),
+                order.getTotalAmount(), "DONE", "카드", OffsetDateTime.now(), List.of()));
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post(endpoint).session(renewed).with(csrf(mvc))
+                    .contentType(MediaType.APPLICATION_JSON).content(body).header("Idempotency-Key", idempotencyKey))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("SUCCESS"));
+        }
+        verify(tossPaymentsClient).confirm(eq(request.getPaymentKey()), eq(order.getOrderId()),
+            eq(order.getTotalAmount()), anyString());
+        stock(product, 0, 0);
+        assertThat(orders.findByOrderId(order.getOrderId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
     void shippingHttpLifecyclePreservesHistoryAndProtectsOrderData() throws Exception {
         var order = order(product(1), 1);
         var work = approval(order);
@@ -467,30 +526,32 @@ class InventoryIntegrationTest {
             .andExpect(jsonPath("$.data.orders[0].shippingAddress").doesNotHaveJsonPath());
         mvc.perform(get(endpoint)).andExpect(status().isUnauthorized());
         mvc.perform(get(endpoint).session(session(buyer))).andExpect(status().isForbidden());
-        String csrf = mvc.perform(get(endpoint).session(operatorSession)).andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.actions[0]").value("SHIP"))
-            .andReturn().getResponse().getHeader("X-CSRF-TOKEN");
-        assertThat(csrf).isNotBlank();
+        mvc.perform(get(endpoint).session(operatorSession)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.actions[0]").value("SHIP"));
 
         var ship = shippingChange(Action.SHIP, 0L, "0000000123");
         String body = json.writeValueAsString(ship);
-        mvc.perform(post(endpoint).contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(post(endpoint).with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(body))
             .andExpect(status().isUnauthorized());
         mvc.perform(post(endpoint).session(operatorSession).contentType(MediaType.APPLICATION_JSON).content(body))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("CSRF_INVALID"));
         mvc.perform(post(endpoint).session(operatorSession).header("X-CSRF-TOKEN", "wrong")
                 .contentType(MediaType.APPLICATION_JSON).content(body))
             .andExpect(status().isForbidden());
-        mvc.perform(post(endpoint).session(operatorSession).header("X-CSRF-TOKEN", csrf)
+        mvc.perform(post(endpoint).session(operatorSession).with(csrf(mvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(shippingChange(Action.SHIP, 0L, "invalid"))))
             .andExpect(status().isBadRequest());
         for (int retry = 0; retry < 2; retry++) {
-            mvc.perform(post(endpoint).session(operatorSession).header("X-CSRF-TOKEN", csrf)
+            mvc.perform(post(endpoint).session(operatorSession).with(csrf(mvc))
                     .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.tracking.status").value("SHIPPED"))
                 .andExpect(jsonPath("$.data.history.length()").value(1));
         }
+
+        mvc.perform(post(endpoint).session(session(buyer)).with(csrf(mvc))
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("AUTH_02"));
 
         var original = shipping.get(order.getOrderId(), admin).tracking().shippedAt();
         var reusedKey = new ShippingChangeRequest(Action.SHIP, ship.requestKey(), 0L, "test",

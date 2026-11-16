@@ -9,8 +9,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+import org.springframework.security.web.csrf.CsrfException;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nanacocoa.server.common.exception.ErrorCode;
+import com.nanacocoa.server.common.exception.ErrorMessage;
 
 @Configuration
 public class SecurityConfig {
@@ -21,16 +26,33 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        var shippingWrites = PathPatternRequestMatcher.withDefaults()
-                .matcher(HttpMethod.POST, "/api/admin/shipping/orders/{orderId}");
+    HttpSessionCsrfTokenRepository csrfTokenRepository() {
+        return new HttpSessionCsrfTokenRepository();
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http, HttpSessionCsrfTokenRepository csrfTokens,
+                                            ObjectMapper json) throws Exception {
+        var defaultDeniedHandler = new AccessDeniedHandlerImpl();
         return http
-            .csrf(csrf -> csrf.requireCsrfProtectionMatcher(request ->
-                shippingWrites.matches(request) && SecurityContextHolder.getContext().getAuthentication() != null))
+            .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))
+            .logout(logout -> logout.disable())
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                .accessDeniedHandler((request, response, exception) -> {
+                    if (!(exception instanceof CsrfException)) {
+                        defaultDeniedHandler.handle(request, response, exception);
+                        return;
+                    }
+                    var error = ErrorCode.CSRF_INVALID;
+                    response.setStatus(error.getHttpStatus().value());
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.setHeader("Cache-Control", "no-store");
+                    json.writeValue(response.getOutputStream(), new ErrorMessage(error.getCode(), error.getError()));
+                }))
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(
                     "/",

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
@@ -15,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static com.nanacocoa.server.CsrfRequests.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:member-api-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
@@ -77,7 +79,7 @@ class MemberApiIntegrationTest {
         MockHttpSession session = createAndLoginMember();
 
         mockMvc.perform(put("/api/members/me")
-                        .session(session)
+                        .session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -103,14 +105,14 @@ class MemberApiIntegrationTest {
         MockHttpSession session = createAndLoginMember();
 
         mockMvc.perform(put("/api/members/me")
-                        .session(session)
+                        .session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(profileUpdate("changed@example.com", "010-3333-4444")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MEMBER_04"));
 
         mockMvc.perform(put("/api/members/me")
-                        .session(session)
+                        .session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(profileUpdate("mypage@example.com", "01033334444")))
                 .andExpect(status().isBadRequest())
@@ -125,7 +127,7 @@ class MemberApiIntegrationTest {
         MockHttpSession session = createAndLoginMember();
 
         mockMvc.perform(put("/api/members/me/password")
-                        .session(session)
+                        .session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -152,7 +154,7 @@ class MemberApiIntegrationTest {
     void rejectsMismatchedAndShortNewPassword() throws Exception {
         MockHttpSession session = createAndLoginMember();
 
-        mockMvc.perform(put("/api/members/me/password").session(session)
+        mockMvc.perform(put("/api/members/me/password").session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"currentPassword":"incorrect","newPassword":"changed123!","newPasswordConfirm":"changed123!"}
@@ -161,7 +163,7 @@ class MemberApiIntegrationTest {
                 .andExpect(jsonPath("$.code").value("MEMBER_02"));
 
         mockMvc.perform(put("/api/members/me/password")
-                        .session(session)
+                        .session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -174,7 +176,7 @@ class MemberApiIntegrationTest {
                 .andExpect(jsonPath("$.code").value("MEMBER_05"));
 
         mockMvc.perform(put("/api/members/me/password")
-                        .session(session)
+                        .session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -189,7 +191,7 @@ class MemberApiIntegrationTest {
 
     @Test
     void signupStoresRequiredProfileFields() throws Exception {
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -213,7 +215,7 @@ class MemberApiIntegrationTest {
 
     @Test
     void signupRejectsMissingProfileFieldsAndInvalidPhone() throws Exception {
-        mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup").with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -273,10 +275,10 @@ class MemberApiIntegrationTest {
                 .andExpect(header().string("Cache-Control", "no-store"));
         mockMvc.perform(get("/api/members/me").session(session))
                 .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("AUTH_03"));
-        mockMvc.perform(put("/api/members/me").session(session).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/api/members/me").session(session).with(csrf(mockMvc)).contentType(MediaType.APPLICATION_JSON)
                         .content(profileUpdate("mypage@example.com", "010-3333-4444")))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(put("/api/members/me/password").session(session).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/api/members/me/password").session(session).with(csrf(mockMvc)).contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"currentPassword":"current123!","newPassword":"changed123!","newPasswordConfirm":"changed123!"}
                                 """))
@@ -288,14 +290,14 @@ class MemberApiIntegrationTest {
 
     @Test
     void verificationRequiresLoginJsonAndSameOriginHeader() throws Exception {
-        mockMvc.perform(post("/api/members/me/verification").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/members/me/verification").with(csrf(mockMvc)).contentType(MediaType.APPLICATION_JSON)
                         .header("X-Mypage-Verification", "1").content("{\"currentPassword\":\"current123!\"}"))
                 .andExpect(status().isUnauthorized());
         MockHttpSession session = createAndLoginUnverifiedMember();
-        mockMvc.perform(post("/api/members/me/verification").session(session)
+        mockMvc.perform(post("/api/members/me/verification").session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"currentPassword\":\"current123!\"}"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(post("/api/members/me/verification").session(session)
+        mockMvc.perform(post("/api/members/me/verification").session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("currentPassword", "current123!"))
                 .andExpect(status().isUnsupportedMediaType());
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/members/me/verification")
@@ -332,7 +334,7 @@ class MemberApiIntegrationTest {
         login(first);
         mockMvc.perform(get("/api/members/me").session(first)).andExpect(status().isForbidden());
         verify(first, "current123!").andExpect(status().isOk());
-        mockMvc.perform(post("/api/auth/logout").session(first)).andExpect(status().isOk());
+        mockMvc.perform(post("/api/auth/logout").session(first).with(csrf(mockMvc))).andExpect(status().isOk());
         assertThat(first.isInvalid()).isTrue();
         MockHttpSession afterLogout = login(new MockHttpSession());
         mockMvc.perform(get("/api/members/me").session(afterLogout)).andExpect(status().isForbidden());
@@ -343,7 +345,7 @@ class MemberApiIntegrationTest {
         MockHttpSession first = createAndLoginMember();
         MockHttpSession second = login(new MockHttpSession());
         verify(second, "current123!").andExpect(status().isOk());
-        mockMvc.perform(put("/api/members/me/password").session(first).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/api/members/me/password").session(first).with(csrf(mockMvc)).contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"currentPassword":"current123!","newPassword":"changed123!","newPasswordConfirm":"changed123!"}
                                 """))
@@ -351,7 +353,7 @@ class MemberApiIntegrationTest {
         for (MockHttpSession session : java.util.List.of(first, second)) {
             mockMvc.perform(get("/api/members/me").session(session)).andExpect(status().isForbidden());
             mockMvc.perform(get("/mypage.html").session(session)).andExpect(redirectedUrl("/mypage-verify.html"));
-            mockMvc.perform(put("/api/members/me").session(session).contentType(MediaType.APPLICATION_JSON)
+            mockMvc.perform(put("/api/members/me").session(session).with(csrf(mockMvc)).contentType(MediaType.APPLICATION_JSON)
                             .content(profileUpdate("mypage@example.com", "010-3333-4444")))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("AUTH_03"));
@@ -359,13 +361,13 @@ class MemberApiIntegrationTest {
     }
 
     private org.springframework.test.web.servlet.ResultActions verify(MockHttpSession session, String password) throws Exception {
-        return mockMvc.perform(post("/api/members/me/verification").session(session)
+        return mockMvc.perform(post("/api/members/me/verification").session(session).with(csrf(mockMvc))
                 .header("X-Mypage-Verification", "1").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"currentPassword\":\"" + password + "\"}"));
     }
 
     private MockHttpSession login(MockHttpSession session) throws Exception {
-        return (MockHttpSession) mockMvc.perform(post("/api/auth/login").session(session)
+        return (MockHttpSession) mockMvc.perform(post("/api/auth/login").session(session).with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"mypage@example.com\",\"password\":\"current123!\"}"))
                 .andExpect(status().isOk()).andReturn().getRequest().getSession(false);
@@ -388,7 +390,7 @@ class MemberApiIntegrationTest {
                 .build();
         memberRepository.saveAndFlush(member);
 
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
+        MvcResult login = mockMvc.perform(post("/api/auth/login").with(csrf(mockMvc))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

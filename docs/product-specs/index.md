@@ -11,6 +11,7 @@
   테스트에 연결합니다.
 - [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
   출시 승인 조건을 정의합니다.
+- [세션 보안 구현 PRD](session-security-prd.md)는 CSRF 발급·검증, 세션 ID 회전과 로그아웃 계약을 정의합니다.
 - [마이페이지 주문 목록·상세 PRD](order-history-prd.md)는 본인 주문 조회,
   주문 당시 정보와 결제 결과 표시, 인수 테스트를 정의합니다.
 - [배송관리 구현 PRD](shipping-management-prd.md)는 관리자 출고, 구매자

@@ -2,12 +2,13 @@ package com.nanacocoa.server.common.session;
 
 import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
 import com.nanacocoa.server.common.userdetails.UserDetailsServiceImpl;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -16,19 +17,19 @@ import java.util.Collections;
 @AllArgsConstructor
 public class SessionLoginService implements LoginService{
 	private static final String USER_ID = "user_id";
-	private final HttpSession session;
+	private final HttpServletRequest request;
+	private final HttpSessionCsrfTokenRepository csrfTokens;
 	private final ProfileVerificationSession verificationSession;
 	private final UserDetailsServiceImpl userDetailsService;
 
 	@Override
 	public void login(String email) {
+		UserDetailsImpl userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(email);
+		var session = request.getSession();
+		request.changeSessionId();
+		csrfTokens.saveToken(null, request, null);
 		verificationSession.clear();
 		session.setAttribute(USER_ID, email);
-		setAuthenticationContext(email);
-	}
-
-	private void setAuthenticationContext(String email) {
-		UserDetailsImpl userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(email);
 		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails,
 				null,
 				Collections.emptyList());
@@ -43,6 +44,9 @@ public class SessionLoginService implements LoginService{
 	@Override
 	public void logout() {
 		SecurityContextHolder.clearContext();
-		session.invalidate();
+		var session = request.getSession(false);
+		if (session != null) {
+			session.invalidate();
+		}
 	}
 }
