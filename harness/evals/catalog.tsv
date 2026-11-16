@@ -31,3 +31,6 @@ STOCK-002|복수 상품 주문 부분 반영|com.nanacocoa.server.order.inventor
 STOCK-003|불확실 결제 재고 조기 해제|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#uncertainApprovalAndLateRecoveryKeepReservedStockAfterExpiry|진행 중 결제는 만료 후에도 예약 유지 및 한 번 판매 확정|docs/runbooks/inventory.md
 STOCK-004|취소 재고 중복 복원|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#canceledSaleRequiresAdminInspectionAndConcurrentRestockIsIdempotent|검수 권한 검증 및 동시 재입고 한 번 반영|docs/runbooks/inventory.md
 STOCK-005|승인과 주문 만료 경합|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#expiredOrderCannotEnterApprovalDuringConcurrentExpiry|만료 주문 승인 차단과 재고 해제 일관성|docs/runbooks/inventory.md
+SHIP-001|무단 배송 변경과 송장 이력 유출|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#shippingHttpLifecyclePreservesHistoryAndProtectsOrderData|관리자·CSRF 검증과 구매자 소유권 유지, 출고·정정·완료 기록|docs/product-specs/shipping-management-prd.md
+SHIP-002|출고와 출고 전 취소의 동시 확정|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#shippingAndCancellationRaceAndPendingRecoveryHaveOneWinner|동시 요청 중 한쪽만 성공하고 취소 결과 확인 중 출고 차단|docs/product-specs/shipping-management-prd.md
+SHIP-003|과거 주문의 중복 출고 또는 환불|com.nanacocoa.server.order.inventory.InventoryIntegrationTest#oldOrdersRequireVerifiedShippingEvidence|출고 근거 대조 전 출고·새 결제 취소 차단|docs/product-specs/shipping-management-prd.md

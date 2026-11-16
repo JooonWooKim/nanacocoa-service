@@ -49,6 +49,7 @@ public class OrderService {
 	private final OrderInventoryService inventoryService;
 	private final PaymentRepository paymentRepository;
 	private final PaymentCancellationRepository paymentCancellationRepository;
+	private final ShippingService shippingService;
 
 	@Transactional(readOnly = true)
 	public OrderHistoryResponse.OrderPage listOrders(String pageValue, UserDetailsImpl userDetails) {
@@ -77,7 +78,7 @@ public class OrderService {
 		Member member = authenticatedMember(userDetails);
 		Order order = orderRepository.findByOrderIdAndMemberId(orderId, member.getId())
 				.orElseThrow(() -> new NanacocoaException(NOT_FOUND_ORDER));
-		return OrderHistoryResponse.from(order, paymentResult(order));
+		return OrderHistoryResponse.from(order, paymentResult(order), shippingService.tracking(order));
 	}
 
 	private int parsePage(String value) {

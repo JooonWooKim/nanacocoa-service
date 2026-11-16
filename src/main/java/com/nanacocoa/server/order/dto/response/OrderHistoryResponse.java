@@ -11,15 +11,15 @@ import java.util.List;
 public record OrderHistoryResponse(
 		String orderId, LocalDateTime createdAt, OrderStatus status, long totalAmount,
 		String recipientName, String phoneNumber, String shippingAddress, String customerRequest,
-		List<OrderItemResponse> items, PaymentResult paymentResult) {
+		List<OrderItemResponse> items, PaymentResult paymentResult, ShippingResponse.Tracking shipping) {
 
-	public static OrderHistoryResponse from(Order order, PaymentResult paymentResult) {
+	public static OrderHistoryResponse from(Order order, PaymentResult paymentResult, ShippingResponse.Tracking shipping) {
 		return new OrderHistoryResponse(order.getOrderId(), order.getCreatedAt(), order.getStatus(),
 				order.getTotalAmount(), order.getRecipientName(), order.getPhoneNumber(),
 				order.getShippingAddress(), order.getCustomerRequest(),
 				order.getItems().stream().sorted(Comparator.comparing(OrderItem::getId))
 						.map(OrderItemResponse::from).toList(),
-				paymentResult);
+				paymentResult, shipping);
 	}
 
 	public enum PaymentResult {

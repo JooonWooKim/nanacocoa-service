@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>배송 관리 · 나나코코아</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="mypage-body">
+    <main class="mypage-page" aria-labelledby="shipping-title">
+      <nav class="order-history-nav"><a href="index.html">홈</a><a href="inventory.html">재고 관리</a></nav>
+      <header class="mypage-heading"><h1 id="shipping-title">배송 관리</h1></header>
+      <form id="shipping-search" class="inventory-card">
+        <label>주문 번호 <input name="orderNumber" maxlength="64" /></label>
+        <label>배송 상태
+          <select name="state">
+            <option value="PREPARING">배송 준비</option>
+            <option value="ON_HOLD">출고 보류</option>
+            <option value="SHIPPED">배송 중</option>
+            <option value="DELIVERED">배송 완료</option>
+            <option value="BEFORE_SHIPPING">출고 전</option>
+            <option value="CANCELED">출고 전 취소</option>
+            <option value="ALL">전체</option>
+          </select>
+        </label>
+        <button type="submit">조회</button>
+      </form>
+      <p id="shipping-message" class="mypage-guard" role="status"></p>
+      <button id="shipping-retry" type="button" hidden>다시 조회</button>
+      <a id="shipping-login" href="login.html" hidden>로그인하기</a>
+      <div id="shipping-content"></div>
+    </main>
+    <script src="script.js"></script>
+    <script src="shipping.js"></script>
+    <script src="shipping-admin.js"></script>
+  </body>
+</html>

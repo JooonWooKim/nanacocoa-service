@@ -981,6 +981,12 @@ function renderAdminProductRegisterLink(session) {
   inventoryLink.textContent = "재고 관리";
   inventoryLink.dataset.adminProductRegister = "";
   drawerNav.append(inventoryLink);
+  const shippingLink = document.createElement("a");
+  shippingLink.className = "drawer-link";
+  shippingLink.href = "shipping.html";
+  shippingLink.textContent = "배송 관리";
+  shippingLink.dataset.adminProductRegister = "";
+  drawerNav.append(shippingLink);
 }
 
 function loadAuthSession() {

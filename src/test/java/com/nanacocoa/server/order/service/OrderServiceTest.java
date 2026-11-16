@@ -45,6 +45,8 @@ class OrderServiceTest {
 	@Mock
 	private PaymentCancellationRepository paymentCancellationRepository;
 
+	@Mock
+	private ShippingService shippingService;
 	private OrderService orderService;
 	private Member member;
 	private UserDetailsImpl userDetails;
@@ -52,7 +54,7 @@ class OrderServiceTest {
 	@BeforeEach
 	void setUp() {
 		orderService = new OrderService(orderRepository, productsRepository, memberRepository,
-				new OrderInventoryService(productsRepository), paymentRepository, paymentCancellationRepository);
+				new OrderInventoryService(productsRepository), paymentRepository, paymentCancellationRepository, shippingService);
 		member = Member.builder()
 				.email("buyer@example.com")
 				.name("구매자")

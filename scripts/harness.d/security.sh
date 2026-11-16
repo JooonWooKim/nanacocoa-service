@@ -88,8 +88,8 @@ auth_controller="$PROJECT_DIR/src/main/java/com/nanacocoa/server/member/controll
 session_service="$PROJECT_DIR/src/main/java/com/nanacocoa/server/common/session/SessionLoginService.java"
 application_config="$PROJECT_DIR/src/main/resources/application.yml"
 
-if grep -qE '\.csrf\(.*disable\(\)' "$security_config" 2>/dev/null; then
-	printf '%s\n' 'NC-SEC-001|src/main/java/com/nanacocoa/server/common/security/config/SecurityConfig.java|CSRF 보호가 비활성화되어 있음' >> "$risks"
+if grep -qE '\.csrf\(.*(disable\(\)|requireCsrfProtectionMatcher)' "$security_config" 2>/dev/null; then
+	printf '%s\n' 'NC-SEC-001|src/main/java/com/nanacocoa/server/common/security/config/SecurityConfig.java|기존 세션 쓰기에 CSRF 보호가 적용되지 않음' >> "$risks"
 fi
 if grep -qE 'RequestMethod\.GET.*RequestMethod\.POST|RequestMethod\.POST.*RequestMethod\.GET' "$auth_controller" 2>/dev/null; then
 	printf '%s\n' 'NC-SEC-002|src/main/java/com/nanacocoa/server/member/controller/AuthController.java|로그아웃이 상태 변경 요청으로 GET을 허용함' >> "$risks"

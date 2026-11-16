@@ -1,6 +1,6 @@
 # 마이페이지 주문 목록·상세 조회 PRD
 
-- 상태: 조회 구현 완료 · SHIP·RETURN 연동 대기
+- 상태: 조회 및 SHIP 연동 구현 완료 · RETURN 연동 대기
 - 관련 이슈: [GitHub #10](https://github.com/JooonWooKim/nanacocoa-service/issues/10)
 - 상위 명세: [커머스 출시 PRD의 ORDER 항목](commerce-launch-prd.md#order--주문-목록과-상세)
 

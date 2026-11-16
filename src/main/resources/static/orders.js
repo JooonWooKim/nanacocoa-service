@@ -77,11 +77,44 @@ function renderOrderHistoryDetail(content, order) {
     }
   }
 
+  if (order.shipping) renderOrderShipping(card, order.shipping);
+
   appendOrderElement(card, "h2", "주문 당시 배송 정보");
   appendOrderFields(card, [
     ["수령인", order.recipientName], ["연락처", order.phoneNumber],
     ["배송지", order.shippingAddress], ["배송 요청사항", order.customerRequest],
   ]);
+}
+
+function renderOrderShipping(card, shipping) {
+  appendOrderElement(card, "h2", "배송 상태");
+  appendOrderElement(card, "p", shippingLabels[shipping.status]);
+  if (shipping.status === "ON_HOLD") {
+    appendOrderElement(card, "p", "배송 정보를 확인하고 있습니다. 잠시 후 다시 조회해 주세요.");
+  }
+  if (!shipping.trackingNumber) return;
+
+  appendOrderFields(card, [
+    ["택배사", shipping.carrierName], ["송장 번호", shipping.trackingNumber],
+    ["출고 시각", displayShippingTime(shipping.shippedAt)],
+    ...(shipping.deliveredAt ? [["배송 완료 시각", displayShippingTime(shipping.deliveredAt)]] : []),
+  ]);
+  if (shipping.trackingUrl) {
+    appendOrderElement(card, "a", "택배사에서 배송 조회").href = shipping.trackingUrl;
+  } else {
+    const copy = appendOrderElement(card, "button", "송장 번호 복사");
+    copy.type = "button";
+    const feedback = appendOrderElement(card, "p");
+    feedback.setAttribute("role", "status");
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(shipping.trackingNumber);
+        feedback.textContent = "송장 번호를 복사했습니다.";
+      } catch {
+        feedback.textContent = "송장 번호를 직접 선택해 복사해 주세요.";
+      }
+    });
+  }
 }
 
 function initOrderHistory() {
@@ -139,7 +172,7 @@ function initOrderHistory() {
         renderOrderHistoryList(content, message, data);
       } else {
         renderOrderHistoryDetail(content, data);
-        retry.hidden = !["PENDING", "CANCELLATION_PENDING"].includes(data.paymentResult);
+        retry.hidden = !data.shipping && !["PENDING", "CANCELLATION_PENDING"].includes(data.paymentResult);
       }
       message.hidden = !message.textContent;
     } catch {
