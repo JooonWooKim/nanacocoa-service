@@ -7,8 +7,8 @@
 | --- | --- | --- | --- | --- | --- |
 | NC-TEST-001 | 활성 | 상태 확인 통합 | 회원가입, 로그인·세션 계약의 기존 실패를 해소했습니다. `NanacocoaServerApplicationTests#healthApiReturnsOk`의 HTTP 404가 남아 있습니다. | health route와 응답 계약을 구현합니다. | 엄격한 `./gradlew test`가 통과하고 기준선 파일이 비어 있습니다. |
 | NC-ARCH-001 | 활성 | 의존 방향 | `common.userdetails`가 `member` Entity·Repository class를 import합니다. | 세션 동작을 바꾸지 않고 common 소유 identity port를 도입하거나 어댑터를 member·security로 이동합니다. | `common`에 비즈니스 도메인 import가 없고 아키텍처 예외 파일이 비어 있습니다. |
-| NC-OPS-001 | 활성 | 제공자 안전 | `application.yml`은 실제 Toss URL과 활성화된 reconciliation을 기본값으로 사용합니다. | 명시적 운영 프로필·활성화 flag와 실제 제공자가 아닌 로컬·테스트 대상을 요구합니다. | 기본 시작으로 Toss를 호출할 수 없고 운영은 의도적인 제공자 설정을 요구합니다. |
-| NC-OPS-002 | 활성 | Compose 제공자 안전 | `compose.yaml`도 실제 Toss 기본값과 활성화된 reconciliation을 결합합니다. 로컬 `.env.example`은 두 값을 안전하게 덮어쓰지만 누락·부분 환경은 여전히 위험합니다. | 배포 설정 책임을 정한 뒤 Compose 기본값에서 실제 제공자 동작을 제거합니다. | 명시적 운영 opt-in 없이 Compose가 Toss에 연결할 수 없습니다. |
+| NC-OPS-001 | 해결 | 제공자 안전 | 애플리케이션 기본값과 운영 프로필·키 유형·호스트 검증을 [결제 환경 PRD](../product-specs/payment-environment-prd.md)에 기록했습니다. | 운영 활성화 시 결제 환경 운영 절차를 따릅니다. | 기본 실행에서는 실제 PG 어댑터와 자동 복구를 구성하지 않습니다. |
+| NC-OPS-002 | 해결 | Compose 제공자 안전 | Compose는 기본 `mysql` 프로필에서 Toss 연동과 복구를 끕니다. | 운영에서만 프로필과 활성화 플래그를 지정합니다. | 명시적 운영 활성화 없이 Compose에서 Toss에 연결할 수 없습니다. |
 | NC-OPS-003 | 제안 | 데이터베이스 노출 | Compose가 로컬 도구를 위해 MySQL을 host loopback에 공개하여 host process 접근 범위와 3306 충돌 가능성을 넓힙니다. | host SQL 접근이 기본으로 필요한지 명시적 debug profile에 속하는지 결정합니다. | 기본 Compose에 MySQL host port가 없거나 검토된 운영 필요성과 대체 port 정책이 문서화·테스트됩니다. |
 | NC-DATA-001 | 활성 | 마이그레이션 도입 | MySQL 프로필이 `baseline-on-migrate: true`와 기준 버전 1을 사용합니다. | 기존 배포 이력을 감사하고 flag 변경 전에 기준화가 계속 필요한지 결정합니다. | 새·관리 DB가 버전 없는 스키마를 거부하고 배포 DB에 문서화된 전환 절차가 있습니다. |
 | NC-DATA-002 | 제안 | 데이터베이스 충실도 | 마이그레이션 테스트는 H2 MySQL 모드를 사용하며 임시 MySQL 8.4 마이그레이션·JPA 검증을 자동 실행하지 않았습니다. | Docker CI 생명주기와 정리 책임이 승인되면 제공자 호출 없는 MySQL container 테스트를 추가합니다. | 운영 마이그레이션 이력과 JPA 검증이 CI의 MySQL 8.4에서 통과합니다. |

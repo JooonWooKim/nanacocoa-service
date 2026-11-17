@@ -1,4 +1,2 @@
 NC-DATA-001|src/main/resources/application.yml|Flyway baseline-on-migrate가 활성화되어 있음
-NC-OPS-001|src/main/resources/application.yml|실제 Toss URL과 reconciliation이 모두 기본값으로 활성화되어 있음
-NC-OPS-002|compose.yaml|Compose 기본값이 실제 Toss URL과 활성화된 reconciliation을 결합함
 NC-OPS-003|compose.yaml|MySQL이 기본적으로 host loopback에 공개됨

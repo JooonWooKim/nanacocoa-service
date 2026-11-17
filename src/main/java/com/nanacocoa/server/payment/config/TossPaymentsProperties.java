@@ -10,7 +10,10 @@ import java.time.Duration;
 @Setter
 @ConfigurationProperties(prefix = "toss-payments")
 public class TossPaymentsProperties {
-	private String baseUrl = "https://api.tosspayments.com";
+	static final String LIVE_BASE_URL = "https://api.tosspayments.com";
+
+	private boolean enabled;
+	private String baseUrl = LIVE_BASE_URL;
 	private String clientKey = "";
 	private String secretKey = "";
 	private Duration connectTimeout = Duration.ofSeconds(2);

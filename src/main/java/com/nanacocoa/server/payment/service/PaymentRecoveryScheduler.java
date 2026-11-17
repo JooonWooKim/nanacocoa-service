@@ -7,9 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(
-		name = "payment.reconciliation.enabled",
-		havingValue = "true",
-		matchIfMissing = true
+		name = {"toss-payments.enabled", "payment.reconciliation.enabled"},
+		havingValue = "true"
 )
 public class PaymentRecoveryScheduler {
 	private final PaymentRecoveryService recoveryService;

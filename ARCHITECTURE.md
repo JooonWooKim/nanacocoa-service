@@ -185,8 +185,12 @@ V5의 기존 상품은 0개·판매 중지, 기존 주문은 `LEGACY`로 이행�
 
 ## 외부 경계
 
-- `TossPaymentsClient`는 타입이 지정된 결제 경계입니다. 테스트에서는 이를
-  mock 처리하며 실제 제공자를 호출하면 안 됩니다.
+- `TossPaymentsClient`는 결제 제공자 경계입니다. 기본 어댑터는 네트워크를 사용하지
+  않으며, checkout 설정과 새 승인·취소 요청은 503으로 끝납니다. 활성 운영 프로필,
+  명시적 활성화 플래그와 라이브 키 유형 검증 후 공식 HTTPS API에 연결하는 어댑터를
+  구성합니다. 자동 복구에는 별도 활성화 플래그도 필요합니다.
+  테스트는 모의 어댑터 또는 네트워크 없는 HTTP 모의 PG를 사용합니다.
+  [결제 환경 운영 절차](docs/runbooks/payment-environment.md)
 - 브라우저는 Toss Payments 공식 V2 SDK를 사용합니다. 인증된
   `PaymentClientConfigController -> PaymentClientConfigService` 경계는 공개용
   클라이언트 키만 반환하며 시크릿 키는 반환하지 않습니다.

@@ -1410,29 +1410,27 @@ function checkoutApiError(body, fallback) {
   return body?.error || body?.message || fallback;
 }
 
-async function createTossPayment() {
-  const configPromise = (async () => {
-    const response = await requestAuth(paymentsApi.clientConfig);
-    const body = await readJson(response);
+async function fetchTossPaymentClientKey() {
+  const response = await requestAuth(paymentsApi.clientConfig, { cache: "no-store" });
+  const body = await readJson(response);
 
-    if (response.status === 401) {
-      const error = new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
-      error.requiresLogin = true;
-      throw error;
-    }
+  if (response.status === 401) {
+    const error = new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+    error.requiresLogin = true;
+    throw error;
+  }
 
-    if (response.status === 503) {
-      throw new Error("토스페이 설정을 사용할 수 없습니다. 관리자에게 문의해 주세요.");
-    }
+  if (response.status === 503) {
+    throw new Error("현재 토스페이 결제를 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+  }
+  if (!response.ok || !body?.data?.clientKey) {
+    throw new Error(checkoutApiError(body, "토스페이 설정을 불러오지 못했습니다."));
+  }
+  return body.data.clientKey;
+}
 
-    if (!response.ok || !body.data?.clientKey) {
-      throw new Error(checkoutApiError(body, "토스페이 설정을 불러오지 못했습니다."));
-    }
-
-    return body.data.clientKey;
-  })();
-
-  const [TossPayments, clientKey] = await Promise.all([loadTossPaymentsSdk(), configPromise]);
+async function createTossPayment(clientKey) {
+  const TossPayments = await loadTossPaymentsSdk();
   return TossPayments(clientKey).payment({ customerKey: checkoutCustomerKey() });
 }
 
@@ -1571,17 +1569,6 @@ async function initCheckoutPage() {
 
   paymentTermsInput.addEventListener("change", () => paymentTermsInput.setCustomValidity(""));
 
-  let paymentSetupPromise;
-  function prepareTossPayment() {
-    if (!paymentSetupPromise) {
-      paymentSetupPromise = createTossPayment().catch((error) => {
-        paymentSetupPromise = null;
-        throw error;
-      });
-    }
-    return paymentSetupPromise;
-  }
-
   function renderPaymentResult({
     eyebrow,
     title,
@@ -1635,6 +1622,7 @@ async function initCheckoutPage() {
     resultMessage.textContent = "동일한 주문으로 토스페이 결제를 다시 요청하고 있습니다.";
 
     try {
+      const clientKey = await fetchTossPaymentClientKey();
       const reservationResponse = await requestAuth(`/api/orders/${encodeURIComponent(context.orderId)}/reservation`, { method: "POST" });
       const reservationBody = await readJson(reservationResponse);
       if (!reservationResponse.ok) {
@@ -1642,7 +1630,7 @@ async function initCheckoutPage() {
         error.canRetry = reservationResponse.status !== 409;
         throw error;
       }
-      const payment = await prepareTossPayment();
+      const payment = await createTossPayment(clientKey);
       renewCheckoutPaymentAttempt(context);
       resultMessage.textContent = "토스페이 결제창으로 이동하고 있습니다.";
       await requestTossPay(payment, context);
@@ -2006,7 +1994,8 @@ async function initCheckoutPage() {
     submitButton.textContent = "결제 준비 중";
 
     try {
-      const payment = await prepareTossPayment();
+      const clientKey = await fetchTossPaymentClientKey();
+      const payment = await createTossPayment(clientKey);
 
       if (!createdPaymentContext) {
         submitButton.textContent = "주문 생성 중";

@@ -761,7 +761,7 @@ class NanacocoaServerApplicationTests {
     }
 
     @Test
-    void paymentClientConfigRequiresLoginAndExposesOnlyClientKey() throws Exception {
+    void disabledPaymentsRequireLoginAndRejectWritesButAllowQueries() throws Exception {
         mockMvc.perform(get("/api/payments/client-config"))
             .andExpect(status().isUnauthorized());
 
@@ -779,9 +779,30 @@ class NanacocoaServerApplicationTests {
         );
 
         mockMvc.perform(get("/api/payments/client-config").session(session))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.clientKey").value("test_ck_integration"))
-            .andExpect(jsonPath("$.data.secretKey").doesNotExist());
+            .andExpect(status().isServiceUnavailable())
+            .andExpect(jsonPath("$.code").value("PAYMENT_11"))
+            .andExpect(jsonPath("$.data").doesNotExist());
+
+        mockMvc.perform(post("/api/payments/confirm").session(session).with(csrf(mockMvc))
+                .header("Idempotency-Key", "disabled-confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"paymentKey":"fixture-payment","orderId":"fixture-order","amount":1000}
+                    """))
+            .andExpect(status().isServiceUnavailable())
+            .andExpect(jsonPath("$.code").value("PAYMENT_11"));
+
+        mockMvc.perform(post("/api/payments/1/cancel").session(session).with(csrf(mockMvc))
+                .header("Idempotency-Key", "disabled-cancel")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"cancelReason":"테스트 취소"}
+                    """))
+            .andExpect(status().isServiceUnavailable())
+            .andExpect(jsonPath("$.code").value("PAYMENT_11"));
+
+        mockMvc.perform(get("/api/payments/1").session(session))
+            .andExpect(status().isNotFound());
     }
 
     @Test
@@ -899,7 +920,10 @@ class NanacocoaServerApplicationTests {
             "writeCheckoutPaymentContext(context);"
         );
         assertThat(retry).containsSubsequence(
-            "const payment = await prepareTossPayment();",
+            "const clientKey = await fetchTossPaymentClientKey();",
+            "const reservationResponse = await requestAuth(",
+            "if (!reservationResponse.ok) {",
+            "const payment = await createTossPayment(clientKey);",
             "renewCheckoutPaymentAttempt(context);",
             "await requestTossPay(payment, context);"
         );

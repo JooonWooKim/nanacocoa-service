@@ -101,13 +101,13 @@ fi
 if grep -qE 'baseline-on-migrate:[[:space:]]*true' "$application_config" 2>/dev/null; then
 	printf '%s\n' 'NC-DATA-001|src/main/resources/application.yml|Flyway baseline-on-migrate가 활성화되어 있음' >> "$risks"
 fi
-if grep -q 'TOSS_PAYMENTS_BASE_URL:https://api.tosspayments.com' "$application_config" 2>/dev/null &&
-	grep -q 'PAYMENT_RECONCILIATION_ENABLED:true' "$application_config" 2>/dev/null; then
-	printf '%s\n' 'NC-OPS-001|src/main/resources/application.yml|실제 Toss URL과 reconciliation이 모두 기본값으로 활성화되어 있음' >> "$risks"
+if ! grep -Eq '^[[:space:]]+enabled: \$\{TOSS_PAYMENTS_ENABLED:false\}$' "$application_config" ||
+	! grep -Eq '^[[:space:]]+enabled: \$\{PAYMENT_RECONCILIATION_ENABLED:false\}$' "$application_config"; then
+	printf '%s\n' 'NC-OPS-001|src/main/resources/application.yml|실제 Toss 연동 또는 자동 복구의 비활성 기본값을 확인할 수 없음' >> "$risks"
 fi
-if grep -q 'TOSS_PAYMENTS_BASE_URL:-https://api.tosspayments.com' "$PROJECT_DIR/compose.yaml" 2>/dev/null &&
-	grep -q 'PAYMENT_RECONCILIATION_ENABLED:-true' "$PROJECT_DIR/compose.yaml" 2>/dev/null; then
-	printf '%s\n' 'NC-OPS-002|compose.yaml|Compose 기본값이 실제 Toss URL과 활성화된 reconciliation을 결합함' >> "$risks"
+if ! grep -Eq '^[[:space:]]+TOSS_PAYMENTS_ENABLED: \$\{TOSS_PAYMENTS_ENABLED:-false\}$' "$PROJECT_DIR/compose.yaml" ||
+	! grep -Eq '^[[:space:]]+PAYMENT_RECONCILIATION_ENABLED: \$\{PAYMENT_RECONCILIATION_ENABLED:-false\}$' "$PROJECT_DIR/compose.yaml"; then
+	printf '%s\n' 'NC-OPS-002|compose.yaml|실제 Toss 연동 또는 자동 복구의 비활성 기본값을 확인할 수 없음' >> "$risks"
 fi
 if grep -Fq '127.0.0.1:${MYSQL_PORT:-3306}:3306' "$PROJECT_DIR/compose.yaml" 2>/dev/null; then
 	printf '%s\n' 'NC-OPS-003|compose.yaml|MySQL이 기본적으로 host loopback에 공개됨' >> "$risks"
