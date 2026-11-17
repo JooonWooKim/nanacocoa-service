@@ -1,6 +1,10 @@
 # 결제 환경 분리와 모의 PG 검증 PRD
 
-상태: 구현됨 · 출시 PRD PAY 1단계 · 이슈 #16
+구현 완료 · [PR #17 검토 대기](https://github.com/JooonWooKim/nanacocoa-service/pull/17)
+
+출시 PRD의 PAY 1단계는 [이슈 #16](https://github.com/JooonWooKim/nanacocoa-service/issues/16)에서 추적한다.
+2026-11-17에 확인한 원격 [main `8bda659`](https://github.com/JooonWooKim/nanacocoa-service/commit/8bda6595d9982d526dddc65a09f92c798b773da1)에는
+선행 세션 보안이 반영됐으며 PAY 1단계는 PR #17에서 검토 중이다.
 
 ## 목표와 범위
 

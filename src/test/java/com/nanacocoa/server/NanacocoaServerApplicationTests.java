@@ -920,7 +920,10 @@ class NanacocoaServerApplicationTests {
             "writeCheckoutPaymentContext(context);"
         );
         assertThat(retry).containsSubsequence(
-            "const payment = await prepareTossPayment();",
+            "const clientKey = await fetchTossPaymentClientKey();",
+            "const reservationResponse = await requestAuth(",
+            "if (!reservationResponse.ok) {",
+            "const payment = await createTossPayment(clientKey);",
             "renewCheckoutPaymentAttempt(context);",
             "await requestTossPay(payment, context);"
         );
