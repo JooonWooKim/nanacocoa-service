@@ -18,6 +18,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,7 +33,8 @@ import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_PAYMENT_ST
 import static com.nanacocoa.server.common.exception.ErrorCode.ORDER_AMOUNT_OVERFLOW;
 
 @Entity(name = "PurchaseOrder")
-@Table(name = "orders")
+@Table(name = "orders", uniqueConstraints = @UniqueConstraint(
+		name = "uk_orders_member_submission", columnNames = {"member_id", "submission_key"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Order {
@@ -46,6 +48,9 @@ public class Order {
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
+
+	@Column(name = "submission_key", length = 36, updatable = false)
+	private String submissionKey;
 
 	@Column(name = "recipient_name", nullable = false, length = 100)
 	private String recipientName;
@@ -145,6 +150,13 @@ public class Order {
 			String shippingAddress,
 			String customerRequest) {
 		return new Order(orderId, member, recipientName, phoneNumber, shippingAddress, customerRequest);
+	}
+
+	public static Order createForSubmission(String orderId, Member member, String submissionKey,
+			String recipientName, String phoneNumber, String shippingAddress, String customerRequest) {
+		Order order = create(orderId, member, recipientName, phoneNumber, shippingAddress, customerRequest);
+		order.submissionKey = submissionKey;
+		return order;
 	}
 
 	public void addItem(Products product, int quantity) {

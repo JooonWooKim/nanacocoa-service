@@ -3,7 +3,7 @@
 상태: 2026-09-14 검증됨
 
 `src/main/resources/db/migration` 아래 Flyway SQL이 운영 스키마 이력입니다.
-현재 파일은 V1부터 V4까지이며 MySQL 시작 시 적용되고 JPA는
+현재 파일은 V1부터 V7까지이며 MySQL 시작 시 적용되고 JPA는
 `ddl-auto=validate`를 사용합니다.
 
 ## 마이그레이션 추가

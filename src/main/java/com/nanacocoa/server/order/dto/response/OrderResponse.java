@@ -23,6 +23,7 @@ public class OrderResponse {
 	private LocalDateTime createdAt;
 	private LocalDateTime reservationExpiresAt;
 	private StockState stockState;
+	private boolean canStartPayment;
 
 	public static OrderResponse from(Order order) {
 		return new OrderResponse(
@@ -34,7 +35,9 @@ public class OrderResponse {
 				order.getTotalAmount(),
 				order.getStatus(),
 				order.getItems().stream().map(OrderItemResponse::from).toList(),
-				order.getCreatedAt(), order.getReservationExpiresAt(), order.getStockState()
+				order.getCreatedAt(), order.getReservationExpiresAt(), order.getStockState(),
+				order.getStatus() == OrderStatus.CREATED && order.getStockState() == StockState.RESERVED
+						&& order.getReservationExpiresAt() != null && !order.reservationExpired(LocalDateTime.now())
 		);
 	}
 }

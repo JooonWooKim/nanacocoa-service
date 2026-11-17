@@ -700,6 +700,7 @@ class NanacocoaServerApplicationTests {
         productsRepository.saveAndFlush(product);
 
         mockMvc.perform(post("/api/orders")
+                .header("Idempotency-Key", java.util.UUID.randomUUID().toString())
                 .session(memberSession).with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -730,6 +731,7 @@ class NanacocoaServerApplicationTests {
             "invalid-order-member@example.com", "order123!", "주문 검증 회원", false);
 
         mockMvc.perform(post("/api/orders")
+                .header("Idempotency-Key", java.util.UUID.randomUUID().toString())
                 .session(memberSession).with(csrf(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -908,7 +910,8 @@ class NanacocoaServerApplicationTests {
             );
         assertThat(login).containsSubsequence(
             "const paymentReturnUrl = takePaymentCallbackLoginReturnUrl();",
-            "window.location.href = orderHistoryLoginReturnUrl() || paymentReturnUrl || loginRedirectUrl;"
+            "window.location.href = orderHistoryLoginReturnUrl() || checkoutLoginReturnUrl()",
+            "|| paymentReturnUrl || loginRedirectUrl;"
         );
         mockMvc.perform(get("/orders.html"))
             .andExpect(status().isOk())

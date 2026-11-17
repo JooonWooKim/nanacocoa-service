@@ -37,6 +37,8 @@ public enum ErrorCode {
 	NOT_FOUND_ORDER(HttpStatus.NOT_FOUND, "ORDER_01", "주문을 찾을 수 없습니다."),
 	INVALID_ORDER_ITEMS(HttpStatus.BAD_REQUEST, "ORDER_02", "주문 상품 정보를 확인해주세요."),
 	ORDER_AMOUNT_OVERFLOW(HttpStatus.BAD_REQUEST, "ORDER_03", "주문 금액이 허용 범위를 초과했습니다."),
+	ORDER_SUBMISSION_CONFLICT(HttpStatus.CONFLICT, "ORDER_05", "이미 접수한 주문의 내용과 다릅니다. 기존 주문을 확인해주세요."),
+	ORDER_CHECKOUT_ACCOUNT_CHANGED(HttpStatus.CONFLICT, "ORDER_06", "로그인한 계정이 바뀌었습니다. 주문서를 다시 열어주세요."),
 
 	NOT_FOUND_PAYMENT(HttpStatus.NOT_FOUND, "PAYMENT_01", "결제 정보를 찾을 수 없습니다."),
 	PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT_02", "주문 금액과 결제 금액이 일치하지 않습니다."),

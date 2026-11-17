@@ -13,16 +13,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FlywayMigrationTest {
 	@Test
 	void appliesMigrationsAndPreservesExistingMemberProfileDefaults() throws Exception {
-		String url = "jdbc:h2:mem:flyway-migration;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
+		String mysql = System.getenv("SUBMISSION_MIGRATION_TEST_DB_URL");
+		String url = mysql == null
+				? "jdbc:h2:mem:flyway-migration;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+				: mysql;
+		String username = mysql == null ? "sa" : "root";
 		Flyway firstThreeMigrations = Flyway.configure()
-				.dataSource(url, "sa", "")
+				.dataSource(url, username, "")
 				.locations("classpath:db/migration")
 				.target("3")
 				.load();
 
 		assertThat(firstThreeMigrations.migrate().migrationsExecuted).isEqualTo(3);
 
-		try (Connection connection = DriverManager.getConnection(url, "sa", "");
+		try (Connection connection = DriverManager.getConnection(url, username, "");
 			 Statement statement = connection.createStatement()) {
 			statement.executeUpdate("""
 					insert into members (email, name, password, is_admin, created_at)
@@ -30,34 +34,35 @@ class FlywayMigrationTest {
 					""");
 		}
 
-		try (Connection connection = DriverManager.getConnection(url, "sa", ""); Statement statement = connection.createStatement()) {
+		try (Connection connection = DriverManager.getConnection(url, username, ""); Statement statement = connection.createStatement()) {
 			statement.executeUpdate("insert into products (name, price, summary, detail_title, description, created_at) values ('legacy product', 41000, 'summary', 'detail', 'description', current_timestamp)");
 			statement.executeUpdate("insert into orders (order_id, member_id, total_amount, status, version, created_at, updated_at) select 'legacy-order', id, 41000, 'CREATED', 0, current_timestamp, current_timestamp from members where email = 'legacy@example.com'");
 		}
 
 		Flyway allMigrations = Flyway.configure()
-				.dataSource(url, "sa", "")
+				.dataSource(url, username, "")
 				.locations("classpath:db/migration")
 				.load();
-		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(3);
+		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(4);
 
-		try (Connection connection = DriverManager.getConnection(url, "sa", "");
+		try (Connection connection = DriverManager.getConnection(url, username, "");
 			 Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery("select count(*) from payments")) {
 			assertThat(resultSet.next()).isTrue();
 			assertThat(resultSet.getLong(1)).isZero();
 		}
 
-		try (Connection connection = DriverManager.getConnection(url, "sa", "");
+		try (Connection connection = DriverManager.getConnection(url, username, "");
 			 Statement statement = connection.createStatement();
-			 ResultSet resultSet = statement.executeQuery("select stock_state, reservation_expires_at, legacy_shipping_review from orders where order_id = 'legacy-order'")) {
+			 ResultSet resultSet = statement.executeQuery("select stock_state, reservation_expires_at, legacy_shipping_review, submission_key from orders where order_id = 'legacy-order'")) {
 			assertThat(resultSet.next()).isTrue();
 			assertThat(resultSet.getString("stock_state")).isEqualTo("LEGACY");
 			assertThat(resultSet.getObject("reservation_expires_at")).isNull();
 			assertThat(resultSet.getBoolean("legacy_shipping_review")).isTrue();
+			assertThat(resultSet.getString("submission_key")).isNull();
 		}
 
-		try (Connection connection = DriverManager.getConnection(url, "sa", ""); Statement statement = connection.createStatement();
+		try (Connection connection = DriverManager.getConnection(url, username, ""); Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery("select stock_quantity, reserved_quantity, sale_status from products where name = 'legacy product'")) {
 			assertThat(resultSet.next()).isTrue();
 			assertThat(resultSet.getLong("stock_quantity")).isZero();
@@ -65,7 +70,7 @@ class FlywayMigrationTest {
 			assertThat(resultSet.getString("sale_status")).isEqualTo("STOPPED");
 		}
 
-		try (Connection connection = DriverManager.getConnection(url, "sa", "");
+		try (Connection connection = DriverManager.getConnection(url, username, "");
 			 Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery("select address, phone_number, email_receive_consent from members where email = 'legacy@example.com'")) {
 			assertThat(resultSet.next()).isTrue();

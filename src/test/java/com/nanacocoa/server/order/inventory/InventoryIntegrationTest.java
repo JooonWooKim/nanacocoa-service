@@ -110,7 +110,10 @@ class InventoryIntegrationTest {
         return products.saveAndFlush(product);
     }
     OrderResponse order(Products product, int quantity) {
-        return orderService.createOrder(request(List.of(new OrderItemRequest(product.getId(), quantity))), buyer);
+        return submitNewOrder(request(List.of(new OrderItemRequest(product.getId(), quantity))), buyer);
+    }
+    OrderResponse submitNewOrder(CreateOrderRequest request, UserDetailsImpl owner) {
+        return orderService.createOrder(request, UUID.randomUUID().toString(), null, owner).order();
     }
     CreateOrderRequest request(List<OrderItemRequest> items) {
         return new CreateOrderRequest("테스트", "010-0000-0000", "테스트 배송지", null, items);
@@ -144,9 +147,131 @@ class InventoryIntegrationTest {
 
     @Test void insufficientSecondItemRollsBackFirstReservationAndEntireOrder() {
         Products first = product(5), second = product(0); long count = orders.count();
-        assertThatThrownBy(() -> orderService.createOrder(request(List.of(new OrderItemRequest(first.getId(), 2), new OrderItemRequest(second.getId(), 1))), buyer))
+        String key = UUID.randomUUID().toString();
+        var submission = request(List.of(new OrderItemRequest(first.getId(), 2), new OrderItemRequest(second.getId(), 1)));
+        assertThatThrownBy(() -> orderService.createOrder(submission, key, null, buyer))
             .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(INSUFFICIENT_STOCK));
         stock(first, 5, 0); stock(second, 0, 0); assertThat(orders.count()).isEqualTo(count);
+        assertThatThrownBy(() -> orderService.getSubmission(key, null, buyer))
+            .isInstanceOfSatisfying(NanacocoaException.class, e -> assertThat(e.getErrorCode()).isEqualTo(NOT_FOUND_ORDER));
+        productsService.updateInventory(second.getId(),
+            new UpdateInventoryRequest(1L, SaleStatus.ON_SALE, second.getStockVersion()), admin);
+        assertThat(orderService.createOrder(submission, key, null, buyer).created()).isTrue();
+        stock(first, 3, 2); stock(second, 0, 1);
+    }
+
+    @Test void sameSubmissionConvergesOnOneOrderAndReservationAtLastUnit() throws Exception {
+        Products product = product(1);
+        String key = UUID.randomUUID().toString();
+        var request = request(List.of(new OrderItemRequest(product.getId(), 1)));
+        Queue<OrderService.Submission> results = new ConcurrentLinkedQueue<>();
+        long count = orders.count();
+        Runnable submit = () -> results.add(orderService.createOrder(request, key, null, buyer));
+        parallel(submit, submit);
+
+        assertThat(results).extracting(OrderService.Submission::created).containsExactlyInAnyOrder(true, false);
+        assertThat(results.stream().map(result -> result.order().getOrderId()).distinct()).hasSize(1);
+        assertThat(orders.count()).isEqualTo(count + 1);
+        stock(product, 0, 1);
+        verifyNoInteractions(tossPaymentsClient);
+    }
+
+    @Test void differentConcurrentPayloadsWithSameKeyConflictBeforeCheckingStock() throws Exception {
+        Products product = product(1);
+        String key = UUID.randomUUID().toString();
+        var items = List.of(new OrderItemRequest(product.getId(), 1));
+        var created = new AtomicInteger();
+        var conflicts = new AtomicInteger();
+        java.util.function.Consumer<CreateOrderRequest> submit = request -> {
+            try {
+                assertThat(orderService.createOrder(request, key, null, buyer).created()).isTrue();
+                created.incrementAndGet();
+            } catch (NanacocoaException e) {
+                assertThat(e.getErrorCode()).isEqualTo(ORDER_SUBMISSION_CONFLICT);
+                conflicts.incrementAndGet();
+            }
+        };
+        parallel(() -> submit.accept(request(items)),
+            () -> submit.accept(new CreateOrderRequest("테스트", "010-0000-0000", "다른 배송지", null, items)));
+        assertThat(created.get()).isEqualTo(1);
+        assertThat(conflicts.get()).isEqualTo(1);
+        stock(product, 0, 1);
+    }
+
+    @Test void submissionHttpContractScopesKeysAndReplaysStoredOrder() throws Exception {
+        Products first = product(2), second = product(1);
+        String endpoint = "/api/orders";
+        String lookup = endpoint + "/submission";
+        String key = UUID.randomUUID().toString();
+        MockHttpSession owner = session(buyer), other = session(admin);
+        var accountResponse = mvc.perform(get("/api/auth/session").session(owner)).andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+        String account = json.readTree(accountResponse).path("checkoutAccount").asText();
+        mvc.perform(get("/api/auth/session").session(session(buyer)))
+            .andExpect(jsonPath("$.checkoutAccount").value(account));
+        var firstItem = new OrderItemRequest(first.getId(), 1);
+        var secondItem = new OrderItemRequest(second.getId(), 1);
+        String payload = json.writeValueAsString(request(List.of(firstItem, secondItem)));
+        mvc.perform(post(endpoint).session(owner).header("Idempotency-Key", key)
+                .contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(endpoint).session(owner).with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isBadRequest());
+        mvc.perform(post(endpoint).session(owner).with(csrf(mvc)).header("Idempotency-Key", "1-2-3-4-5")
+                .contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isBadRequest());
+        mvc.perform(get(lookup).session(owner).header("Idempotency-Key", key)).andExpect(status().isNotFound());
+        mvc.perform(get(lookup).session(owner)).andExpect(status().isBadRequest());
+        mvc.perform(get(lookup).header("Idempotency-Key", key)).andExpect(status().isUnauthorized());
+
+        var creation = mvc.perform(post(endpoint).session(owner).with(csrf(mvc)).header("Idempotency-Key", key)
+                .header("X-Checkout-Account", account).contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isCreated()).andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.data.canStartPayment").value(true))
+            .andReturn().getResponse().getContentAsString();
+        var stored = json.readTree(creation).path("data");
+        String orderId = stored.path("orderId").asText();
+        jdbc.update("update products set price = ? where id = ?", 60000L, first.getId());
+        String replay = json.writeValueAsString(new CreateOrderRequest(" 테스트 ", " 010-0000-0000 ",
+            " 테스트 배송지 ", "  ", List.of(secondItem, firstItem)));
+        mvc.perform(post(endpoint).session(owner).with(csrf(mvc)).header("Idempotency-Key", key.toUpperCase(Locale.ROOT))
+                .contentType(MediaType.APPLICATION_JSON).content(replay))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.orderId").value(orderId))
+            .andExpect(jsonPath("$.data.totalAmount").value(82000))
+            .andExpect(jsonPath("$.data.reservationExpiresAt").value(stored.path("reservationExpiresAt").asText()));
+        mvc.perform(get(lookup).session(owner).header("Idempotency-Key", key))
+            .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.data.orderId").value(orderId));
+        mvc.perform(get(lookup).session(other).header("Idempotency-Key", key)).andExpect(status().isNotFound());
+        mvc.perform(get(lookup).session(other).header("Idempotency-Key", key).header("X-Checkout-Account", account))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ORDER_06"));
+        mvc.perform(post(endpoint).session(other).with(csrf(mvc)).header("Idempotency-Key", key)
+                .header("X-Checkout-Account", account).contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ORDER_06"));
+        String otherPayload = json.writeValueAsString(request(List.of(firstItem)));
+        mvc.perform(post(endpoint).session(other).with(csrf(mvc)).header("Idempotency-Key", key)
+                .contentType(MediaType.APPLICATION_JSON).content(otherPayload))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.data.orderId").value(org.hamcrest.Matchers.not(orderId)));
+        stock(first, 0, 2); stock(second, 0, 1);
+        verifyNoInteractions(tossPaymentsClient);
+    }
+
+    @Test void recoveryReportsExpiredAndCanceledOrdersWithoutRenewal() {
+        Products product = product(1);
+        String key = UUID.randomUUID().toString();
+        var request = request(List.of(new OrderItemRequest(product.getId(), 1)));
+        var original = orderService.createOrder(request, key, null, buyer).order();
+        makeExpired(original);
+        var expired = orderService.getSubmission(key, null, buyer);
+        assertThat(expired.isCanStartPayment()).isFalse();
+        stock(product, 0, 1);
+        expiration.expire(original.getOrderId());
+        var replay = orderService.createOrder(request, key, null, buyer);
+        assertThat(replay.created()).isFalse();
+        assertThat(replay.order().getOrderId()).isEqualTo(original.getOrderId());
+        assertThat(replay.order().getStatus()).isEqualTo(OrderStatus.CANCELED);
+        assertThat(replay.order().getReservationExpiresAt()).isEqualTo(expired.getReservationExpiresAt());
+        stock(product, 1, 0);
     }
 
     @Test void stoppedAndOversizedOrdersAreRejected() {
@@ -314,8 +439,8 @@ class InventoryIntegrationTest {
 
     @Test void oppositeMultiProductRequestOrderDoesNotDeadlock() throws Exception {
         Products first = product(2), second = product(2);
-        parallel(() -> orderService.createOrder(request(List.of(new OrderItemRequest(first.getId(), 1), new OrderItemRequest(second.getId(), 1))), buyer),
-            () -> orderService.createOrder(request(List.of(new OrderItemRequest(second.getId(), 1), new OrderItemRequest(first.getId(), 1))), buyer));
+        parallel(() -> submitNewOrder(request(List.of(new OrderItemRequest(first.getId(), 1), new OrderItemRequest(second.getId(), 1))), buyer),
+            () -> submitNewOrder(request(List.of(new OrderItemRequest(second.getId(), 1), new OrderItemRequest(first.getId(), 1))), buyer));
         stock(first, 0, 2); stock(second, 0, 2);
     }
 
@@ -374,13 +499,13 @@ class InventoryIntegrationTest {
         for (int count = 0; count < 20; count++) {
             order(cocoa, 1);
         }
-        var newest = orderService.createOrder(request(List.of(
+        var newest = submitNewOrder(request(List.of(
             new OrderItemRequest(second.getId(), 1), new OrderItemRequest(cocoa.getId(), 1))), buyer);
         var owner = members.findByEmail(buyer.getUsername()).orElseThrow();
         jdbc.update("update orders set created_at = ? where member_id = ?",
             LocalDateTime.of(2026, 1, 1, 12, 0), owner.getId());
         orderService.cancelUnpaid(newest.getOrderId(), buyer);
-        orderService.createOrder(request(List.of(new OrderItemRequest(cocoa.getId(), 1))), admin);
+        submitNewOrder(request(List.of(new OrderItemRequest(cocoa.getId(), 1))), admin);
 
         mvc.perform(get("/api/orders").session(buyerSession)).andExpect(status().isOk())
             .andExpect(header().string("Cache-Control", "no-store"))
