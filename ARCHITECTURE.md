@@ -163,6 +163,20 @@ Actuator health·info를 허용하며 나머지 요청은 인증된 세션이 �
 평가 카탈로그는 이러한 위험을 기존 테스트에 연결합니다.
 [docs/product-specs/evaluation-catalog.md](docs/product-specs/evaluation-catalog.md).
 
+## 미확정 거래 운영
+
+`PaymentOperationsController → PaymentOperationsService`는 관리자 미확정 승인·보상·취소
+목록과 상세, 개별 복구를 제공한다. 현재 DB 관리자 권한을 매 요청 확인하며
+`PaymentOperationsQueryService`는 기존 Repository의 UNION ALL 조회로 페이지를 읽는다.
+DTO는 키·개인정보·외부 오류 원문을 제외한다. 조회는 PG를 호출하지 않는다.
+
+수동 복구는 결제 활성화가 필요하지만 자동 복구 플래그와 독립적이다.
+기존 주문 락 안에서 최신 상태와 재시도 시각을 확인하며 자동 복구도 같은 검증을
+사용한다. 확정된 대상은 외부 호출 없이 반환하고 미래·누락 재시도 시각은 수동
+요청을 409로 보류한다. PG 호출 중 DB 트랜잭션을 유지하지 않는다. 승인·취소·보상
+완료는 결제 키·주문 번호·금액 검증 후 기존 트랜잭션과 재고 흐름을 따른다.
+[미확정 결제·환불 운영 PRD](docs/product-specs/payment-operations-prd.md).
+
 ## 재고·품절 및 주문 만료
 
 공개 상품 응답은 판매 상태만 제공하고 수량·버전은 관리자 전용 재고 API로만 조회합니다. 상품의 판매 가능 수량과 예약 수량을 분리하며 `Products`의 `stockVersion`과 DB 비관적 쓰기 잠금으로 보호합니다. 주문 생성은 상품 ID 순서로 잠금을 획득하여 재고를 확보합니다. 결제 완료·확정 실패·보상은 `OrderInventoryService`를 통해 예약을 판매 확정하거나 해제하며 주문·결제·재고를 같은 트랜잭션에 반영합니다.

@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
 
         logger.error(e.getErrorCode().getCode() + " : " + e.getErrorCode().getError());
 
-        return ResponseEntity.status(status).body(errorMessage);
+        return ResponseEntity.status(status).cacheControl(org.springframework.http.CacheControl.noStore()).body(errorMessage);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
 
         logger.error(error + " : " + error);
 
-        return ResponseEntity.status(status).body(errorMessage);
+        return ResponseEntity.status(status).cacheControl(org.springframework.http.CacheControl.noStore()).body(errorMessage);
     }
 
 	@ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
