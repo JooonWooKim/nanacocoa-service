@@ -182,6 +182,7 @@ class PaymentRecoveryServiceTest {
 				PaymentStatus.PENDING,
 				recoveryAction,
 				createdAt,
+				LocalDateTime.now().minusSeconds(1),
 				true,
 				new PaymentResponse(10L, "NC_order-123", 38000L, PaymentStatus.PENDING, null, null, null, null)
 		);

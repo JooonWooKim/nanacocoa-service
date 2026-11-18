@@ -52,6 +52,7 @@ public enum ErrorCode {
 	PAYMENT_CANCEL_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_10", "결제 취소에 실패했습니다."),
 	PAYMENT_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "PAYMENT_11", "결제사와 통신할 수 없습니다."),
 	INVALID_PAYMENT_STATUS(HttpStatus.CONFLICT, "PAYMENT_12", "현재 결제 상태에서는 요청을 처리할 수 없습니다."),
+	PAYMENT_RECOVERY_DEFERRED(HttpStatus.CONFLICT, "PAYMENT_14", "복구 예정 시각 또는 거래 상태를 확인해주세요."),
 	UNSUPPORTED_PAYMENT_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_13", "지원하지 않는 결제 상태입니다.");
 
 

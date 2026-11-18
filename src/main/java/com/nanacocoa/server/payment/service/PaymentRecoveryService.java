@@ -77,22 +77,39 @@ public class PaymentRecoveryService {
 		}
 	}
 
+	// 수동 실행과 배치 실행은 동일한 주문 락과 최신 복구 상태를 사용한다.
+	public void reconcileOneApproval(Long id, String orderId) {
+		paymentLockManager.withOrderLock(orderId, () -> { reconcileApproval(id, true); return null; });
+	}
+
+	public void reconcileOneCancellation(Long id, String orderId) {
+		paymentLockManager.withOrderLock(orderId, () -> { reconcileCancellation(id, true); return null; });
+	}
+
+	private boolean ready(LocalDateTime retryAt, boolean manual) {
+		if (retryAt != null && !retryAt.isAfter(LocalDateTime.now())) return true;
+		if (manual) throw new NanacocoaException(com.nanacocoa.server.common.exception.ErrorCode.PAYMENT_RECOVERY_DEFERRED);
+		return false;
+	}
+
 	private void reconcileApprovalSafely(Long paymentId, String orderId) {
 		try {
 			paymentLockManager.withOrderLock(orderId, () -> {
-				reconcileApproval(paymentId);
+				reconcileApproval(paymentId, false);
 				return null;
 			});
 		} catch (RuntimeException exception) {
-			log.warn("Payment approval reconciliation deferred. paymentId={}", paymentId, exception);
+			log.warn("Payment approval reconciliation deferred. paymentId={}", paymentId);
 		}
 	}
 
-	private void reconcileApproval(Long paymentId) {
+	private void reconcileApproval(Long paymentId, boolean manual) {
 		ApprovalWork work = transactionalService.getRecoveryApproval(paymentId);
 		if (work.status() != PaymentStatus.PENDING || work.recoveryAction() == PaymentRecoveryAction.NONE) {
 			return;
 		}
+
+		if (!ready(work.nextRetryAt(), manual)) return;
 
 		TossPaymentResponse response;
 		try {
@@ -213,19 +230,21 @@ public class PaymentRecoveryService {
 	private void reconcileCancellationSafely(Long cancellationId, String orderId) {
 		try {
 			paymentLockManager.withOrderLock(orderId, () -> {
-				reconcileCancellation(cancellationId);
+				reconcileCancellation(cancellationId, false);
 				return null;
 			});
 		} catch (RuntimeException exception) {
-			log.warn("Payment cancellation reconciliation deferred. cancellationId={}", cancellationId, exception);
+			log.warn("Payment cancellation reconciliation deferred. cancellationId={}", cancellationId);
 		}
 	}
 
-	private void reconcileCancellation(Long cancellationId) {
+	private void reconcileCancellation(Long cancellationId, boolean manual) {
 		CancellationWork work = transactionalService.getRecoveryCancellation(cancellationId);
 		if (work.status() != CancellationStatus.PENDING) {
 			return;
 		}
+
+		if (!ready(work.nextRetryAt(), manual)) return;
 
 		TossPaymentResponse lookup;
 		try {
@@ -236,6 +255,13 @@ public class PaymentRecoveryService {
 					exception.getCode(),
 					exception.getMessage()
 			);
+			return;
+		}
+
+		if (!Objects.equals(work.paymentKey(), lookup.getPaymentKey())
+				|| !Objects.equals(work.orderId(), lookup.getOrderId())
+				|| !Objects.equals(work.amount(), lookup.getTotalAmount())) {
+			transactionalService.recordUncertainCancellation(work.cancellationId(), "PG_PAYMENT_MISMATCH", "결제사 조회 결과 불일치");
 			return;
 		}
 

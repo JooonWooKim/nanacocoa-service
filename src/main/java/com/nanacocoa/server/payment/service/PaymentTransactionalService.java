@@ -335,7 +335,9 @@ public class PaymentTransactionalService {
 	}
 
 	private void validateCanceledResponse(Payment payment, TossPaymentResponse response) {
-		if (!Objects.equals(payment.getPaymentKey(), response.getPaymentKey()) || !response.isCanceled()) {
+		if (!Objects.equals(payment.getPaymentKey(), response.getPaymentKey())
+				|| !Objects.equals(payment.getOrder().getOrderId(), response.getOrderId())
+				|| !Objects.equals(payment.getAmount(), response.getTotalAmount()) || !response.isCanceled()) {
 			throw new NanacocoaException(UNSUPPORTED_PAYMENT_STATUS);
 		}
 	}
@@ -360,6 +362,7 @@ public class PaymentTransactionalService {
 			PaymentStatus status,
 			PaymentRecoveryAction recoveryAction,
 			LocalDateTime createdAt,
+			LocalDateTime nextRetryAt,
 			boolean replay,
 			PaymentResponse response) {
 		static ApprovalWork from(Payment payment, boolean replay) {
@@ -373,6 +376,7 @@ public class PaymentTransactionalService {
 					payment.getStatus(),
 					payment.getRecoveryAction(),
 					payment.getCreatedAt(),
+					payment.getNextRetryAt(),
 					replay,
 					PaymentResponse.from(payment)
 			);
@@ -387,6 +391,8 @@ public class PaymentTransactionalService {
 			String idempotencyKey,
 			String reason,
 			CancellationStatus status,
+			long amount,
+			LocalDateTime nextRetryAt,
 			boolean replay,
 			PaymentResponse response) {
 		static CancellationWork from(PaymentCancellation cancellation, boolean replay) {
@@ -399,6 +405,8 @@ public class PaymentTransactionalService {
 					cancellation.getIdempotencyKey(),
 					cancellation.getReason(),
 					cancellation.getStatus(),
+					payment.getAmount(),
+					cancellation.getNextRetryAt(),
 					replay,
 					PaymentResponse.from(payment)
 			);
@@ -413,6 +421,8 @@ public class PaymentTransactionalService {
 					null,
 					null,
 					CancellationStatus.SUCCESS,
+					payment.getAmount(),
+					null,
 					true,
 					PaymentResponse.from(payment)
 			);

@@ -498,6 +498,36 @@ function checkoutLoginReturnUrl() {
   return `checkout.html?id=${productId}`;
 }
 
+// 로그인 복귀에는 고정 경로와 검증된 조회 조건만 허용한다.
+function paymentOperationsLocation(params) {
+  const target = new URLSearchParams();
+  const kind = params.get("kind");
+  if (kind && !["VERIFY_APPROVAL", "COMPENSATE_APPROVAL", "CANCELLATION"].includes(kind)) return null;
+  if (kind) target.set("kind", kind);
+  const orderId = params.get("orderId");
+  if (orderId && (orderId.length > 64 || !orderId.trim())) return null;
+  if (orderId) target.set("orderId", orderId);
+  for (const [key, fallback, min, max] of [["page", 0, 0, 2147483647], ["size", 20, 1, 100]]) {
+    const raw = params.get(key) ?? String(fallback);
+    const value = Number(raw);
+    if (!/^[0-9]+$/.test(raw) || !Number.isSafeInteger(value) || value < min || value > max) return null;
+    target.set(key, String(value));
+  }
+  const type = params.get("type"), id = params.get("id");
+  if (type !== null || id !== null) {
+    if (!["APPROVAL", "CANCELLATION"].includes(type) || !/^[1-9][0-9]{0,18}$/.test(id || "")
+        || BigInt(id) > 9223372036854775807n) return null;
+    target.set("type", type); target.set("id", id);
+  }
+  return target;
+}
+function paymentOperationsLoginReturnUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("return") !== "payment-operations") return null;
+  const target = paymentOperationsLocation(params);
+  return target ? `payment-operations.html?${target}` : null;
+}
+
 function initLoginPage() {
   const form = document.querySelector("[data-login-form]");
   const socialButtons = document.querySelectorAll("[data-social-login]");
@@ -540,7 +570,7 @@ function initLoginPage() {
       }
 
       const paymentReturnUrl = takePaymentCallbackLoginReturnUrl();
-      window.location.href = orderHistoryLoginReturnUrl() || checkoutLoginReturnUrl()
+      window.location.href = orderHistoryLoginReturnUrl() || checkoutLoginReturnUrl() || paymentOperationsLoginReturnUrl()
         || paymentReturnUrl || loginRedirectUrl;
     } catch (error) {
       setAuthMessage(error.message || "로그인 중 문제가 발생했습니다.");
@@ -1032,6 +1062,12 @@ function renderAdminProductRegisterLink(session) {
   shippingLink.textContent = "배송 관리";
   shippingLink.dataset.adminProductRegister = "";
   drawerNav.append(shippingLink);
+  const operationsLink = document.createElement("a");
+  operationsLink.className = "drawer-link";
+  operationsLink.href = "payment-operations.html";
+  operationsLink.textContent = "결제·환불 운영";
+  operationsLink.dataset.adminProductRegister = "";
+  drawerNav.append(operationsLink);
 }
 
 function loadAuthSession() {

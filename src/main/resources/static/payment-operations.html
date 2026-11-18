@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>결제·환불 운영 · 나나코코아</title><link rel="stylesheet" href="styles.css"></head>
+<body class="mypage-body">
+<main class="mypage-page payment-operations-page" aria-labelledby="operations-title">
+<nav class="order-history-nav"><a href="index.html">홈</a><a href="inventory.html">재고 관리</a><a href="shipping.html">배송 관리</a></nav>
+<header class="mypage-heading"><h1 id="operations-title">미확정 결제·환불 운영</h1></header>
+<p>승인 확인, 승인 보상과 취소 확인 거래를 조회합니다. 복구는 선택한 거래에만 실행됩니다.</p>
+<form id="operations-search" class="inventory-card">
+<label>거래 유형 <select name="kind"><option value="">전체</option><option value="VERIFY_APPROVAL">승인 확인</option><option value="COMPENSATE_APPROVAL">승인 보상</option><option value="CANCELLATION">취소 확인</option></select></label>
+<label>주문 번호 <input name="orderId" maxlength="64" autocomplete="off"></label>
+<button type="submit">조회</button>
+</form>
+<p id="operations-message" class="mypage-guard" role="status" aria-live="polite"></p>
+<button id="operations-retry" type="button" hidden>상태 다시 조회</button>
+<a id="operations-login" href="login.html" hidden>로그인하기</a>
+<div id="operations-content"></div>
+</main>
+<script src="script.js"></script><script src="payment-operations.js"></script>
+</body></html>

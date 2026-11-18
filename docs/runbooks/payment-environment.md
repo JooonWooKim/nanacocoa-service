@@ -51,3 +51,33 @@ Git 브랜치 전환으로 갱신되지 않습니다. 기존 환경에 반영할
 - `.env.example`: `SPRING_PROFILES_ACTIVE=mysql`,
   `TOSS_PAYMENTS_ENABLED=false`, `PAYMENT_RECONCILIATION_ENABLED=false`를
   기본값으로 둡니다. 키 항목은 비워 두고 이미 생성된 `.env`는 변경하지 않습니다.
+
+## 미확정 결제·환불 운영 화면
+
+관리자는 `payment-operations.html`에서 미확정 승인·보상·취소를 주문 번호와 유형으로
+조회한다. 미래 재시도 대상도 표시되며 완료 거래는 상세 URL에서 확인할 수 있다.
+조회에는 PG 호출이 없다. 각 거래의 오류 안내, 주문·결제·재고 상태와 복구 예정
+시각을 확인한다. 시각 누락은 운영 점검 대상이며 DB를 임의로 수정해 실행하지 않는다.
+
+개별 복구는 PG 조회 후 기존 승인 재시도·보상·환불이 실행될 수 있다. 결제 연동을
+활성화한 환경에서만 사용하고 자동 복구 플래그는 수동 실행을 차단하지 않는다.
+성공 안내 후 저장된 결과를 확인한다. 확인 중이면 예정 시각 이후 다시 조회한다.
+409는 처리 경합 또는 재시도 보류, 503은 결제 비활성 또는 잠금 서비스 장애를
+의미한다. 미확정 결과만으로 환불 완료·재입고를 판단하지 않는다.
+
+통신 오류로 실행 응답을 잃으면 상태 다시 조회를 사용한다. 자동 재제출은 하지 않는다.
+화면·증거에 키·개인정보를 복사하지 않는다. 수동 실행 로그는 운영자 내부 ID,
+거래 유형·ID, 시각과 결과 분류만 제공한다. 로그는 영구 감사 원장을 대체하지 않는다.
+출시 전 점검 담당자와 고객 문의·이관 절차를 확정한다.
+
+검증 명령(외부 PG 연결 없음):
+
+```sh
+./gradlew test --tests '*PaymentOperationsIntegrationTest' --tests 'com.nanacocoa.server.payment.*'
+node --test src/test/js/payment-operations.test.cjs
+./scripts/harness check
+```
+
+임시 MySQL 8.4 검증은 별도 가상 DB URL을 `PAYMENT_OPERATIONS_TEST_DB_URL`로
+지정한다. 테스트는 빈 비밀번호를 쓰는 격리된 임시 root DB만 대상으로 하며
+운영·공유 DB URL을 사용하지 않는다. 테스트 프로필에서는 결제 제공자를 모의한다.

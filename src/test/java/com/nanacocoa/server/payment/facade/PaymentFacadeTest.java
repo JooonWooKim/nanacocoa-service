@@ -161,7 +161,7 @@ class PaymentFacadeTest {
 				.thenReturn("cancel-fingerprint");
 		CancellationWork work = new CancellationWork(
 				20L, 10L, "payment-key", "NC_order-123", "cancel-idem", "고객 요청",
-				CancellationStatus.PENDING, false,
+				CancellationStatus.PENDING, 38000L, LocalDateTime.now().minusSeconds(1), false,
 				new PaymentResponse(10L, "NC_order-123", 38000L, PaymentStatus.CANCEL_PENDING, "카드", null, LocalDateTime.now(), null)
 		);
 		TossPaymentResponse canceled = canceledResponse();
@@ -189,6 +189,7 @@ class PaymentFacadeTest {
 				status,
 				status == PaymentStatus.PENDING ? PaymentRecoveryAction.VERIFY_APPROVAL : PaymentRecoveryAction.NONE,
 				LocalDateTime.now(),
+				LocalDateTime.now().minusSeconds(1),
 				replay,
 				response
 		);
