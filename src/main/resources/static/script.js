@@ -1839,6 +1839,9 @@ async function initCheckoutPage() {
 
   if (paymentResult && storedPaymentContext?.checkoutAccount
       && storedPaymentContext.checkoutAccount !== session.checkoutAccount) {
+    if (paymentResult === "success") {
+      preservePaymentCallbackLoginReturnUrl();
+    }
     renderCheckoutGuard(guard, "이 결제를 시작한 계정으로 로그인해 주세요.", "login.html", "로그인하기");
     return;
   }

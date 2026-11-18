@@ -944,5 +944,16 @@ class NanacocoaServerApplicationTests {
             "preservePaymentCallbackLoginReturnUrl();",
             "renderCheckoutGuard(guard,"
         );
+        int accountMismatchStart = checkoutSession.indexOf(
+            "if (paymentResult && storedPaymentContext?.checkoutAccount");
+        String accountMismatch = checkoutSession.substring(accountMismatchStart,
+            checkoutSession.indexOf("await processPaymentSuccessCallback();", accountMismatchStart));
+        assertThat(accountMismatch).containsSubsequence(
+            "storedPaymentContext.checkoutAccount !== session.checkoutAccount",
+            "if (paymentResult === \"success\") {",
+            "preservePaymentCallbackLoginReturnUrl();",
+            "renderCheckoutGuard(guard,",
+            "return;"
+        );
     }
 }
