@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static com.nanacocoa.server.common.exception.ErrorCode.ADMIN_ACCESS_REQUIRED;
 import static com.nanacocoa.server.common.exception.ErrorCode.NOT_VALID_PASSWORD;
@@ -46,6 +48,11 @@ public class Member {
 
     @Column(name = "is_admin", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean admin = false;
+
+    public String checkoutAccount() {
+        String identity = "nanacocoa.checkout.v1:" + id + ":" + createdAt;
+        return UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString();
+    }
 
     @Builder
     public Member(

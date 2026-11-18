@@ -11,12 +11,13 @@ public class AuthSessionResponse {
 	private final String email;
 	private final String name;
 	private final boolean admin;
+	private final String checkoutAccount;
 
 	public static AuthSessionResponse anonymous() {
-		return new AuthSessionResponse(false, null, null, false);
+		return new AuthSessionResponse(false, null, null, false, null);
 	}
 
 	public static AuthSessionResponse from(Member member) {
-		return new AuthSessionResponse(true, member.getEmail(), member.getName(), member.isAdmin());
+		return new AuthSessionResponse(true, member.getEmail(), member.getName(), member.isAdmin(), member.checkoutAccount());
 	}
 }

@@ -215,3 +215,10 @@ CREATE TABLE shipment_events (
     CONSTRAINT fk_shipment_events_shipment FOREIGN KEY (shipment_id) REFERENCES shipments (id)
 );
 ```
+
+## `src/main/resources/db/migration/V7__order_submission_key.sql`
+
+```sql
+ALTER TABLE orders ADD COLUMN submission_key VARCHAR(36);
+ALTER TABLE orders ADD CONSTRAINT uk_orders_member_submission UNIQUE (member_id, submission_key);
+```

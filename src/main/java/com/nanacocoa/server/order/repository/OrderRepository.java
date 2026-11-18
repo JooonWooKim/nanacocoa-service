@@ -21,6 +21,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 	Optional<Order> findByOrderIdAndMemberId(String orderId, Long memberId);
 
+	Optional<Order> findByMemberIdAndSubmissionKey(Long memberId, String submissionKey);
+
 	@Query("""
 			select i.order.id as orderId, i.productName as productName
 			from OrderItem i

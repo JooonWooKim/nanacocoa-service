@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
+	private static final String KEY = "cb4d6f79-9d52-49fb-b32b-6cd48faf3be9";
 	@Mock
 	private OrderRepository orderRepository;
 	@Mock
@@ -69,7 +70,7 @@ class OrderServiceTest {
 		Products cake = product("케이크", 18000L);
 		setId(cocoa, 1L);
 		setId(cake, 2L);
-		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+		when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
 		when(productsRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cocoa));
 		when(productsRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(cake));
 		when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -79,8 +80,8 @@ class OrderServiceTest {
 						"문 앞에 놓아주세요.",
 						List.of(new OrderItemRequest(1L, 2), new OrderItemRequest(2L, 1))
 				),
-				userDetails
-		);
+				KEY, null, userDetails
+		).order();
 
 		assertThat(response.getOrderId()).startsWith("NC_");
 		assertThat(response.getRecipientName()).isEqualTo("구매자");
@@ -94,13 +95,13 @@ class OrderServiceTest {
 
 	@Test
 	void rejectsDuplicateProductIdsBeforeRepositoryLookup() {
-		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+		when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
 		CreateOrderRequest request = request(
 				null,
 				List.of(new OrderItemRequest(1L, 1), new OrderItemRequest(1L, 2))
 		);
 
-		assertThatThrownBy(() -> orderService.createOrder(request, userDetails))
+		assertThatThrownBy(() -> orderService.createOrder(request, KEY, null, userDetails))
 				.isInstanceOfSatisfying(NanacocoaException.class,
 						exception -> assertThat(exception.getErrorCode()).isEqualTo(INVALID_ORDER_ITEMS));
 
@@ -109,12 +110,12 @@ class OrderServiceTest {
 
 	@Test
 	void rejectsOrderWhenRequestedProductDoesNotExist() {
-		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+		when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
 		when(productsRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> orderService.createOrder(
 				request(null, List.of(new OrderItemRequest(999L, 1))),
-				userDetails
+				KEY, null, userDetails
 		))
 				.isInstanceOfSatisfying(NanacocoaException.class,
 						exception -> assertThat(exception.getErrorCode()).isEqualTo(INVALID_ORDER_ITEMS));
@@ -126,7 +127,7 @@ class OrderServiceTest {
 	void requiresAuthenticatedMember() {
 		CreateOrderRequest request = request(null, List.of(new OrderItemRequest(1L, 1)));
 
-		assertThatThrownBy(() -> orderService.createOrder(request, null))
+		assertThatThrownBy(() -> orderService.createOrder(request, KEY, null, null))
 				.isInstanceOfSatisfying(NanacocoaException.class,
 						exception -> assertThat(exception.getErrorCode()).isEqualTo(AUTHENTICATION_REQUIRED));
 	}
@@ -135,14 +136,14 @@ class OrderServiceTest {
 	void storesNullWhenOptionalCustomerRequestIsBlank() {
 		Products product = product("코코아", 12000L);
 		setId(product, 1L);
-		when(memberRepository.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+		when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
 		when(productsRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
 		when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		OrderResponse response = orderService.createOrder(
 				request("   ", List.of(new OrderItemRequest(1L, 1))),
-				userDetails
-		);
+				KEY, null, userDetails
+		).order();
 
 		assertThat(response.getCustomerRequest()).isNull();
 	}

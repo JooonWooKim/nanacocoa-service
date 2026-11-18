@@ -24,24 +24,31 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import static com.nanacocoa.server.common.exception.ErrorCode.AUTHENTICATION_REQUIRED;
 import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_REQUEST;
 import static com.nanacocoa.server.common.exception.ErrorCode.NOT_FOUND_ORDER;
 import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_ORDER_ITEMS;
+import static com.nanacocoa.server.common.exception.ErrorCode.ORDER_CHECKOUT_ACCOUNT_CHANGED;
+import static com.nanacocoa.server.common.exception.ErrorCode.ORDER_SUBMISSION_CONFLICT;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 	private static final int HISTORY_PAGE_SIZE = 20;
 	private static final Sort HISTORY_SORT = Sort.by(Sort.Direction.DESC, "createdAt", "id");
+	private static final Pattern SUBMISSION_KEY = Pattern.compile(
+			"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
 	private final OrderRepository orderRepository;
 	private final ProductsRepository productsRepository;
@@ -110,12 +117,36 @@ public class OrderService {
 		};
 	}
 
-	@Transactional
-	public OrderResponse createOrder(CreateOrderRequest request, UserDetailsImpl userDetails) {
+	@Transactional(readOnly = true)
+	public OrderResponse getSubmission(String rawKey, String checkoutAccount, UserDetailsImpl userDetails) {
 		Member member = authenticatedMember(userDetails);
+		checkCheckoutAccount(member, checkoutAccount);
+		return orderRepository.findByMemberIdAndSubmissionKey(member.getId(), normalizeKey(rawKey))
+				.map(OrderResponse::from)
+				.orElseThrow(() -> new NanacocoaException(NOT_FOUND_ORDER));
+	}
+
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public Submission createOrder(CreateOrderRequest request, String rawKey, String checkoutAccount,
+			UserDetailsImpl userDetails) {
+		if (userDetails == null) throw new NanacocoaException(AUTHENTICATION_REQUIRED);
+		String key = normalizeKey(rawKey);
+		// 같은 회원의 제출은 재고 검사 전에 직렬화합니다.
+		Member member = memberRepository.findByEmailForUpdate(userDetails.getUsername())
+				.orElseThrow(() -> new NanacocoaException(AUTHENTICATION_REQUIRED));
+		checkCheckoutAccount(member, checkoutAccount);
 		validateShippingInformation(request);
 		validateItems(request);
 		validateNoDuplicateProducts(request.getItems());
+
+		var existing = orderRepository.findByMemberIdAndSubmissionKey(member.getId(), key);
+		if (existing.isPresent()) {
+			Order order = existing.get();
+			if (!matchesSubmission(order, request)) {
+				throw new NanacocoaException(ORDER_SUBMISSION_CONFLICT);
+			}
+			return new Submission(OrderResponse.from(order), false);
+		}
 
 		List<Long> productIds = request.getItems().stream().map(OrderItemRequest::getProductId).toList();
 		Map<Long, Products> productsById = new HashMap<>();
@@ -126,9 +157,10 @@ public class OrderService {
 			throw new NanacocoaException(INVALID_ORDER_ITEMS);
 		}
 
-		Order order = Order.create(
+		Order order = Order.createForSubmission(
 				"NC_" + UUID.randomUUID(),
 				member,
+				key,
 				request.getRecipientName().strip(),
 				request.getPhoneNumber().strip(),
 				request.getShippingAddress().strip(),
@@ -141,7 +173,34 @@ public class OrderService {
 		}
 
 		order.reserveStock(LocalDateTime.now().plusMinutes(15));
-		return OrderResponse.from(orderRepository.save(order));
+		return new Submission(OrderResponse.from(orderRepository.save(order)), true);
+	}
+
+	public record Submission(OrderResponse order, boolean created) {}
+
+	private String normalizeKey(String key) {
+		if (key == null || !SUBMISSION_KEY.matcher(key).matches()) throw new NanacocoaException(INVALID_REQUEST);
+		return UUID.fromString(key).toString();
+	}
+
+	private void checkCheckoutAccount(Member member, String checkoutAccount) {
+		if (checkoutAccount != null && !member.checkoutAccount().equals(checkoutAccount)) {
+			throw new NanacocoaException(ORDER_CHECKOUT_ACCOUNT_CHANGED);
+		}
+	}
+
+	private boolean matchesSubmission(Order order, CreateOrderRequest request) {
+		if (!order.getRecipientName().equals(request.getRecipientName().strip())
+				|| !order.getPhoneNumber().equals(request.getPhoneNumber().strip())
+				|| !order.getShippingAddress().equals(request.getShippingAddress().strip())
+				|| !Objects.equals(order.getCustomerRequest(), normalizeCustomerRequest(request.getCustomerRequest()))
+				|| order.getItems().size() != request.getItems().size()) {
+			return false;
+		}
+		Map<Long, Integer> quantities = new HashMap<>();
+		order.getItems().forEach(item -> quantities.put(item.getProduct().getId(), item.getQuantity()));
+		return request.getItems().stream()
+				.allMatch(item -> item.getQuantity().equals(quantities.get(item.getProductId())));
 	}
 
 	@Transactional

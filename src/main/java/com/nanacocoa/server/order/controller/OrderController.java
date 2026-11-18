@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
+	private static final String SUBMISSION_KEY = "Idempotency-Key";
+	private static final String CHECKOUT_ACCOUNT = "X-Checkout-Account";
 	private final OrderService orderService;
 
 	@GetMapping
@@ -65,8 +68,21 @@ public class OrderController {
 	@PostMapping
 	public ResponseEntity<SuccessMessage<OrderResponse>> createOrder(
 			@Valid @RequestBody CreateOrderRequest request,
+			@RequestHeader(name = SUBMISSION_KEY, required = false) String key,
+			@RequestHeader(name = CHECKOUT_ACCOUNT, required = false) String checkoutAccount,
 			@AuthenticationPrincipal UserDetailsImpl userDetails) {
-		OrderResponse response = orderService.createOrder(request, userDetails);
-		return new ResponseEntity<>(new SuccessMessage<>("주문생성성공", response), HttpStatus.CREATED);
+		var submission = orderService.createOrder(request, key, checkoutAccount, userDetails);
+		return ResponseEntity.status(submission.created() ? HttpStatus.CREATED : HttpStatus.OK)
+				.cacheControl(CacheControl.noStore())
+				.body(new SuccessMessage<>(submission.created() ? "주문생성성공" : "주문제출조회성공", submission.order()));
+	}
+
+	@GetMapping("/submission")
+	public ResponseEntity<SuccessMessage<OrderResponse>> getSubmission(
+			@RequestHeader(name = SUBMISSION_KEY, required = false) String key,
+			@RequestHeader(name = CHECKOUT_ACCOUNT, required = false) String checkoutAccount,
+			@AuthenticationPrincipal UserDetailsImpl userDetails) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+				.body(new SuccessMessage<>("주문제출조회성공", orderService.getSubmission(key, checkoutAccount, userDetails)));
 	}
 }
