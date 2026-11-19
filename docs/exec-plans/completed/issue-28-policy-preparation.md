@@ -97,3 +97,16 @@
 - [x] 문서와 하네스 검사 결과 및 잔여 부채를 분류했다.
 - [x] 출시 PRD에 준비 상태와 남은 작업을 연결했다.
 - [x] 코드 구현·정책 승인과 준비 완료를 구분한 보고 자료를 정리했다.
+
+## 2026-11-20 원격 문서 포함 여부 재확인
+
+[리뷰 댓글](https://github.com/JooonWooKim/nanacocoa-service/issues/28#issuecomment-7024858698)은 HEAD가 main과 동일하고 준비 문서가 없다고 지적했다.
+최신 원격 fetch 후 확인한 feature/28에는 `accc632`와 `5aa4460`이 있으며,
+구현 PRD·이 준비 기록·제품 명세 인덱스·출시 PRD 4개 모두 Git 트리에 존재한다.
+제품 명세 인덱스와 출시 PRD의 POLICY 연결도 확인했다. 원격 main과의 diff는 비어 있지 않다.
+해당 리뷰의 누락 상태는 현재 원격 브랜치에 해당하지 않으며,
+재검토 대상은 [PR #29](https://github.com/JooonWooKim/nanacocoa-service/pull/29)다.
+이번 문서 보완에서는 네 문서의 상호 연결과 구현 PR을 명확히 했으며 병합은 수행하지 않았다.
+
+- PASS: `git fetch origin feature/28 main` 후 `git ls-tree -r --name-only origin/feature/28`에서 요청 문서 4개 확인.
+- PASS: `git log --oneline origin/main..origin/feature/28`에서 구현 커밋 2개 확인.

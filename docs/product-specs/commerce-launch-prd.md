@@ -99,6 +99,9 @@ H2·격리 MySQL 8.4의 신청·출고 경합·환불·복구·재입고 집중 
 
 ### POLICY · 서비스 안내, 약관, 가입 동의
 
+구현 검토는 [PR #29](https://github.com/JooonWooKim/nanacocoa-service/pull/29)에서 진행한다.
+[제품 명세 인덱스](index.md)·[구현 PRD](service-policy-prd.md)·[준비 기록](../exec-plans/completed/issue-28-policy-preparation.md)은 feature/28에 포함돼 있으며 main 미반영이다.
+
 [구현 PRD](service-policy-prd.md)와 [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 기능을 feature/28의 `accc632`에서 구현했다. 기준 main은 2026-11-19 확인한 `0cee3be`이며 main 미반영이다. 이후 가입 UI 개선과 파일 기반 정책 전환은 feature/28에 반영하며 main 미반영이다. 최초 V9 구현은 DB 게시와 동의 이력이었으며, 2026-11-20 후속 변경은 약관 파일 스냅샷 조회와 DB 동의 이력으로 분리한다. V10은 기존 동의 식별자·해시를 이행하고 원본 테이블을 보존한다. 게시 잠금 대신 불변 파일과 배포 전 버전 대조를 사용한다.
 
 신규 가입은 기본 비활성이다. 승인 카탈로그와 `POLICY_SIGNUP_ENABLED=true`가 모두 필요하며 미준비 시 503으로 보류한다. 승인 원문·필수 항목·판매자/문의처·배송/반품 조건·기존 회원 적용은 확정하지 않았다. 운영 정책과 실제 배송·RETURN 설정 대조는 [정책 운영 절차](../runbooks/service-policy.md)의 운영 인수 항목이며 자동 승인하지 않는다.

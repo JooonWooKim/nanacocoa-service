@@ -6,6 +6,7 @@
 | 우선순위 | P0 출시 전 |
 | 기준 | 2026-11-19 원격 main `0cee3bec457cced7468d61c2d068aa0669cc9300`, RETURN PR #27 병합 확인 |
 | 이슈 | [P0 POLICY #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28) |
+| 구현 PR | [PR #29](https://github.com/JooonWooKim/nanacocoa-service/pull/29), `feature/28` → `main` · 미병합 |
 | 대상 | 가입 예정자, 구매 회원, 정책 승인·고객 운영 담당자 |
 
 ## 목표와 현재 상태
