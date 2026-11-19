@@ -528,7 +528,31 @@ function paymentOperationsLoginReturnUrl() {
   return target ? `payment-operations.html?${target}` : null;
 }
 
+function returnOperationsLoginReturnUrl() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("return") !== "returns") return null;
+  const target = new URLSearchParams();
+  const id = params.get("id"), page = params.get("page") || "0", orderId = params.get("orderId");
+  if (!/^[0-9]+$/.test(page) || Number(page) > 107374182) return null;
+  target.set("page", page);
+  if (id !== null) {
+    if (!/^[1-9][0-9]{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n) return null;
+    target.set("id", id);
+  }
+  if (orderId) {
+    if (!orderId.trim() || orderId.length > 64) return null;
+    target.set("orderId", orderId);
+  }
+  for (const [key, values] of [["type", ["CANCELLATION", "RETURN"]],
+      ["status", ["REQUESTED", "APPROVED", "REJECTED", "COLLECTING", "RECEIVED", "INSPECTED"]]]) {
+    const value = params.get(key);
+    if (value) { if (!values.includes(value)) return null; target.set(key, value); }
+  }
+  return `returns.html?${target}`;
+}
+
 function initLoginPage() {
+  // 관리자 신청 화면은 고정 경로와 검증된 조회 조건으로만 복귀한다.
   const form = document.querySelector("[data-login-form]");
   const socialButtons = document.querySelectorAll("[data-social-login]");
 
@@ -570,7 +594,7 @@ function initLoginPage() {
       }
 
       const paymentReturnUrl = takePaymentCallbackLoginReturnUrl();
-      window.location.href = orderHistoryLoginReturnUrl() || checkoutLoginReturnUrl() || paymentOperationsLoginReturnUrl()
+      window.location.href = orderHistoryLoginReturnUrl() || checkoutLoginReturnUrl() || paymentOperationsLoginReturnUrl() || returnOperationsLoginReturnUrl()
         || paymentReturnUrl || loginRedirectUrl;
     } catch (error) {
       setAuthMessage(error.message || "로그인 중 문제가 발생했습니다.");
@@ -1068,6 +1092,12 @@ function renderAdminProductRegisterLink(session) {
   operationsLink.textContent = "결제·환불 운영";
   operationsLink.dataset.adminProductRegister = "";
   drawerNav.append(operationsLink);
+  const returnsLink = document.createElement("a");
+  returnsLink.className = "drawer-link";
+  returnsLink.href = "returns.html";
+  returnsLink.textContent = "취소·반품 운영";
+  returnsLink.dataset.adminProductRegister = "";
+  drawerNav.append(returnsLink);
 }
 
 function loadAuthSession() {

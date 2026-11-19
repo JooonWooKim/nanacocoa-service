@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>취소·반품 운영 · 나나코코아</title><link rel="stylesheet" href="styles.css"></head>
+<body class="mypage-body"><main class="mypage-page" data-return-admin>
+<nav class="order-history-nav"><a href="index.html">홈</a><a href="shipping.html">배송 관리</a><a href="inventory.html">재고 관리</a><a href="payment-operations.html">결제·환불 운영</a></nav>
+<header class="mypage-heading"><h1>취소·반품 운영</h1></header>
+<form class="inventory-card">
+<label>주문 번호 <input name="orderId" maxlength="64"></label>
+<label>유형 <select name="type"><option value="">전체</option><option value="CANCELLATION">출고 전 취소</option><option value="RETURN">반품</option></select></label>
+<label>신청 상태 <select name="status"><option value="">전체</option><option value="REQUESTED">접수</option><option value="APPROVED">승인</option><option value="REJECTED">반려</option><option value="COLLECTING">회수 중</option><option value="RECEIVED">회수 완료</option><option value="INSPECTED">검수 완료</option></select></label>
+<button type="submit">조회</button></form>
+<p data-return-message role="status" aria-live="polite"></p>
+<button type="button" data-return-retry>최신 상태 조회</button>
+<a href="login.html" data-return-login hidden>로그인 후 조회</a>
+<div data-return-content></div>
+</main><script src="script.js"></script><script src="returns.js"></script></body></html>

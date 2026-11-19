@@ -69,6 +69,15 @@ public class PaymentFacade {
 		);
 	}
 
+    public PaymentResponse cancelDirect(Long paymentId, CancelPaymentRequest request,
+            String idempotencyKey, UserDetailsImpl userDetails) {
+        String email = authenticatedEmail(userDetails);
+        requireProvider();
+        transactionalService.requireExistingCancellation(paymentId, idempotencyKey,
+            fingerprintService.cancellation(email, paymentId, request.getCancelReason()), email);
+        return cancel(paymentId, request, idempotencyKey, userDetails);
+    }
+
 	private PaymentResponse confirmLocked(
 			ConfirmPaymentRequest request,
 			String idempotencyKey,
@@ -178,9 +187,15 @@ public class PaymentFacade {
 			work = transactionalService.replayCancellation(idempotencyKey, fingerprint);
 		}
 
+        return executePreparedCancellation(work);
+    }
+
+    public PaymentResponse executePreparedCancellation(CancellationWork work) {
 		if (work.cancellationId() == null || work.status() == CancellationStatus.SUCCESS) {
 			return work.response();
 		}
+        requireProvider();
+        if (work.status() == CancellationStatus.FAILED) throw new NanacocoaException(PAYMENT_CANCEL_FAILED);
 
 		TossPaymentResponse pgResponse;
 		try {
@@ -223,7 +238,7 @@ public class PaymentFacade {
 		);
 	}
 
-	private void requireProvider() {
+	public void requireProvider() {
 		if (tossPaymentsClient.isDisabled()) {
 			throw new NanacocoaException(PAYMENT_PROVIDER_UNAVAILABLE);
 		}

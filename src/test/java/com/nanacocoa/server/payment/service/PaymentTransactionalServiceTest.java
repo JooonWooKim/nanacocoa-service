@@ -47,7 +47,8 @@ class PaymentTransactionalServiceTest {
 				orderRepository,
 				Duration.ofSeconds(30),
 				org.mockito.Mockito.mock(com.nanacocoa.server.order.service.OrderInventoryService.class),
-				org.mockito.Mockito.mock(com.nanacocoa.server.order.service.ShippingService.class)
+				org.mockito.Mockito.mock(com.nanacocoa.server.order.service.ShippingService.class),
+                org.mockito.Mockito.mock(com.nanacocoa.server.order.service.ReturnRequestService.class)
 		);
 	}
 

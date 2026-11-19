@@ -37,6 +37,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             when s.status = DELIVERED then 'DELIVERED'
             when o.status = CANCELED then 'CANCELED'
             when pending.id is not null then 'ON_HOLD'
+            when returnHold.id is not null then 'ON_HOLD'
             when o.legacyShippingReview = true and s.id is null then 'ON_HOLD'
             when o.status = PAID then
                 case when paid.id is not null and o.stockState = SOLD
@@ -59,6 +60,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             as shippingStatus
         from PurchaseOrder o
         left join Shipment s on s.order = o
+        left join ReturnRequest returnHold on returnHold.order = o and returnHold.activeOrderId is not null
+            and returnHold.type = CANCELLATION
         left join Payment paid on paid.order = o and paid.status = SUCCESS
         left join Payment pending on pending.order = o and pending.status = CANCEL_PENDING
         left join Payment canceled on canceled.order = o and canceled.status = CANCELED

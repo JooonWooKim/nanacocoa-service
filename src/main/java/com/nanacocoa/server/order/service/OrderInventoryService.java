@@ -22,6 +22,8 @@ import static com.nanacocoa.server.common.exception.ErrorCode.*;
 @Transactional(propagation = Propagation.MANDATORY)
 public class OrderInventoryService {
 	private final ProductsRepository productsRepository;
+    private final com.nanacocoa.server.order.repository.ReturnRequestRepository returnRequests;
+    private final com.nanacocoa.server.order.config.ReturnPolicy returnPolicy;
 
 	public void prepareApproval(Order order) {
 		if (order.getStockState() == StockState.LEGACY || order.reservationExpired(LocalDateTime.now()))
@@ -47,6 +49,16 @@ public class OrderInventoryService {
 	}
 
 	public void restock(Order order, String reason) {
+        var request = returnRequests.findByActiveOrderId(order.getId()).orElse(null);
+        if (request != null) {
+            returnPolicy.requireAvailable();
+            if (!returnPolicy.getVersion().equals(request.getPolicyVersion())
+                    || request.getStatus() != com.nanacocoa.server.order.entity.ReturnRequest.Status.INSPECTED
+                    || !Boolean.TRUE.equals(request.getResellable())
+                    || request.getCancellation() == null
+                    || request.getCancellation().getStatus() != com.nanacocoa.server.payment.entity.CancellationStatus.SUCCESS)
+                throw new NanacocoaException(RETURN_CONFLICT);
+        }
 		if (order.getStockState() == StockState.RETURNED) return;
 		order.restockAfterInspection(reason);
 		for (OrderItem item : sortedItems(order)) locked(item).restock(item.getQuantity());

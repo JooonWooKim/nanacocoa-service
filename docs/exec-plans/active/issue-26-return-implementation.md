@@ -1,0 +1,73 @@
+# 이슈 #26 취소·반품·환불 구현
+
+상태: 활성 · 구현·자동화 검증 완료, 브라우저 후반 검증 BLOCKED
+
+## 목표
+
+구매자 신청, 관리자 승인·회수·검수, 기존 환불·복구·재입고와 화면을 구현한다.
+
+## 하지 않는 일
+
+부분 환불·교환·실제 PG/S3 호출·운영 활성화·커밋·push·PR 생성은 제외한다.
+
+## 현재 증거
+
+feature/26 작업 트리와 PRD, 기존 결제·배송·재고 및 테스트 구조를 확인했다.
+기존 문서 변경 4개를 보존한다. NC-TEST-001의 health 실패 1개는 남아 있다.
+
+## 결정
+
+정책 기간·비용을 임의 확정하지 않고 승인 설정이 없으면 신규 신청·처리를 차단한다.
+조회·기존 미확정 복구는 유지한다. 신청·환불·재입고를 분리하고 기존 잠금·멱등성을 재사용한다.
+
+## 작업 분해
+
+- [x] 조사
+- [x] 구현
+- [x] 자동화·MySQL 검증
+- [ ] 브라우저 환불·재입고 및 출시 종단 검증
+- [x] 리뷰와 문서화
+
+## 진행 상황
+
+- 2026-11-19: PRD와 기존 경계를 조사하고 구현을 시작했다. 정책 비활성 기본값과 설정 경계를 사용자에게 안내했다.
+- 2026-11-19: V8, 신청·작업 이력, 관리자 처리, 기존 환불·복구 연결과 주문·운영 화면을 구현했다. 기존 API의 신규 직접 취소는 신청 경로를 요구하고 기존 취소 재전송은 유지한다.
+- 2026-11-19: 집중 18개 테스트를 H2·MySQL 8.4.10에서 통과했다. 임시 MySQL의 기존 주문 Flyway 이행 보존도 통과했다. 직접 취소의 PG 비활성 503 우선순위 회귀를 발견해 수정하고 기존 테스트를 유지했다.
+- 2026-11-19: 전체 170개 중 기존 health 실패 1개만 유지했다. 신규 발견 테스트 18개는 모두 ReturnRequestIntegrationTest 소속임을 확인하고 목록만 추가했다. 실패 기준선·fingerprint는 변경하지 않았다.
+- 2026-11-19: 화면 제출·중복 클릭·키 유지·고정 로그인 복귀·CSRF 안내 Node 테스트 5개를 통과했다. 기존 결제 운영 화면 테스트도 통과했다.
+- 2026-11-19: 실제 Chrome에서 메모리 DB·가상 회원·모의 PG 서버의 구매자 신청·출고 보류, 관리자 로그인 복귀·승인·검수를 확인했다. 모의 환불 confirm 이후 브라우저 도구가 응답하지 않아 후반 화면 확인은 BLOCKED다. 실제 결제·고객 데이터는 사용하지 않았다.
+- 2026-11-19: 최종 전체 check는 BASELINED. 170개·skip 0개, 기존 health 실패 fingerprint 1개만 유지했다. 신규 RETURN 위험 평가 6개는 PASS, 문서·마이그레이션·보안·아키텍처 계약과 기존 스택 smoke를 유지했다.
+- 2026-11-19: 회귀·권한·데이터 손실 검토를 마쳤다. 운영 정책·main 반영·브라우저 후반 확인은 완료로 처리하지 않고 활성 기록에 남겼다. 검증용 Java 서버와 메모리 기반 임시 MySQL만 종료하고 기존 사용자 문서를 보존했다.
+
+## 명령과 증거
+
+| 명령 | 상태 | 증거 |
+| --- | --- | --- |
+| `git status --short --branch` | PASS | feature/26, 기존 문서 변경 확인 |
+| `./gradlew test --tests '*ReturnRequestIntegrationTest'` | PASS | H2와 임시 MySQL 8.4.10, 18개·skip 0개 |
+| `./gradlew test --tests '*FlywayMigrationTest'` | PASS | 임시 MySQL 별도 스키마에서 V1~V3 기존 데이터 생성 후 V8까지 이행·보존 |
+| `./gradlew test` | FAIL | 170개 중 기존 healthApiReturnsOk 실패 1개. 신규 실패 없음 |
+| `node --test src/test/js/returns.test.cjs src/test/js/payment-operations.test.cjs` | PASS | 새 화면 로직 5개와 기존 운영 화면 테스트 통과 |
+| `./scripts/harness migrations --accept-new` | PASS | V8만 등록, 기존 checksum 불변 |
+| `Chrome 가상 주문 흐름` | BLOCKED | 신청·로그인 복귀·승인·검수 확인. 환불 confirm 후 CUA 연결 중단으로 후반 화면 미확인 |
+| `./scripts/harness check` | BASELINED | 170개·skip 0개·기존 health 실패 1개만 유지. build/harness/check-summary.txt |
+| `./scripts/harness eval` | BASELINED | check 안에서 실행. 신규 RETURN-001~006 PASS, 기존 OPS-001만 기준선 |
+| `check: architecture / security` | BASELINED | 검토된 의존·보안 예외만 유지하고 검사 통과 |
+| `check: migrations / docs / harness-self-check / entropy / smoke` | PASS | 기존 Flyway 불변, 생성 문서 최신, 기존 Compose 스택 정상 |
+| `git diff --check` | PASS | whitespace 오류 없음 |
+| `사용자 문서 SHA-256 비교` | PASS | 기존 변경·미추적 문서 4개 내용 불변 |
+
+## 위험과 롤백
+
+잠금 역전·중복 환불·재입고·직접 API 우회·민감 정보 노출을 집중 검증한다.
+정책 비활성화와 앱 변경 롤백으로 신규 작업을 차단하고 적용된 마이그레이션·이력은 보존한다.
+
+## 미해결 항목
+
+운영 정책·출시는 미승인이고 기본 비활성이다. 브라우저 환불·재입고 완료 및 전체 종단 검증,
+main 반영은 남아 있다. 코드·문서는 feature/26에 반영하며 준비 기록은 별도로 보존한다.
+
+## 완료 조건
+
+집중 테스트와 전체 check를 실행·분류하고 아키텍처·문서·마이그레이션·보안 검사를 유지한다.
+출시 PRD·운영 절차·평가 카탈로그를 갱신한다.
