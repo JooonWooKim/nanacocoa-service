@@ -30,10 +30,10 @@
 추적합니다. 결제와 회원 기능 테스트를 추가했으며,
 회원가입 관련 실패 4개를 검증된 계약으로 해소했습니다. 세션 보안 작업에서 인증
 fixture와 API 계약 검증을 정비해 상태 확인 실패 1개가 남아 있습니다. 실제 HTTP 세션
-보안, 모의 PG 결제 복귀·HTTP 결제 환경·관리자 복구·취소·반품 검증을 포함한 전체 발견 기준은 170개입니다.
+보안, 모의 PG 결제 복귀·HTTP 결제 환경·관리자 복구·취소·반품 검증을 포함한 전체 발견 기준은 183개입니다.
 
 `test-baseline`은 전체 테스트를 실행하고 모든 Gradle XML을 파싱합니다.
-전체 170개 테스트 목록을 비교하고 skip 0개를 요구하며 각 알려진 실패의
+전체 183개 테스트 목록을 비교하고 skip 0개를 요구하며 각 알려진 실패의
 failure·error 종류, 예외 타입, assertion 메시지를 고정합니다. 전체 실행은
 XML 옆에 저장소 fingerprint를 기록하며 `--from-results`는 정확히 동일한
 소스·실행 비트 상태에서만 허용합니다. 다음 상황에서는 실패합니다.
@@ -57,3 +57,20 @@ XML 옆에 저장소 fingerprint를 기록하며 `--from-results`는 정확히 �
 
 통과 결과만 얻기 위해 의미 있는 동작을 비활성화하거나 예외를 삼키거나
 mock으로 제거하지 않습니다.
+
+## 정책·가입 검증
+
+POLICY 집중 테스트는 승인·미승인, 원문 불변성·게시 revision, 선택 동의 거절,
+회원/동의 롤백과 게시·가입 경합을 다룹니다. 승인 문서는 테스트 리소스에만 둡니다.
+기존 가입 성공 테스트도 명시적으로 승인 fixture와 가입 활성화를 설정합니다.
+기본 설정을 시험을 위해 활성화하지 않습니다.
+
+```sh
+./gradlew test --tests '*PolicyIntegrationTest'
+node src/test/js/policies.test.cjs
+```
+
+격리 MySQL 8.4 검증은 `POLICY_TEST_DB_URL`을 사용하며 운영 DB를 지정하지 않습니다.
+새 빈 DB에서만 기존 데이터 이행 테스트의 `SUBMISSION_MIGRATION_TEST_DB_URL`을 사용합니다.
+[정책 운영 절차](service-policy.md),
+[구현 기록](../exec-plans/completed/issue-28-policy-implementation.md).

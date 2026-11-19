@@ -31,8 +31,8 @@
         <div class="login-heading">
           <h1 id="signup-title">회원가입</h1>
           <p>
-            이메일과 비밀번호, 이름만 입력하면<br />
-            nanacocoa를 바로 시작할 수 있어요.
+            가입 정보와 서비스 정책을 확인하고<br />
+            nanacocoa를 시작해 주세요.
           </p>
         </div>
 
@@ -103,7 +103,7 @@
             />
           </label>
 
-          <fieldset class="signup-consent">
+          <fieldset class="signup-consent" data-policy-choices>
             <legend>이메일 수신여부</legend>
             <label>
               <input type="radio" name="emailReceiveConsent" value="Y" required />
@@ -115,9 +115,15 @@
             </label>
           </fieldset>
 
+          <section aria-label="서비스 정책과 가입 동의">
+            <div data-signup-policies></div>
+            <p role="status" aria-live="polite" data-policy-status>서비스 정책을 확인하고 있습니다.</p>
+            <button type="button" data-policy-retry>정책 다시 조회</button>
+          </section>
+
           <p class="login-message" role="alert" aria-live="polite" hidden></p>
 
-          <button class="login-submit" type="submit">회원가입</button>
+          <button class="login-submit" type="submit" disabled>회원가입</button>
         </form>
 
         <nav class="login-links" aria-label="계정 메뉴">
@@ -125,6 +131,7 @@
         </nav>
       </section>
     </main>
+    <script src="policies.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

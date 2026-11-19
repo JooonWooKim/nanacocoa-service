@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 상태 | 출시 준비 · P0 잔여 기능·통합 검증 및 운영 정책 승인 대기 |
-| 기준일 | 2026-11-19 GitHub [`main` (`1eaf066`)](https://github.com/JooonWooKim/nanacocoa-service/commit/1eaf066060e12ae2769cc700959852d4ed276b09) 및 이슈 #26 구현 작업 트리. 이번 코드·문서 변경은 feature/26 반영·main 미반영 |
+| 기준일 | 2026-11-19 원격 [`main` (`0cee3be`)](https://github.com/JooonWooKim/nanacocoa-service/commit/0cee3bec457cced7468d61c2d068aa0669cc9300), [PR #27](https://github.com/JooonWooKim/nanacocoa-service/pull/27) 병합 확인. 이 병합 상태 문서 갱신은 로컬 미커밋 POLICY #28은 feature/28 작업 트리 구현·main 미반영 |
 | 대상 | 구매 회원, 배송·환불 운영자, 출시 승인 담당자 |
 
 ## 목표
@@ -16,8 +16,8 @@
 | --- | --- | --- | --- | --- |
 | SEC | P0 | [세션 보안](session-security-prd.md) | PR #15 병합. 세션 쓰기 전반의 CSRF 보호, POST 로그아웃, 로그인 세션 ID 회전 구현 | P0 종단 회귀 검증 |
 | PAY | P0 | [결제 환경 분리와 모의 PG 검증](payment-environment-prd.md) | 결제 승인·취소·조회·복구 구현. PR #17의 환경 분리·모의 PG와 PR #21의 주문 제출 멱등성 병합. [PR #23](https://github.com/JooonWooKim/nanacocoa-service/pull/23)으로 [미확정 거래 운영 조회·개별 복구](payment-operations-prd.md) 구현·검증 및 main 반영 완료 | 미확정 거래 점검 담당자·문의 대응 절차 승인, RETURN 연동 후 브라우저 중복·타임아웃·복구 및 전체 종단 검증 |
-| POLICY | P0 | 서비스 안내·약관 | 가입 화면에 이메일 수신 선택, checkout에 Toss 결제 약관 제공 | 배송·취소·반품 조건 먼저 확정. 승인된 원문 게시와 가입 동의 이력 구현 |
-| RETURN | P0 | [취소·반품·환불](cancellation-return-prd.md) | main에는 미결제 취소·기존 결제 취소와 배송 경합 제어가 존재. [이슈 #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26)의 feature/26 작업 트리에서 신청·운영 승인·회수·검수·환불·복구·재입고 연결 구현 및 집중 검증(feature/26 반영·main 미반영) | 정책 승인·설정과 운영 활성화, 브라우저 환불·재입고 확인 및 전체 종단 검증. 최종 하네스 결과는 실행 기록 참고 |
+| POLICY | P0 출시 검증 | [서비스 안내·약관·가입 동의](service-policy-prd.md) | [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 정책 조회·원문 보존·가입 동의 검증/원자적 저장·화면과 V9를 feature/28에서 구현·집중 검증. main 미반영 | main 반영 검토, 원문·필수 항목·기존 회원 적용 및 배송/반품 조건 승인, 정책 대조와 명시적 가입 활성화, P0 종단 검증 |
+| RETURN | P0 출시 검증 | [취소·반품·환불](cancellation-return-prd.md) | [이슈 #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26)의 신청·운영 승인·회수·검수·환불·복구·재입고 및 재신청 키 수정이 [PR #27](https://github.com/JooonWooKim/nanacocoa-service/pull/27)으로 main 반영 완료. Codex 재리뷰 지적 없음 | 정책 승인·설정과 운영 활성화, 브라우저 환불·재입고 확인 및 전체 종단 검증 |
 | STOCK | P0 출시 검증 | 재고·품절 관리 | PR #9 병합. 재고 예약·판매 확정·해제·검수 재입고 구현 | 실재고 등록과 판매 활성화, RETURN 및 PAY 연동 회귀 검증 |
 | ORDER | P0 출시 검증 | 내 주문 목록·상세 조회 | PR #11 병합. [본인 주문 목록·상세](order-history-prd.md) 구현 및 배송 조회 연결 | RETURN 상태·후속 행동 연결과 소유권·재로그인·기존 주문 회귀 검증 |
 | SHIP | P0 출시 검증 | 배송 관리 | 배송 구현 커밋 `125e46e`가 main에 병합. 관리자 출고·송장·배송 완료 및 구매자 조회 구현 | 운영 택배사 설정, V6 기존 주문 배송 확인, SEC·RETURN 연동 검증 |
@@ -26,7 +26,7 @@
 | DISCOVERY | P1 | 검색·고객센터·알림 | 검색·문의 진입점 일부가 페이지 내부 링크 | 상품 조회, POLICY, 거래 상태 이벤트에 맞춰 구현 |
 
 1. SEC와 PAY의 모의 PG·운영 활성화 설정, 주문 제출 멱등성은 main에 반영됐다. [미확정 결제·환불 운영 조회와 개별 복구](payment-operations-prd.md)(이슈 #22)도 PR #23으로 main에 반영됐다. 배송 범위·요금, 취소·반품 조건, 약관·동의 원문 확정은 병행한다.
-2. [RETURN](cancellation-return-prd.md)([이슈 #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26))은 feature/26 작업 트리에서 구현·집중 검증했으며 main 미반영이다. 정책 설정 누락 시 신규 신청·처리를 차단한다. 남은 순서는 정책 승인·설정, main 반영, 고객·운영자 브라우저 환불·재입고와 전체 종단 검증이다. 승인된 POLICY 원문 게시와 동의 이력 구현은 병행한다.
+2. [RETURN](cancellation-return-prd.md)은 [PR #27](https://github.com/JooonWooKim/nanacocoa-service/pull/27)으로 main에 반영됐다. [POLICY 원문 게시·가입 동의 이력](service-policy-prd.md)(이슈 #28)은 feature/28에서 구현·집중 검증했으며 main 미반영이다. 다음 작업은 POLICY main 반영 검토와 원문·적용 조건 승인, 명시적 신규 가입 활성화다. 운영 정책 승인·설정과 고객·운영자 브라우저 환불·재입고 및 전체 종단 검증도 남아 있다. 승인·설정 누락 시 신규 가입과 RETURN 신규 신청·처리를 각각 보류한다.
 3. 미확정 거래 점검 담당자와 문의 대응·이관 절차를 확정한다. 운영 택배사와 실재고를 등록하고 V6 배송 확인 대상인 기존 주문을 점검한다. 구매·결제부터 배송·취소·반품·환불까지 고객 화면과 서버 상태를 대조하고, 출시 승인 기준을 충족한 뒤 P1을 진행한다.
 
 첫 출시 범위는 회원 바로 구매, 주문당 송장 1개, 주문 전체 취소·반품·환불로 제안한다. 출시 메뉴는 실제 동작하는 화면과 문의 경로로 연결한다. 부분 출고·부분 환불, 장바구니, 자동 배송 상태 수집은 후속 범위에서 검토한다.
@@ -58,11 +58,11 @@
 
 PR #27의 Codex P2 지적에 따라 반려 후 동일 유형·사유 재신청의 요청 키를 최신 반려
 신청 ID별로 분리했다. 최초 신청·응답 유실 재시도의 키 유지와 서버의 재신청 허용 판단은
-유지한다. 이 리뷰 수정은 feature/26 및 PR #27 반영 대상이며 main 미반영이다.
+유지한다. 이 리뷰 수정은 PR #27으로 main에 반영됐으며 최신 커밋 703fe60의 Codex 재리뷰는 지적 없음으로 완료됐다.
 신규 폼 회귀 3개를 포함한 화면 테스트 8개는 PASS, 전체 check는 기존 health 실패
 1개를 유지한 BASELINED다. 기존 브라우저 후반 검증·정책 승인 잔여 항목은 그대로 남는다.
 
-[구현 PRD](cancellation-return-prd.md)와 [이슈 #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26)의 기능을 feature/26에서 구현했다. 구매자 신청·관리자 승인·회수·검수·기존 환불·복구·재입고를 연결했으며 정책 미설정 시 차단한다. 반품 기간·비용·부담 주체·회수·검수·운영 판단 정책 승인은 운영 활성화 선행 조건이며 미승인 상태다. 코드·문서는 feature/26 반영·main 미반영이다.
+[구현 PRD](cancellation-return-prd.md)와 [이슈 #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26)의 기능을 feature/26에서 구현했다. 구매자 신청·관리자 승인·회수·검수·기존 환불·복구·재입고를 연결했으며 정책 미설정 시 차단한다. 반품 기간·비용·부담 주체·회수·검수·운영 판단 정책 승인은 운영 활성화 선행 조건이며 미승인 상태다. 기능 코드·문서는 PR #27(병합 커밋 0cee3be)으로 main에 반영됐다.
 
 H2·격리 MySQL 8.4의 신청·출고 경합·환불·복구·재입고 집중 18개와 화면 제출·복귀 로직 5개를 검증했다. 전체 170개 중 기존 health 실패 1개가 남아 엄격 테스트는 FAIL, 최종 check는 BASELINED이며 신규 회귀는 없다. 브라우저는 구매자 신청·관리자 승인·검수까지 확인했으나 모의 환불 확인창에서 도구 연결이 끊겨 이후 화면 확인은 BLOCKED다. [구현 실행 기록](../exec-plans/active/issue-26-return-implementation.md)에 증거를 남긴다. [준비 기록](../exec-plans/completed/issue-26-return-preparation.md)은 별도로 보존한다.
 
@@ -75,7 +75,7 @@ H2·격리 MySQL 8.4의 신청·출고 경합·환불·복구·재입고 집중 
 
 - 바로 구매 → 배송 정보 입력 → 서버 가격으로 주문 생성 → Toss 콜백 → 결제 승인 → 주문 상세까지 연결한다. 성공·실패·확인 중 화면은 서버에 저장된 주문·결제 상태를 기준으로 표시한다. 주문 제출을 재전송해도 동일 구매 시도가 주문·예약을 추가로 생성하지 않도록 한다.
 - 자동화 테스트는 모의 결제 제공자로 실행한다. 운영 결제는 운영 프로필과 명시적 활성화 설정에서만 가능하게 하고 환경별 키·대상 설정을 검증한다. 오래 머무르는 결제·환불 확인 중 상태를 운영자가 찾고 복구 결과를 확인할 수 있어야 한다. [결제 환경 운영 절차](../runbooks/payment-environment.md)
-- 구현 완료 범위: 관리자는 미확정 승인·승인 보상·기존 결제 취소를 조회하고 거래별 복구를 실행할 수 있다. 이 기능의 환불 복구는 이미 접수된 거래를 대상으로 하며, 고객의 신규 취소·반품 신청과 운영 승인·검수는 RETURN의 미구현 범위로 남아 있다.
+- 구현 완료 범위: 관리자는 미확정 승인·승인 보상·기존 결제 취소를 조회하고 거래별 복구를 실행할 수 있다. 이 기능의 환불 복구는 이미 접수된 거래를 대상으로 하며, 고객의 신규 취소·반품 신청과 운영 승인·검수는 PR #27의 RETURN 범위로 main에 반영됐다. 운영 정책 승인과 전체 종단 검증은 남아 있다.
 - 구현·검증 근거: [미확정 거래 운영 구현 기록](../exec-plans/completed/issue-22-payment-operations.md). 관리자 운영 경로 검증은 완료됐으며 RETURN 연동과 전체 종단 검증, 운영 대응 절차 승인은 남아 있다.
 - **인수 기준** — 아래 시나리오마다 고객 화면과 서버의 주문·결제·재고 결과를 대조한다. 테스트에는 가상 회원·주문을 사용한다.
 
@@ -98,6 +98,12 @@ H2·격리 MySQL 8.4의 신청·출고 경합·환불·복구·재입고 집중 
 - **인수 기준** — 유효 요청은 성공하고 CSRF 토큰 누락·오류 요청은 거부된다. GET 로그아웃 요청은 인증 상태를 바꾸지 않는다. 로그인 전 ID와 로그아웃한 세션으로 보호 자원에 접근할 수 없다. 기존 회원 본인 확인과 결제 복귀 흐름을 회귀 검증한다. [세션 보안 구현·검증 기록](../exec-plans/completed/session-security.md)
 
 ### POLICY · 서비스 안내, 약관, 가입 동의
+
+[구현 PRD](service-policy-prd.md)와 [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 기능을 feature/28에서 구현했다. 기준 main은 2026-11-19 확인한 `0cee3be`이며 이번 코드·문서는 미커밋·main 미반영이다. V9는 게시 원문·현재 게시 집합·가입 동의 이력을 추가하고 회원/동의 저장과 정책 교체를 같은 게시 행 잠금으로 직렬화한다. 같은 문서 버전의 변경·게시 revision 역행을 막고 과거 원문·기존 회원 데이터를 보존한다.
+
+신규 가입은 기본 비활성이다. 승인 카탈로그와 `POLICY_SIGNUP_ENABLED=true`가 모두 필요하며 미준비 시 503으로 보류한다. 승인 원문·필수 항목·판매자/문의처·배송/반품 조건·기존 회원 적용은 확정하지 않았다. 운영 정책과 실제 배송·RETURN 설정 대조는 [정책 운영 절차](../runbooks/service-policy.md)의 운영 인수 항목이며 자동 승인하지 않는다.
+
+정책 집중 13개는 H2에서 통과했고 핵심 12개와 기존 데이터 이행은 tmpfs MySQL 8.4.10에서 통과했다. 화면 회귀 7개와 브라우저의 필수 동의·선택 수신 거절 가입 및 원문 텍스트 표시를 확인했다. 전체 183개 중 기존 health 실패 1개가 남아 엄격 테스트는 FAIL이며 전체 check는 BASELINED다. POLICY 위험 평가 6개는 PASS다. 최종 check와 검증 범위는 [구현 실행 기록](../exec-plans/completed/issue-28-policy-implementation.md)에 기록하며 [준비 기록](../exec-plans/completed/issue-28-policy-preparation.md)은 별도 보존한다.
 
 - 가입·checkout·푸터에서 운영자가 확정한 서비스 약관·개인정보 안내·판매자와 문의처·배송비와 출고 기준·취소/반품/환불 정책을 확인할 수 있게 한다. 고객 신청 화면과 관리자 판단 기준에 같은 정책을 적용한다.
 - 가입 화면에서 승인된 필수 항목과 선택 수신 동의를 구분해 제공하고, 동의가 필요한 항목의 문서 버전·동의 일시·선택 결과를 저장한다. 기존 회원의 동의 이력은 실제 기록에 근거하며 추가 동의가 필요한 경우 운영 정책에 따라 안내한다.

@@ -30,6 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @SpringBootTest(properties = {
+        "policy.catalog-location=classpath:policies/approved-test-catalog.json",
+        "policy.signup-enabled=true",
         "spring.datasource.url=jdbc:h2:mem:member-api-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
@@ -48,8 +50,12 @@ class MemberApiIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private com.nanacocoa.server.policy.repository.MemberPolicyConsentRepository policyConsents;
+
     @AfterEach
     void cleanUp() {
+        policyConsents.deleteAll();
         memberRepository.deleteAll();
     }
 
@@ -200,7 +206,8 @@ class MemberApiIntegrationTest {
                                   "name": "신규 회원",
                                   "address": "부산시 해운대구",
                                   "phoneNumber": "010-5555-6666",
-                                  "emailReceiveConsent": "Y"
+                                  "emailReceiveConsent": "Y",
+                      "consents": [{"documentCode":"TERMS","version":"test-v1","agreed":true},{"documentCode":"PRIVACY","version":"test-v1","agreed":true},{"documentCode":"EMAIL_RECEIVE","version":"test-v1","agreed":true}]
                                 }
                                 """))
                 .andExpect(status().isCreated())

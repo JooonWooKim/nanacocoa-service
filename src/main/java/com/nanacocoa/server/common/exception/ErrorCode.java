@@ -8,6 +8,9 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ErrorCode {
 	INVALID_REQUEST(HttpStatus.BAD_REQUEST, "COMMON_01", "요청 값을 확인해주세요."),
+	POLICY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "POLICY_01", "서비스 정책 승인 및 회원가입 준비 중입니다."),
+	POLICY_VERSION_CHANGED(HttpStatus.CONFLICT, "POLICY_02", "서비스 정책이 변경되었습니다. 문서를 다시 확인하고 동의해주세요."),
+	POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "POLICY_03", "게시된 정책 문서를 찾을 수 없습니다."),
 	RETURN_POLICY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "RETURN_01", "취소·반품 정책 승인 및 운영 준비 중입니다."),
 	RETURN_CONFLICT(HttpStatus.CONFLICT, "RETURN_02", "신청 상태 또는 요청 내용이 변경되었습니다. 다시 조회해주세요."),
 	RETURN_REQUEST_REQUIRED(HttpStatus.CONFLICT, "RETURN_03", "주문 상세에서 취소·반품을 신청해주세요."),

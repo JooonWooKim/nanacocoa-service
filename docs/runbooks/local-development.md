@@ -9,6 +9,10 @@
 - 전체 스택 실행용 Docker와 Compose plugin
 - 로컬 비밀값을 명시적으로 초기화할 때만 필요한 OpenSSL
 
+신규 회원가입은 승인된 정책 게시와 `POLICY_SIGNUP_ENABLED=true`가 모두 필요합니다.
+기본 false에서는 기존 회원 로그인·조회만 유지합니다.
+[정책 게시·가입 운영 절차](service-policy.md)를 참고합니다.
+
 비밀값 내용을 읽지 않고 진단합니다.
 
 ```sh

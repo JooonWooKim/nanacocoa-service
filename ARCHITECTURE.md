@@ -30,6 +30,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 | `products` | 상품 목록과 이미지 등록 | `ProductsController` / `ProductsService` | `ProductsRepository` |
 | `order` | 서버 가격 기반 주문과 배송 정보 | `OrderController` / `OrderService` | `OrderRepository` |
 | `payment` | 승인, 취소, 멱등성, 락, 복구 | `PaymentController` / `PaymentFacade` | 결제 Repository |
+| `policy` | 승인 정책 게시·원문 보존·가입 동의 | `PolicyController` / `PolicyService` | 정책·게시·동의 Repository |
 | `common` | 응답, 예외, 보안, 세션, 사용자 상세 | 공통 프레임워크 어댑터 | 회원 조회는 기록된 예외 |
 
 생성된 패키지 목록은
@@ -222,6 +223,23 @@ PG 호출 동안 DB 트랜잭션을 유지하지 않으며 기존 복구 결과�
 전체 취소 확정과 적합 검수 뒤 기존 재입고를 사용하며 직접 API도 같은 조건을 검증한다.
 [취소·반품 PRD](docs/product-specs/cancellation-return-prd.md),
 [운영 절차](docs/runbooks/returns.md).
+
+## 서비스 정책과 가입 동의
+
+`PolicyController -> PolicyService`는 승인된 현재 정책 목록과 과거 원문을 공개한다.
+`PolicyCatalogLoader -> PolicyPublishingService`는 저장소의 버전 JSON을 검증하고
+V9의 게시 원문·현재 게시 집합을 트랜잭션으로 반영한다. 같은 문서 버전은 불변이며
+낮은 게시 revision과 빈 기본 자료가 현재 정책을 덮어쓰지 않는다.
+
+가입은 `AuthController -> AuthService -> PolicyService`에서 현재 게시 행의 공유
+잠금을 유지하며 필수 동의·문서 버전·선택 수신 일치를 검증한다. 회원과 동의 이력은
+같은 트랜잭션으로 저장하고 게시 변경은 같은 행의 쓰기 잠금을 사용한다.
+가입 동의는 회원 수신 설정 변경과 독립된 기록이다. 기존 회원의 과거 동의를 생성하지 않는다.
+
+신규 가입은 기본 비활성이며 승인 자료와 `POLICY_SIGNUP_ENABLED=true`가 있어야 한다.
+조회·기존 회원 로그인과 실 PG·RETURN 설정은 독립적이다. 정책 화면은 원문을 일반
+텍스트로 표시하고 공개 DTO에서 내부 승인 정보와 회원 이력을 제외한다.
+[구현 PRD](docs/product-specs/service-policy-prd.md), [운영 절차](docs/runbooks/service-policy.md).
 
 ## 외부 경계
 

@@ -8,6 +8,7 @@ import com.nanacocoa.server.member.dto.reqeust.SignupRequest;
 import com.nanacocoa.server.member.dto.response.AuthSessionResponse;
 import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
+import com.nanacocoa.server.policy.service.PolicyService;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,9 +23,11 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final MemberRepository memberRepository;
     private final LoginService loginService;
+    private final PolicyService policyService;
 
     @Transactional
     public void signUp(SignupRequest request) {
+        var verifiedConsents = policyService.validateSignup(request.getConsents(), request.getEmailReceiveConsent());
         if (memberRepository.existsByEmail(request.getEmail())) {
             throw new NanacocoaException(ALREADY_EXIST_EMAIL);
         }
@@ -39,6 +42,7 @@ public class AuthService {
                 .emailReceiveConsent(request.getEmailReceiveConsent())
                 .build();
         memberRepository.save(member);
+        policyService.recordSignup(member, verifiedConsents);
     }
 
     public void login(LoginRequest request) {

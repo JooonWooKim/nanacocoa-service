@@ -11,6 +11,9 @@
   테스트에 연결합니다.
 - [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
   출시 승인 조건을 정의합니다.
+- [서비스 안내·약관·가입 동의 PRD](service-policy-prd.md)는 이슈 #28의 승인 문서 게시,
+  가입 동의 버전·이력, 실패 처리와 운영 활성화 선행 조건을 정의합니다.
+  feature/28에서 구현했으며 main 반영·정책 승인·운영 활성화는 별도입니다.
 - [세션 보안 구현 PRD](session-security-prd.md)는 CSRF 발급·검증, 세션 ID 회전과 로그아웃 계약을 정의합니다.
 - [결제 환경과 모의 PG PRD](payment-environment-prd.md)는 운영 결제 활성화, 비활성 상태의 API·화면, 모의 PG 검증 기준을 정의합니다.
 - [주문 제출 멱등성 구현 PRD](order-submission-idempotency-prd.md)는 checkout
@@ -23,7 +26,7 @@
   배송 조회, 결제 취소와의 경계, 인수 기준을 정의합니다.
 - [취소·반품·환불 PRD](cancellation-return-prd.md)은 구매자 신청,
   운영 승인·회수·검수, 기존 환불·복구·재입고 연결을 정의합니다.
-  이슈 #26의 feature/26 구현은 기본 비활성이며 운영 정책 승인·main 반영·출시 검증은 별도입니다.
+  이슈 #26 구현은 PR #27로 main에 반영됐으며 기본 비활성입니다. 운영 정책 승인·출시 검증은 별도입니다.
 - [마이페이지 PRD](../design-docs/PRD.md)는 회원 프로필·비밀번호 관리의
   인수 조건과 범위 경계를 정의합니다.
 - [기술부채 NC-TEST-001](../exec-plans/tech-debt-tracker.md)은 현재 인증·상태

@@ -40,6 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @SpringBootTest(properties = {
+        "policy.catalog-location=classpath:policies/approved-test-catalog.json",
+        "policy.signup-enabled=true",
     "spring.datasource.url=jdbc:h2:mem:nanacocoa-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.datasource.username=sa",
@@ -163,7 +165,8 @@ class NanacocoaServerApplicationTests {
                       "name": "가입자",
                       "address": "서울시 성동구",
                       "phoneNumber": "010-1111-2222",
-                      "emailReceiveConsent": "N"
+                      "emailReceiveConsent": "N",
+                      "consents": [{"documentCode":"TERMS","version":"test-v1","agreed":true},{"documentCode":"PRIVACY","version":"test-v1","agreed":true},{"documentCode":"EMAIL_RECEIVE","version":"test-v1","agreed":false}]
                     }
                     """))
             .andExpect(status().isCreated())
@@ -194,7 +197,8 @@ class NanacocoaServerApplicationTests {
             "일반 가입자",
             "서울시 성동구",
             "010-1111-2222",
-            EmailReceiveConsent.N
+            EmailReceiveConsent.N,
+            com.nanacocoa.server.policy.PolicyTestFixtures.consents(false)
         ));
 
         Member member = memberRepository.findByEmail(email).orElseThrow();
@@ -300,7 +304,8 @@ class NanacocoaServerApplicationTests {
                       "name": "로그인회원",
                       "address": "서울시 성동구",
                       "phoneNumber": "010-1111-2222",
-                      "emailReceiveConsent": "N"
+                      "emailReceiveConsent": "N",
+                      "consents": [{"documentCode":"TERMS","version":"test-v1","agreed":true},{"documentCode":"PRIVACY","version":"test-v1","agreed":true},{"documentCode":"EMAIL_RECEIVE","version":"test-v1","agreed":false}]
                     }
                     """))
             .andExpect(status().isCreated());
@@ -335,7 +340,8 @@ class NanacocoaServerApplicationTests {
               "name": "중복회원",
               "address": "서울시 성동구",
               "phoneNumber": "010-1111-2222",
-              "emailReceiveConsent": "N"
+              "emailReceiveConsent": "N",
+                      "consents": [{"documentCode":"TERMS","version":"test-v1","agreed":true},{"documentCode":"PRIVACY","version":"test-v1","agreed":true},{"documentCode":"EMAIL_RECEIVE","version":"test-v1","agreed":false}]
             }
             """;
 
