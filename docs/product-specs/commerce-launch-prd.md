@@ -56,6 +56,12 @@
 
 ### RETURN · 취소, 반품, 환불
 
+PR #27의 Codex P2 지적에 따라 반려 후 동일 유형·사유 재신청의 요청 키를 최신 반려
+신청 ID별로 분리했다. 최초 신청·응답 유실 재시도의 키 유지와 서버의 재신청 허용 판단은
+유지한다. 이 리뷰 수정은 feature/26 및 PR #27 반영 대상이며 main 미반영이다.
+신규 폼 회귀 3개를 포함한 화면 테스트 8개는 PASS, 전체 check는 기존 health 실패
+1개를 유지한 BASELINED다. 기존 브라우저 후반 검증·정책 승인 잔여 항목은 그대로 남는다.
+
 [구현 PRD](cancellation-return-prd.md)와 [이슈 #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26)의 기능을 feature/26에서 구현했다. 구매자 신청·관리자 승인·회수·검수·기존 환불·복구·재입고를 연결했으며 정책 미설정 시 차단한다. 반품 기간·비용·부담 주체·회수·검수·운영 판단 정책 승인은 운영 활성화 선행 조건이며 미승인 상태다. 코드·문서는 feature/26 반영·main 미반영이다.
 
 H2·격리 MySQL 8.4의 신청·출고 경합·환불·복구·재입고 집중 18개와 화면 제출·복귀 로직 5개를 검증했다. 전체 170개 중 기존 health 실패 1개가 남아 엄격 테스트는 FAIL, 최종 check는 BASELINED이며 신규 회귀는 없다. 브라우저는 구매자 신청·관리자 승인·검수까지 확인했으나 모의 환불 확인창에서 도구 연결이 끊겨 이후 화면 확인은 BLOCKED다. [구현 실행 기록](../exec-plans/active/issue-26-return-implementation.md)에 증거를 남긴다. [준비 기록](../exec-plans/completed/issue-26-return-preparation.md)은 별도로 보존한다.

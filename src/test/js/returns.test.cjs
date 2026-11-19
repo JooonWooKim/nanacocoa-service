@@ -20,12 +20,63 @@ function harness() {
   const context = { URLSearchParams, TextEncoder, crypto: webcrypto,
     sessionStorage: { getItem: key => saved.get(key), setItem: (key,value) => saved.set(key,value) },
     document: { querySelector: () => null, createElement: tag => new Element(tag) },
-    window: { confirm: () => true }, location: { search: "" },
+    window: { confirm: () => true }, location: { search: "", reload() {} },
+    orderHistoryQuery: values => new URLSearchParams(values).toString(),
+    readJson: response => response.json(),
   };
   vm.createContext(context); vm.runInContext(code, context);
   context.saved = saved;
   return context;
 }
+function rejected(id) {
+  return { id, status: "REJECTED", type: "CANCELLATION", reason: "same reason",
+    policyVersion: "test-policy", resellable: null, refundEligible: null, history: [] };
+}
+function orderView(requests = [], allowedTypes = ["CANCELLATION"]) {
+  return { orderId: "test-order", status: "PAID", returns: { requests, allowedTypes } };
+}
+async function submitOrderForm(h, order) {
+  const parent = new Element();
+  h.renderOrderReturns(parent, order);
+  const form = parent.all().find(node => node.tag === "form");
+  assert.ok(form, "server-authorized application form is rendered");
+  form.all().find(node => node.tag === "select").value = "CANCELLATION";
+  form.all().find(node => node.tag === "textarea").value = "same reason";
+  await form.events.submit({ preventDefault() {} });
+}
+test("reapplying after each server-confirmed rejection creates a new application", async () => {
+  const h = harness(), applications = new Map();
+  h.requestAuth = async (url, options) => {
+    const payload = JSON.parse(options.body);
+    if (!applications.has(payload.requestKey)) applications.set(payload.requestKey, applications.size + 1);
+    return { ok: true, status: 200, json: async () => ({ data: {} }) };
+  };
+  await submitOrderForm(h, orderView());
+  await submitOrderForm(h, orderView([rejected(1)]));
+  await submitOrderForm(h, orderView([rejected(2), rejected(1)]));
+  assert.equal(applications.size, 3, "same type and reason must create a new application after rejection");
+});
+test("initial and reapplication response-loss retries retain their respective keys after rerender", async () => {
+  const h = harness(), keys = [];
+  const legacyKey = await h.returnRequestKey("order:test-order", { type: "CANCELLATION", reason: "same reason" });
+  h.requestAuth = async (url, options) => {
+    keys.push(JSON.parse(options.body).requestKey);
+    throw new Error("response lost");
+  };
+  await submitOrderForm(h, orderView());
+  await submitOrderForm(h, orderView());
+  await submitOrderForm(h, orderView([rejected(1)]));
+  await submitOrderForm(h, orderView([rejected(1)]));
+  assert.equal(keys[0], legacyKey, "an existing initial submission key survives the update");
+  assert.equal(keys[0], keys[1]);
+  assert.notEqual(keys[1], keys[2]);
+  assert.equal(keys[2], keys[3]);
+});
+test("server-disallowed reapplication never renders a submission form", () => {
+  const h = harness(), parent = new Element();
+  h.renderOrderReturns(parent, orderView([rejected(1)], []));
+  assert.equal(parent.all().filter(node => node.tag === "form").length, 0);
+});
 test("retry key survives response loss without storing the raw reason", async () => {
   const h = harness(); const payload = { type: "RETURN", reason: "private-test-reason" };
   const first = await h.returnRequestKey("order:a", payload);

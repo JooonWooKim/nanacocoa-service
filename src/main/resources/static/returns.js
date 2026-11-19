@@ -132,10 +132,15 @@ function renderOrderReturns(parent, order) {
     } catch (error) { notice.textContent = returnError(undefined, error.code); }
     finally { retry.disabled = false; }
   }
-  if (order.returns?.allowedTypes?.length) returnReasonForm(section, {
-    actions: order.returns.allowedTypes, scope: `order:${order.orderId}`, submit,
-    error: text => { notice.textContent = text; },
-  });
+  if (order.returns?.allowedTypes?.length) {
+    // 서버가 최신순으로 제공한 반려 이력으로 재신청을 구분한다. 같은 신청의 응답 유실 재시도는 키를 유지한다.
+    const rejected = order.returns.requests?.find(row => row.status === "REJECTED");
+    const scope = `order:${order.orderId}${rejected ? `:after-rejected:${rejected.id}` : ""}`;
+    returnReasonForm(section, {
+      actions: order.returns.allowedTypes, scope, submit,
+      error: text => { notice.textContent = text; },
+    });
+  }
   if (order.status === "CREATED") {
     const cancel = returnButton(section, "미결제 주문 취소", async () => {
       cancel.disabled = true;
