@@ -2701,3 +2701,62 @@ textarea.product-register-input {
 #operations-message:empty { display: none; }
 #operations-content > button { margin-block: 16px; }
 @media (max-width: 480px) { .payment-operations-page { margin: 20px auto; padding-inline: 16px; } }
+.policy-page {
+  max-width: 850px;
+  margin: 3rem auto;
+  padding: 1.5rem;
+}
+.policy-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  margin-top: 2rem;
+}
+[data-signup-policies] > div { margin: 0.8rem 0; }
+[data-signup-policies] label { display: flex; gap: 0.5rem; align-items: baseline; }
+.signup-page .login-page { width: min(100%, 480px); }
+.signup-page .login-content { padding: 40px 24px 48px; }
+.signup-page .login-heading { margin-bottom: 40px; }
+.signup-page .login-heading p { font-weight: 400; }
+.signup-page .signup-form { display: grid; gap: 24px; }
+.signup-page .login-field { margin: 0; min-width: 0; }
+.signup-page .login-field > label,
+.signup-page .login-field > span,
+.signup-page .login-field > legend { display: block; margin-bottom: 9px; font-size: 14px; font-weight: 500; }
+.signup-page .signup-required { color: #c85649; }
+.signup-page .login-input { height: 48px; border: 1px solid #d9d3cf; border-radius: 4px; padding: 0 12px; background: #fff; font-size: 16px; font-weight: 400; min-width: 0; }
+.signup-page .login-input:focus { border-color: #9b6555; outline: 2px solid #ead8d0; outline-offset: 1px; }
+.signup-page .login-field small { display: block; color: #777; font-size: 12px; margin-top: 7px; }
+.signup-page .signup-password-wrap { position: relative; }
+.signup-page .signup-password-wrap input { padding-right: 52px; }
+.signup-page .signup-password-toggle { position: absolute; right: 2px; top: 2px; width: 44px; height: 44px; border: 0; background: transparent; color: #707070; cursor: pointer; }
+.signup-page .signup-password-toggle svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.signup-page [aria-pressed="true"] .signup-eye-slash { display: none; }
+.signup-page .signup-field-error { margin: 7px 0 0; color: #b3392b; font-size: 12px; }
+.signup-page .signup-address-group > .login-input { margin-top: 8px; }
+.signup-page .signup-address-search-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(112px, max-content); gap: 8px; }
+.signup-page .signup-address-search-row button { padding: 0 12px; min-height: 48px; background: #fff; border: 1px solid #9f918a; border-radius: 4px; font: inherit; font-size: 13px; cursor: pointer; }
+.signup-page .signup-field-hint { margin: 7px 0 0; color: #71645e; font-size: 12px; }
+.signup-page .signup-phone-group { border: 0; padding: 0; }
+.signup-page .signup-phone-row { display: grid; grid-template-columns: minmax(56px, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 7px; }
+.signup-page .signup-phone-prefix { display: flex; align-items: center; height: 48px; padding: 0 12px; border: 1px solid #d9d3cf; border-radius: 4px; font-size: 16px; }
+.signup-page .signup-agreements { margin-top: 8px; min-width: 0; }
+.signup-page .signup-agree-all { padding-bottom: 20px; margin-bottom: 16px; border-bottom: 1px solid #e2dedb; }
+.signup-page .signup-agreements label { display: flex; gap: 8px; align-items: center; min-height: 44px; font-size: 13px; cursor: pointer; line-height: 1.6; }
+.signup-page .signup-agreements input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; margin: 0; accent-color: #282422; }
+.signup-page .signup-agree-all p { margin: 0 0 0 24px; color: #777; font-size: 12px; line-height: 1.6; }
+.signup-page [data-signup-policies] > div { margin: 0; }
+.signup-page .signup-policy-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: start; }
+.signup-page .signup-policy-toggle { width: 44px; min-height: 44px; border: 0; background: transparent; font-size: 22px; cursor: pointer; color: #333; }
+.signup-page .signup-policy-panel { max-height: 220px; overflow: auto; overscroll-behavior: contain; border: 1px solid #e1dcd8; padding: 10px; margin: 2px 0 12px; font-size: 12px; color: #6c645f; line-height: 1.7; overflow-wrap: anywhere; }
+.signup-page .signup-policy-body { white-space: pre-wrap; }
+.signup-page .signup-policy-panel p { margin: 0; }
+.signup-page .signup-policy-notices { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: #777; }
+.signup-page [data-policy-status]:empty { display: none; }
+.signup-page [data-policy-status] { font-size: 13px; color: #71645e; }
+.signup-page .signup-policy-retry { min-height: 44px; border: 0; padding: 0; background: transparent; color: #71645e; font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.signup-page .login-submit { margin-top: 4px; min-height: 52px; border-radius: 4px; font-weight: 600; }
+.signup-page button:focus-visible, .signup-page input[type="checkbox"]:focus-visible { outline: 2px solid #9b6555; outline-offset: 3px; }
+.signup-page button:disabled { cursor: not-allowed; }
+@media (min-width: 768px) { .signup-page .login-content { padding-top: 64px; } }
+@media (max-width: 360px) { .signup-page .login-content { padding-inline: 20px; } }

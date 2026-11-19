@@ -52,3 +52,9 @@ RETURN-003|환불·재입고 중복 실행|com.nanacocoa.server.order.inventory.
 RETURN-004|타임아웃 후 신규 환불 중복 생성|com.nanacocoa.server.order.inventory.ReturnRequestIntegrationTest#timeoutPersistsLinkedTransactionAndRecoveryUpdatesCustomerWithoutNewRefund|기존 취소 거래로 복구하고 고객 상태 갱신|docs/runbooks/returns.md
 RETURN-005|권한·CSRF·직접 취소 우회와 개인정보 노출|com.nanacocoa.server.order.inventory.ReturnRequestIntegrationTest#guardsOwnershipAdminCsrfPrivacyAndDirectCancellation|소유권·현재 관리자·CSRF 검증 및 고객 응답 비식별화|docs/product-specs/cancellation-return-prd.md
 RETURN-006|검수 불합격 상품 재입고|com.nanacocoa.server.order.inventory.ReturnRequestIntegrationTest#returnCollectionInspectionCanRefundWithoutRestockingDamagedItem|환불 자격과 재입고 분리, 직접 API도 검수 우회 거부|docs/runbooks/returns.md
+POLICY-001|미승인 환경 신규 가입과 기존 회원 동의 위조|com.nanacocoa.server.policy.PolicyIntegrationTest#defaultEmptyCatalogDefersSignupAndPreservesExistingLogin|신규 가입 503, 기존 로그인 유지 및 과거 동의 생성 없음|docs/runbooks/service-policy.md
+POLICY-002|필수 동의·문서·선택 수신 조작|com.nanacocoa.server.policy.PolicyIntegrationTest#missingRequiredRefusalDuplicateUnknownAndEmailMismatchAreRejected|잘못된 동의를 서버에서 400으로 거부하고 저장 없음|docs/product-specs/service-policy-prd.md
+POLICY-003|회원만 생성되고 동의 저장 실패|com.nanacocoa.server.policy.PolicyIntegrationTest#consentStorageFailureRollsBackMemberCreation|회원과 동의 이력을 같은 트랜잭션에서 롤백|docs/product-specs/service-policy-prd.md
+POLICY-004|중복 버전의 파일 충돌과 부분 적재|com.nanacocoa.server.policy.PolicyIntegrationTest#duplicateVersionRejectsCandidateWithoutReplacingSnapshot|중복 버전 후보 거부와 기존 스냅샷 보존|docs/runbooks/service-policy.md
+POLICY-005|파일 버전과 가입 동의 이력 불일치|com.nanacocoa.server.policy.PolicyIntegrationTest#signupRecordsValidatedFileVersionWithoutDocumentForeignKey|검증한 파일 버전·해시 저장과 재시작 후 기존 이력 보존|docs/product-specs/service-policy-prd.md
+POLICY-006|실행 중 정책 파일 교체|com.nanacocoa.server.policy.PolicyIntegrationTest#initializedFilesCannotBeReplacedUntilRestart|불변 스냅샷의 재설치 거부, 혼합 버전 배포는 운영 절차로 차단|docs/runbooks/service-policy.md

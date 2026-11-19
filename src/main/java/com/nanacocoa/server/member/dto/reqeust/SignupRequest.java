@@ -1,6 +1,9 @@
 package com.nanacocoa.server.member.dto.reqeust;
 
 import com.nanacocoa.server.member.entity.EmailReceiveConsent;
+import com.nanacocoa.server.policy.dto.reqeust.PolicyConsentRequest;
+import jakarta.validation.Valid;
+import java.util.List;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -38,4 +41,8 @@ public class SignupRequest {
 
 	@NotNull
 	private EmailReceiveConsent emailReceiveConsent;
+
+	@Valid
+	@Size(max = 20)
+	private List<PolicyConsentRequest> consents;
 }

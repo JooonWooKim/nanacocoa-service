@@ -14,12 +14,13 @@
 | `member` | 15 | 식별, 회원가입, 로그인, 세션 |
 | `order` | 38 | 주문, 배송, 서버 가격 계산 |
 | `payment` | 35 | 승인, 취소, 락, 복구 |
+| `policy` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 | `products` | 17 | 상품 목록과 이미지 저장 |
 
-- 주요 Java 파일: 117
-- 테스트 Java 파일: 26
-- Flyway 마이그레이션: 8
-- 정적 자원·페이지: 29
+- 주요 Java 파일: 130
+- 테스트 Java 파일: 29
+- Flyway 마이그레이션: 10
+- 정적 자원·페이지: 32
 
 ## 주요 패키지 디렉터리
 
@@ -62,6 +63,15 @@ src/main/java/com/nanacocoa/server/payment/lock
 src/main/java/com/nanacocoa/server/payment/pg
 src/main/java/com/nanacocoa/server/payment/repository
 src/main/java/com/nanacocoa/server/payment/service
+src/main/java/com/nanacocoa/server/policy
+src/main/java/com/nanacocoa/server/policy/config
+src/main/java/com/nanacocoa/server/policy/controller
+src/main/java/com/nanacocoa/server/policy/dto
+src/main/java/com/nanacocoa/server/policy/dto/reqeust
+src/main/java/com/nanacocoa/server/policy/dto/response
+src/main/java/com/nanacocoa/server/policy/entity
+src/main/java/com/nanacocoa/server/policy/repository
+src/main/java/com/nanacocoa/server/policy/service
 src/main/java/com/nanacocoa/server/products
 src/main/java/com/nanacocoa/server/products/controller
 src/main/java/com/nanacocoa/server/products/dto
@@ -83,6 +93,7 @@ src/test/java/com/nanacocoa/server/common/session/ProfileVerificationSessionTest
 src/test/java/com/nanacocoa/server/member/MemberApiIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/MemberConcurrencyIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/service/MemberServiceTest.java
+src/test/java/com/nanacocoa/server/migration/FilePolicyConsentMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/InventoryIntegrationTest.java
@@ -100,6 +111,8 @@ src/test/java/com/nanacocoa/server/payment/service/PaymentClientConfigServiceTes
 src/test/java/com/nanacocoa/server/payment/service/PaymentRecoveryServiceTest.java
 src/test/java/com/nanacocoa/server/payment/service/PaymentStateTest.java
 src/test/java/com/nanacocoa/server/payment/service/PaymentTransactionalServiceTest.java
+src/test/java/com/nanacocoa/server/policy/PolicyIntegrationTest.java
+src/test/java/com/nanacocoa/server/policy/PolicyTestFixtures.java
 src/test/java/com/nanacocoa/server/products/service/ProductsServiceTest.java
 src/test/java/com/nanacocoa/server/products/storage/S3ProductImageStorageTest.java
 ```

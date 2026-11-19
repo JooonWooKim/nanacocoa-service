@@ -10,7 +10,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="login-body">
+  <body class="login-body signup-page">
     <main class="login-page" aria-labelledby="signup-title">
       <header class="login-topbar" aria-label="회원가입 상단 메뉴">
         <button class="login-nav-button" type="button" aria-label="이전 페이지" onclick="history.back()">
@@ -31,93 +31,80 @@
         <div class="login-heading">
           <h1 id="signup-title">회원가입</h1>
           <p>
-            이메일과 비밀번호, 이름만 입력하면<br />
-            nanacocoa를 바로 시작할 수 있어요.
+            가입 정보와 서비스 정책을 확인하고<br />
+            nanacocoa를 시작해 주세요.
           </p>
         </div>
 
         <form class="login-form signup-form" action="/api/auth/signup" method="post" data-signup-form>
-          <label class="login-field">
-            <span class="visually-hidden">이메일</span>
-            <input
-              class="login-input"
-              type="email"
-              name="email"
-              autocomplete="email"
-              placeholder="이메일"
-              required
-            />
-          </label>
-
-          <label class="login-field">
-            <span class="visually-hidden">비밀번호</span>
-            <input
-              class="login-input"
-              type="password"
-              name="password"
-              autocomplete="new-password"
-              placeholder="비밀번호"
-              minlength="8"
-              maxlength="72"
-              required
-            />
-          </label>
-
-          <label class="login-field">
-            <span class="visually-hidden">이름</span>
-            <input
-              class="login-input"
-              type="text"
-              name="name"
-              autocomplete="name"
-              placeholder="이름"
-              maxlength="50"
-              required
-            />
-          </label>
-
-          <label class="login-field">
-            <span class="visually-hidden">주소</span>
-            <textarea
-              class="login-input signup-address"
-              name="address"
-              autocomplete="street-address"
-              placeholder="주소"
-              maxlength="500"
-              rows="3"
-              required
-            ></textarea>
-          </label>
-
-          <label class="login-field">
-            <span class="visually-hidden">전화번호</span>
-            <input
-              class="login-input"
-              type="tel"
-              name="phoneNumber"
-              autocomplete="tel"
-              placeholder="전화번호 (010-0000-0000)"
-              pattern="010-[0-9]{4}-[0-9]{4}"
-              maxlength="13"
-              required
-            />
-          </label>
-
-          <fieldset class="signup-consent">
-            <legend>이메일 수신여부</legend>
-            <label>
-              <input type="radio" name="emailReceiveConsent" value="Y" required />
-              <span>수신</span>
-            </label>
-            <label>
-              <input type="radio" name="emailReceiveConsent" value="N" checked required />
-              <span>수신 거부</span>
-            </label>
+          <div class="login-field">
+            <label for="signup-email">이메일(아이디) <span class="signup-required" aria-hidden="true">*</span></label>
+            <input id="signup-email" class="login-input" type="email" name="email" autocomplete="email" maxlength="255" required />
+          </div>
+          <div class="login-field">
+            <label for="signup-password">비밀번호 <span class="signup-required" aria-hidden="true">*</span></label>
+            <div class="signup-password-wrap">
+              <input id="signup-password" class="login-input" type="password" name="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="signup-password-hint" />
+              <button type="button" class="signup-password-toggle" data-password-toggle="password" aria-controls="signup-password" aria-pressed="false" aria-label="비밀번호 표시">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="signup-eye-slash" d="m3 3 18 18"/></svg>
+              </button>
+            </div>
+            <small id="signup-password-hint">8~72자로 입력해 주세요.</small>
+          </div>
+          <div class="login-field">
+            <label for="signup-passwordConfirm">비밀번호 확인 <span class="signup-required" aria-hidden="true">*</span></label>
+            <div class="signup-password-wrap">
+              <input id="signup-passwordConfirm" class="login-input" type="password" name="passwordConfirm" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="signup-passwordConfirm-hint" />
+              <button type="button" class="signup-password-toggle" data-password-toggle="passwordConfirm" aria-controls="signup-passwordConfirm" aria-pressed="false" aria-label="비밀번호 확인 표시">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="signup-eye-slash" d="m3 3 18 18"/></svg>
+              </button>
+            </div>
+            <p id="signup-passwordConfirm-hint" class="signup-field-error" data-password-confirm-status role="status" aria-live="polite" hidden></p>
+          </div>
+          <div class="login-field">
+            <label for="signup-name">이름 <span class="signup-required" aria-hidden="true">*</span></label>
+            <input id="signup-name" class="login-input" type="text" name="name" autocomplete="name" maxlength="100" required />
+          </div>
+          <div class="login-field signup-address-group" role="group" aria-labelledby="signup-address-label">
+            <span id="signup-address-label">주소 <span class="signup-required" aria-hidden="true">*</span></span>
+            <div class="signup-address-search-row">
+              <label class="visually-hidden" for="signup-postal-code">우편번호</label>
+              <input id="signup-postal-code" class="login-input" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="우편번호" data-address-postal-code aria-describedby="signup-address-status" required />
+              <button type="button" data-address-search disabled>주소검색 준비 중</button>
+            </div>
+            <label class="visually-hidden" for="signup-basic-address">기본주소</label>
+            <input id="signup-basic-address" class="login-input" type="text" autocomplete="address-line1" maxlength="500" placeholder="기본주소" data-address-basic aria-describedby="signup-address-status" required />
+            <label class="visually-hidden" for="signup-detail-address">상세주소 (선택)</label>
+            <input id="signup-detail-address" class="login-input" type="text" autocomplete="address-line2" maxlength="500" placeholder="상세주소 (선택)" data-address-detail aria-describedby="signup-address-status" />
+            <input type="hidden" name="address" />
+            <p id="signup-address-status" class="signup-field-hint" data-address-search-status role="status" aria-live="polite">주소검색을 준비하는 중입니다.</p>
+          </div>
+          <fieldset class="login-field signup-phone-group">
+            <legend>휴대전화 <span class="signup-required" aria-hidden="true">*</span></legend>
+            <div class="signup-phone-row">
+              <span class="signup-phone-prefix">010</span><span aria-hidden="true">-</span>
+              <label class="visually-hidden" for="signup-phone-middle">휴대전화 가운데 4자리</label>
+              <input id="signup-phone-middle" class="login-input" type="tel" inputmode="numeric" autocomplete="tel-local-prefix" maxlength="4" pattern="[0-9]{4}" data-phone-middle required />
+              <span aria-hidden="true">-</span>
+              <label class="visually-hidden" for="signup-phone-last">휴대전화 마지막 4자리</label>
+              <input id="signup-phone-last" class="login-input" type="tel" inputmode="numeric" autocomplete="tel-local-suffix" maxlength="4" pattern="[0-9]{4}" data-phone-last required />
+            </div>
+            <input type="hidden" name="phoneNumber" />
           </fieldset>
+          <section class="signup-agreements" aria-label="서비스 정책과 가입 동의">
+            <div class="signup-agree-all">
+              <label><input type="checkbox" data-policy-all disabled /><span>전체 동의</span></label>
+              <p>필수 약관과 선택 이메일 수신에 모두 동의합니다.<br />선택 항목에 동의하지 않아도 가입할 수 있습니다.</p>
+            </div>
+            <input type="hidden" name="emailReceiveConsent" value="N" />
+            <div data-signup-policies></div>
+            <p role="status" aria-live="polite" data-policy-status>서비스 정책을 확인하고 있습니다.</p>
+            <button type="button" class="signup-policy-retry" data-policy-retry>정책 다시 조회</button>
+          </section>
 
           <p class="login-message" role="alert" aria-live="polite" hidden></p>
 
-          <button class="login-submit" type="submit">회원가입</button>
+          <button class="login-submit" type="submit" disabled>회원가입</button>
         </form>
 
         <nav class="login-links" aria-label="계정 메뉴">
@@ -125,6 +112,8 @@
         </nav>
       </section>
     </main>
+    <script src="policies.js"></script>
+    <script src="signup-fields.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

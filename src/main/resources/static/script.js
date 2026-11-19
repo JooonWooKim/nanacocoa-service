@@ -615,8 +615,14 @@ function initSignupPage() {
   const submitButton = form.querySelector(".login-submit");
   const defaultSubmitText = submitButton.textContent;
 
+  const policies = createSignupPolicyState(form);
+  let pending = false;
+  const fields = setupSignupFields(form, () => pending);
+  policies.load();
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (pending || !policies.ready() || !fields.validate()) return;
     setAuthMessage("");
 
     const formData = new FormData(form);
@@ -629,6 +635,10 @@ function initSignupPage() {
       emailReceiveConsent: String(formData.get("emailReceiveConsent") || ""),
     };
 
+    payload.consents = policies.consents(payload.emailReceiveConsent);
+    pending = true;
+    policies.setBusy(true);
+    fields.setBusy(true);
     submitButton.disabled = true;
     submitButton.textContent = "가입 중";
 
@@ -640,14 +650,23 @@ function initSignupPage() {
       const data = await readJson(response);
 
       if (!response.ok) {
+        if (data.code === "POLICY_02" || data.code === "POLICY_01") {
+          policies.setBusy(false);
+          await policies.load();
+        }
         throw new Error(data.error || data.message || "회원가입 정보를 확인해 주세요.");
       }
 
       window.location.href = "login.html";
     } catch (error) {
-      setAuthMessage(error.message || "회원가입 중 문제가 발생했습니다.");
+      setAuthMessage(error instanceof TypeError
+        ? "가입 응답을 확인하지 못했습니다. 로그인으로 가입 여부를 확인한 뒤 다시 시도해 주세요."
+        : error.message || "회원가입 중 문제가 발생했습니다.");
     } finally {
-      submitButton.disabled = false;
+      pending = false;
+      fields.setBusy(false);
+      policies.setBusy(false);
+      submitButton.disabled = !policies.ready();
       submitButton.textContent = defaultSubmitText;
     }
   });

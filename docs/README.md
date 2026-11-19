@@ -29,6 +29,7 @@
 - [재고·품절 운영과 데이터 이행](runbooks/inventory.md)
 - [배송 운영 절차](runbooks/shipping.md)
 - [취소·반품·환불 운영 절차](runbooks/returns.md)
+- [서비스 정책 게시와 가입 동의 운영](runbooks/service-policy.md)
 - [결제 환경 운영 절차](runbooks/payment-environment.md)
 - [데이터베이스 마이그레이션](runbooks/database-migrations.md)
 - [장애 디버깅](runbooks/incident-debugging.md)

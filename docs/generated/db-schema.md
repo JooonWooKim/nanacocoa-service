@@ -266,3 +266,57 @@ CREATE TABLE return_request_events (
     CONSTRAINT fk_return_event_cancellation FOREIGN KEY (cancellation_id) REFERENCES payment_cancellations (id)
 );
 ```
+
+## `src/main/resources/db/migration/V9__policy_and_signup_consents.sql`
+
+```sql
+CREATE TABLE policy_documents (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    document_code VARCHAR(64) NOT NULL,
+    document_version VARCHAR(64) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    body LONGTEXT NOT NULL,
+    consent_mode VARCHAR(32) NOT NULL,
+    effective_at DATETIME(6) NOT NULL,
+    approved_by VARCHAR(100) NOT NULL,
+    approved_at DATETIME(6) NOT NULL,
+    content_hash VARCHAR(64) NOT NULL,
+    active BOOLEAN NOT NULL,
+    CONSTRAINT uk_policy_document_version UNIQUE (document_code, document_version)
+);
+CREATE TABLE policy_publications (
+    id BIGINT NOT NULL PRIMARY KEY,
+    revision BIGINT NOT NULL,
+    content_hash VARCHAR(64) NOT NULL
+);
+INSERT INTO policy_publications (id, revision, content_hash) VALUES (1, 0, '');
+CREATE TABLE member_policy_consents (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    document_id BIGINT NOT NULL,
+    agreed BOOLEAN NOT NULL,
+    recorded_at DATETIME(6) NOT NULL,
+    CONSTRAINT uk_member_policy_consent UNIQUE (member_id, document_id),
+    CONSTRAINT fk_consent_member FOREIGN KEY (member_id) REFERENCES members (id),
+    CONSTRAINT fk_consent_document FOREIGN KEY (document_id) REFERENCES policy_documents (id)
+);
+```
+
+## `src/main/resources/db/migration/V10__file_policy_consent_history.sql`
+
+```sql
+ALTER TABLE member_policy_consents ADD COLUMN document_code VARCHAR(64);
+ALTER TABLE member_policy_consents ADD COLUMN document_version VARCHAR(64);
+ALTER TABLE member_policy_consents ADD COLUMN content_hash VARCHAR(64);
+
+UPDATE member_policy_consents SET
+    document_code = (SELECT document_code FROM policy_documents WHERE id = member_policy_consents.document_id),
+    document_version = (SELECT document_version FROM policy_documents WHERE id = member_policy_consents.document_id),
+    content_hash = (SELECT content_hash FROM policy_documents WHERE id = member_policy_consents.document_id);
+
+ALTER TABLE member_policy_consents MODIFY COLUMN document_code VARCHAR(64) NOT NULL;
+ALTER TABLE member_policy_consents MODIFY COLUMN document_version VARCHAR(64) NOT NULL;
+ALTER TABLE member_policy_consents MODIFY COLUMN content_hash VARCHAR(64) NOT NULL;
+ALTER TABLE member_policy_consents MODIFY COLUMN document_id BIGINT NULL;
+ALTER TABLE member_policy_consents ADD CONSTRAINT uk_member_policy_version UNIQUE (member_id, document_code, document_version);
+```
