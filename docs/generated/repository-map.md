@@ -14,13 +14,13 @@
 | `member` | 15 | 식별, 회원가입, 로그인, 세션 |
 | `order` | 38 | 주문, 배송, 서버 가격 계산 |
 | `payment` | 35 | 승인, 취소, 락, 복구 |
-| `policy` | 15 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
+| `policy` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 | `products` | 17 | 상품 목록과 이미지 저장 |
 
-- 주요 Java 파일: 132
-- 테스트 Java 파일: 28
-- Flyway 마이그레이션: 9
-- 정적 자원·페이지: 31
+- 주요 Java 파일: 130
+- 테스트 Java 파일: 29
+- Flyway 마이그레이션: 10
+- 정적 자원·페이지: 32
 
 ## 주요 패키지 디렉터리
 
@@ -93,6 +93,7 @@ src/test/java/com/nanacocoa/server/common/session/ProfileVerificationSessionTest
 src/test/java/com/nanacocoa/server/member/MemberApiIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/MemberConcurrencyIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/service/MemberServiceTest.java
+src/test/java/com/nanacocoa/server/migration/FilePolicyConsentMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/InventoryIntegrationTest.java

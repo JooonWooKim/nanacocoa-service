@@ -14,28 +14,27 @@ import java.io.IOException;
 
 @Component @RequiredArgsConstructor
 public class PolicyCatalogLoader implements ApplicationRunner {
-    private final PolicyPublishingService publishing;
+    private final PolicyFileStore store;
     private final PolicyReadiness readiness;
     private final ObjectMapper json;
     private final ResourceLoader resources;
     @Value("${policy.catalog-location:classpath:policies/catalog.json}") private String location;
 
     @Override public void run(ApplicationArguments args) {
-        publishing.initialize();
         if (!location.startsWith("classpath:policies/") || location.contains("..")) {
             unavailable();
             return;
         }
         try (var input = resources.getResource(location).getInputStream()) {
-            publishing.publish(json.readValue(input, PolicyCatalog.class));
+            store.initialize(json.readValue(input, PolicyCatalog.class));
             readiness.complete(true);
-        } catch (IOException | NanacocoaException e) {
+        } catch (IOException | NanacocoaException | IllegalArgumentException e) {
             // 원문·승인 정보·파일 경로를 로그에 남기지 않는다. 조회와 기존 회원 로그인은 유지한다.
             unavailable();
         }
     }
     private void unavailable() {
         readiness.complete(false);
-        LoggerFactory.getLogger(getClass()).warn("POLICY_01: policy publication unavailable; new signup deferred");
+        LoggerFactory.getLogger(getClass()).warn("POLICY_01: policy files unavailable; new signup deferred");
     }
 }

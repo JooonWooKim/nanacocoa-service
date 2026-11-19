@@ -617,11 +617,12 @@ function initSignupPage() {
 
   const policies = createSignupPolicyState(form);
   let pending = false;
+  const fields = setupSignupFields(form, () => pending);
   policies.load();
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (pending || !policies.ready()) return;
+    if (pending || !policies.ready() || !fields.validate()) return;
     setAuthMessage("");
 
     const formData = new FormData(form);
@@ -637,6 +638,7 @@ function initSignupPage() {
     payload.consents = policies.consents(payload.emailReceiveConsent);
     pending = true;
     policies.setBusy(true);
+    fields.setBusy(true);
     submitButton.disabled = true;
     submitButton.textContent = "가입 중";
 
@@ -662,6 +664,7 @@ function initSignupPage() {
         : error.message || "회원가입 중 문제가 발생했습니다.");
     } finally {
       pending = false;
+      fields.setBusy(false);
       policies.setBusy(false);
       submitButton.disabled = !policies.ready();
       submitButton.textContent = defaultSubmitText;

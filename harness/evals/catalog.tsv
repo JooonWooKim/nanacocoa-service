@@ -55,6 +55,6 @@ RETURN-006|검수 불합격 상품 재입고|com.nanacocoa.server.order.inventor
 POLICY-001|미승인 환경 신규 가입과 기존 회원 동의 위조|com.nanacocoa.server.policy.PolicyIntegrationTest#defaultEmptyCatalogDefersSignupAndPreservesExistingLogin|신규 가입 503, 기존 로그인 유지 및 과거 동의 생성 없음|docs/runbooks/service-policy.md
 POLICY-002|필수 동의·문서·선택 수신 조작|com.nanacocoa.server.policy.PolicyIntegrationTest#missingRequiredRefusalDuplicateUnknownAndEmailMismatchAreRejected|잘못된 동의를 서버에서 400으로 거부하고 저장 없음|docs/product-specs/service-policy-prd.md
 POLICY-003|회원만 생성되고 동의 저장 실패|com.nanacocoa.server.policy.PolicyIntegrationTest#consentStorageFailureRollsBackMemberCreation|회원과 동의 이력을 같은 트랜잭션에서 롤백|docs/product-specs/service-policy-prd.md
-POLICY-004|같은 버전의 게시 원문 변경과 부분 게시|com.nanacocoa.server.policy.PolicyIntegrationTest#immutableVersionConflictRollsBackWholePublication|전체 게시 롤백과 과거 원문 보존|docs/runbooks/service-policy.md
-POLICY-005|게시 교체와 가입 동의 저장 경합|com.nanacocoa.server.policy.PolicyIntegrationTest#signupHoldsPublicationLockUntilConsentTransactionCompletes|현재 게시 잠금 아래 동의 저장 후 새 정책 반영|docs/product-specs/service-policy-prd.md
-POLICY-006|오래된 앱의 정책 게시 역행|com.nanacocoa.server.policy.PolicyIntegrationTest#publicationRevisionCannotBeReusedOrMoveBackwards|낮은 revision은 유지, 같은 revision의 다른 내용은 거부|docs/runbooks/service-policy.md
+POLICY-004|중복 버전의 파일 충돌과 부분 적재|com.nanacocoa.server.policy.PolicyIntegrationTest#duplicateVersionRejectsCandidateWithoutReplacingSnapshot|중복 버전 후보 거부와 기존 스냅샷 보존|docs/runbooks/service-policy.md
+POLICY-005|파일 버전과 가입 동의 이력 불일치|com.nanacocoa.server.policy.PolicyIntegrationTest#signupRecordsValidatedFileVersionWithoutDocumentForeignKey|검증한 파일 버전·해시 저장과 재시작 후 기존 이력 보존|docs/product-specs/service-policy-prd.md
+POLICY-006|실행 중 정책 파일 교체|com.nanacocoa.server.policy.PolicyIntegrationTest#initializedFilesCannotBeReplacedUntilRestart|불변 스냅샷의 재설치 거부, 혼합 버전 배포는 운영 절차로 차단|docs/runbooks/service-policy.md

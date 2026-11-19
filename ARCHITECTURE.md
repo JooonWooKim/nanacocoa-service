@@ -30,7 +30,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 | `products` | 상품 목록과 이미지 등록 | `ProductsController` / `ProductsService` | `ProductsRepository` |
 | `order` | 서버 가격 기반 주문과 배송 정보 | `OrderController` / `OrderService` | `OrderRepository` |
 | `payment` | 승인, 취소, 멱등성, 락, 복구 | `PaymentController` / `PaymentFacade` | 결제 Repository |
-| `policy` | 승인 정책 게시·원문 보존·가입 동의 | `PolicyController` / `PolicyService` | 정책·게시·동의 Repository |
+| `policy` | 승인 정책 게시·원문 보존·가입 동의 | `PolicyController` / `PolicyService` | 파일 스냅샷·동의 Repository |
 | `common` | 응답, 예외, 보안, 세션, 사용자 상세 | 공통 프레임워크 어댑터 | 회원 조회는 기록된 예외 |
 
 생성된 패키지 목록은
@@ -226,14 +226,16 @@ PG 호출 동안 DB 트랜잭션을 유지하지 않으며 기존 복구 결과�
 
 ## 서비스 정책과 가입 동의
 
-`PolicyController -> PolicyService`는 승인된 현재 정책 목록과 과거 원문을 공개한다.
-`PolicyCatalogLoader -> PolicyPublishingService`는 저장소의 버전 JSON을 검증하고
-V9의 게시 원문·현재 게시 집합을 트랜잭션으로 반영한다. 같은 문서 버전은 불변이며
-낮은 게시 revision과 빈 기본 자료가 현재 정책을 덮어쓰지 않는다.
+`PolicyController -> PolicyService`는 시작 시 적재한 파일 스냅샷으로 현재 목록과 과거
+원문을 공개한다. `PolicyCatalogLoader -> PolicyFileStore`가 classpath 카탈로그의
+현재/과거 버전을 검증하고 메모리에 고정하며 문서·게시 DB 조회나 잠금을 사용하지 않는다.
+실행 중 재적재는 없고 파일 변경은 재시작으로 반영한다. 버전 불변성과 revision 증가,
+과거 원문 포함은 배포 전 파일 대조 도구로 검사하고 서로 다른 버전의 혼합 배포를 금지한다.
 
-가입은 `AuthController -> AuthService -> PolicyService`에서 현재 게시 행의 공유
-잠금을 유지하며 필수 동의·문서 버전·선택 수신 일치를 검증한다. 회원과 동의 이력은
-같은 트랜잭션으로 저장하고 게시 변경은 같은 행의 쓰기 잠금을 사용한다.
+가입은 `AuthController -> AuthService -> PolicyService -> MemberPolicyConsentRepository`에서
+고정된 파일 버전과 필수·선택 동의를 검증하고 회원·코드·버전·해시·결과·시각을 한
+트랜잭션으로 저장한다. V10은 기존 동의의 식별자·해시를 이행하고 기존 문서 FK와
+V9 테이블을 보존한다. 신규 이력은 문서 FK를 만들지 않는다.
 가입 동의는 회원 수신 설정 변경과 독립된 기록이다. 기존 회원의 과거 동의를 생성하지 않는다.
 
 신규 가입은 기본 비활성이며 승인 자료와 `POLICY_SIGNUP_ENABLED=true`가 있어야 한다.

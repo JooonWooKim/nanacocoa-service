@@ -16,7 +16,7 @@
 | --- | --- | --- | --- | --- |
 | SEC | P0 | [세션 보안](session-security-prd.md) | PR #15 병합. 세션 쓰기 전반의 CSRF 보호, POST 로그아웃, 로그인 세션 ID 회전 구현 | P0 종단 회귀 검증 |
 | PAY | P0 | [결제 환경 분리와 모의 PG 검증](payment-environment-prd.md) | 결제 승인·취소·조회·복구 구현. PR #17의 환경 분리·모의 PG와 PR #21의 주문 제출 멱등성 병합. [PR #23](https://github.com/JooonWooKim/nanacocoa-service/pull/23)으로 [미확정 거래 운영 조회·개별 복구](payment-operations-prd.md) 구현·검증 및 main 반영 완료 | 미확정 거래 점검 담당자·문의 대응 절차 승인, RETURN 연동 후 브라우저 중복·타임아웃·복구 및 전체 종단 검증 |
-| POLICY | P0 출시 검증 | [서비스 안내·약관·가입 동의](service-policy-prd.md) | [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 정책 조회·원문 보존·가입 동의 검증/원자적 저장·화면과 V9를 feature/28에서 구현·집중 검증. main 미반영 | main 반영 검토, 원문·필수 항목·기존 회원 적용 및 배송/반품 조건 승인, 정책 대조와 명시적 가입 활성화, P0 종단 검증 |
+| POLICY | P0 출시 검증 | [서비스 안내·약관·가입 동의](service-policy-prd.md) | [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 정책 조회·원문 보존·가입 동의 검증/원자적 저장·화면을 구현. 후속 파일 조회 전환과 V10 이력 이행은 feature/28 반영 대상. main 미반영 | main 반영 검토, 원문·필수 항목·기존 회원 적용 및 배송/반품 조건 승인, 정책 대조와 명시적 가입 활성화, P0 종단 검증 |
 | RETURN | P0 출시 검증 | [취소·반품·환불](cancellation-return-prd.md) | [이슈 #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26)의 신청·운영 승인·회수·검수·환불·복구·재입고 및 재신청 키 수정이 [PR #27](https://github.com/JooonWooKim/nanacocoa-service/pull/27)으로 main 반영 완료. Codex 재리뷰 지적 없음 | 정책 승인·설정과 운영 활성화, 브라우저 환불·재입고 확인 및 전체 종단 검증 |
 | STOCK | P0 출시 검증 | 재고·품절 관리 | PR #9 병합. 재고 예약·판매 확정·해제·검수 재입고 구현 | 실재고 등록과 판매 활성화, RETURN 및 PAY 연동 회귀 검증 |
 | ORDER | P0 출시 검증 | 내 주문 목록·상세 조회 | PR #11 병합. [본인 주문 목록·상세](order-history-prd.md) 구현 및 배송 조회 연결 | RETURN 상태·후속 행동 연결과 소유권·재로그인·기존 주문 회귀 검증 |
@@ -99,11 +99,28 @@ H2·격리 MySQL 8.4의 신청·출고 경합·환불·복구·재입고 집중 
 
 ### POLICY · 서비스 안내, 약관, 가입 동의
 
-[구현 PRD](service-policy-prd.md)와 [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 기능을 feature/28에서 구현했다. 기준 main은 2026-11-19 확인한 `0cee3be`이며 이번 코드·문서는 미커밋·main 미반영이다. V9는 게시 원문·현재 게시 집합·가입 동의 이력을 추가하고 회원/동의 저장과 정책 교체를 같은 게시 행 잠금으로 직렬화한다. 같은 문서 버전의 변경·게시 revision 역행을 막고 과거 원문·기존 회원 데이터를 보존한다.
+[구현 PRD](service-policy-prd.md)와 [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 기능을 feature/28의 `accc632`에서 구현했다. 기준 main은 2026-11-19 확인한 `0cee3be`이며 main 미반영이다. 이후 가입 UI 개선과 파일 기반 정책 전환은 feature/28에 반영하며 main 미반영이다. 최초 V9 구현은 DB 게시와 동의 이력이었으며, 2026-11-20 후속 변경은 약관 파일 스냅샷 조회와 DB 동의 이력으로 분리한다. V10은 기존 동의 식별자·해시를 이행하고 원본 테이블을 보존한다. 게시 잠금 대신 불변 파일과 배포 전 버전 대조를 사용한다.
 
 신규 가입은 기본 비활성이다. 승인 카탈로그와 `POLICY_SIGNUP_ENABLED=true`가 모두 필요하며 미준비 시 503으로 보류한다. 승인 원문·필수 항목·판매자/문의처·배송/반품 조건·기존 회원 적용은 확정하지 않았다. 운영 정책과 실제 배송·RETURN 설정 대조는 [정책 운영 절차](../runbooks/service-policy.md)의 운영 인수 항목이며 자동 승인하지 않는다.
 
 정책 집중 13개는 H2에서 통과했고 핵심 12개와 기존 데이터 이행은 tmpfs MySQL 8.4.10에서 통과했다. 화면 회귀 7개와 브라우저의 필수 동의·선택 수신 거절 가입 및 원문 텍스트 표시를 확인했다. 전체 183개 중 기존 health 실패 1개가 남아 엄격 테스트는 FAIL이며 전체 check는 BASELINED다. POLICY 위험 평가 6개는 PASS다. 최종 check와 검증 범위는 [구현 실행 기록](../exec-plans/completed/issue-28-policy-implementation.md)에 기록하며 [준비 기록](../exec-plans/completed/issue-28-policy-preparation.md)은 별도 보존한다.
+
+2026-11-19 후속 가입 UI는 모바일 테두리 폼·비밀번호 확인/표시·전체 동의·필수/선택
+원문 펼침과 카카오 우편번호 검색을 제공한다. 기존 가입 API·서버 필수 동의 검증과
+주소 필수 계약을 유지한다. 집중 Java 15개, 정책/폼 JavaScript 16개 및 5개 화면
+너비의 가로 넘침 없음, 합성 정책에서 선택 수신 거절 가입을 확인했다.
+외부 팝업의 실제 주소 선택은 자동화 브라우저 접근 제약으로 BLOCKED이며,
+콜백·검색 장애·수동 주소 입력은 검증했다. [가입 UI 검증 기록](../exec-plans/completed/signup-responsive-ui.md).
+main 반영 검토·운영 원문과 조건 승인·정책 대조·명시적 가입 활성화·P0 종단 검증은 남아 있다.
+후속 UI의 전체 183개 테스트에는 기존 health 실패 1개만 남아 BASELINED이며,
+현재 전체 check는 H2 테스트 서버를 유지하는 동안 중지된 Compose 앱의 smoke로 FAIL이다.
+문서·아키텍처·보안·마이그레이션 검사는 별도 확인하고 환경 실패를 제품 테스트 통과로 취급하지 않는다.
+
+2026-11-20 파일 전환은 feature/28 반영·main 미반영이며 기존 API·UI·필수 동의 검증을 유지한다.
+H2 집중 Java 19개와 오프라인 내보내기 3개, 기존 JS 4개 파일이 통과했다.
+MySQL 8.4.10 집중 18개도 통과했고 전체 187개 중 기존 health 실패 1개만 남아 BASELINED다.
+전체 check는 기존 Compose app 중지에 따른 smoke만 FAIL이다. 자세한 결과는 [파일 전환 실행 기록](../exec-plans/completed/policy-file-storage.md)에 기록한다.
+main 반영·운영 원문 승인·운영 DB 원문 파일 이행·전체 인스턴스 교체와 신규 가입 활성화는 남아 있다.
 
 - 가입·checkout·푸터에서 운영자가 확정한 서비스 약관·개인정보 안내·판매자와 문의처·배송비와 출고 기준·취소/반품/환불 정책을 확인할 수 있게 한다. 고객 신청 화면과 관리자 판단 기준에 같은 정책을 적용한다.
 - 가입 화면에서 승인된 필수 항목과 선택 수신 동의를 구분해 제공하고, 동의가 필요한 항목의 문서 버전·동의 일시·선택 결과를 저장한다. 기존 회원의 동의 이력은 실제 기록에 근거하며 추가 동의가 필요한 경우 운영 정책에 따라 안내한다.

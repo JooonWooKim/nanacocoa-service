@@ -19,9 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.support.TransactionTemplate;
 import java.util.*;
-import java.util.concurrent.*;
 import static com.nanacocoa.server.CsrfRequests.csrf;
 import static com.nanacocoa.server.common.exception.ErrorCode.*;
 import static org.assertj.core.api.Assertions.*;
@@ -33,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test") @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @SpringBootTest(properties = {"policy.signup-enabled=true", "spring.datasource.driver-class-name=org.h2.Driver", "spring.datasource.username=sa",
         "spring.datasource.password=", "spring.datasource.url=jdbc:h2:mem:policy-integration;MODE=MySQL;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop", "spring.sql.init.mode=never"})
+        "spring.jpa.hibernate.ddl-auto=create-drop", "spring.sql.init.mode=never", "spring.jpa.properties.hibernate.generate_statistics=true"})
 class PolicyIntegrationTest {
     @DynamicPropertySource static void database(DynamicPropertyRegistry registry) {
         String url = System.getenv("POLICY_TEST_DB_URL");
@@ -47,23 +45,28 @@ class PolicyIntegrationTest {
     }
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
-    @Autowired PolicyPublishingService publishing;
+    @Autowired PolicyFileStore store;
+    @Autowired jakarta.persistence.EntityManagerFactory emf;
     @Autowired PolicyService service;
     @Autowired PolicyReadiness readiness;
     @Autowired com.nanacocoa.server.policy.config.PolicyCatalogLoader loader;
-    @Autowired PolicyPublicationRepository publications;
-    @Autowired PolicyDocumentRepository documents;
     @Autowired MemberRepository members;
     @Autowired AuthService auth;
-    @Autowired TransactionTemplate tx;
     @MockitoSpyBean MemberPolicyConsentRepository consents;
     private PolicyCatalog fixture;
 
     @BeforeEach void setup() throws Exception {
-        consents.deleteAll(); members.deleteAll(); documents.deleteAll(); publications.deleteAll();
-        publishing.initialize();
+        consents.deleteAll(); members.deleteAll();
+        org.springframework.test.util.ReflectionTestUtils.setField(store, "loaded", null);
         try (var input = new ClassPathResource("policies/approved-test-catalog.json").getInputStream()) { fixture = json.readValue(input,PolicyCatalog.class); }
-        publishing.publish(fixture); readiness.complete(true);
+        store.initialize(fixture); readiness.complete(true);
+    }
+    void installForRestart(PolicyCatalog next) {
+        org.springframework.test.util.ReflectionTestUtils.setField(store, "loaded", null);
+        store.initialize(next);
+    }
+    PolicyCatalog withHistory(PolicyCatalog next) {
+        return new PolicyCatalog(next.revision(), next.documents(), fixture.documents());
     }
     SignupRequest signup(String email, boolean receive) {
         return new SignupRequest(email,"fixture-password","테스트 회원","합성 주소","010-1111-2222",
@@ -77,7 +80,7 @@ class PolicyIntegrationTest {
     @Test void publicCatalogAndHistoricalDocumentExcludeInternalApprovalAndMemberData() throws Exception {
         mvc.perform(get("/api/policies")).andExpect(status().isOk()).andExpect(jsonPath("$.data.signupReady").value(true))
                 .andExpect(jsonPath("$.data.documents.length()").value(5)).andExpect(jsonPath("$.data.documents[0].approvedBy").doesNotExist());
-        publishing.publish(revision(2,"test-v2",null));
+        installForRestart(withHistory(revision(2,"test-v2",null)));
         mvc.perform(get("/api/policies/TERMS/test-v1")).andExpect(status().isOk()).andExpect(jsonPath("$.data.body").value(fixture.documents().get(0).body()))
                 .andExpect(jsonPath("$.data.approvedBy").doesNotExist());
         mvc.perform(get("/api/policies/TERMS/unpublished")).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("POLICY_03"));
@@ -107,13 +110,13 @@ class PolicyIntegrationTest {
         assertThat(members.findByEmail("invalid@example.test")).isEmpty(); assertThat(consents.count()).isZero();
     }
     @Test void staleConsentVersionRequiresReconfirmationWithoutCreatingMember() throws Exception {
-        publishing.publish(revision(2,"test-v2",null));
+        installForRestart(withHistory(revision(2,"test-v2",null)));
         mvc.perform(post("/api/auth/signup").with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(body(signup("stale@example.test",false))))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("POLICY_02"));
         assertThat(members.count()).isZero();
     }
     @Test void defaultEmptyCatalogDefersSignupAndPreservesExistingLogin() throws Exception {
-        documents.deleteAll(); publications.deleteAll(); publishing.initialize(); publishing.publish(new PolicyCatalog(0,List.of()));
+        installForRestart(new PolicyCatalog(0,List.of()));
         mvc.perform(get("/api/policies")).andExpect(status().isOk()).andExpect(jsonPath("$.data.signupReady").value(false));
         mvc.perform(post("/api/auth/signup").with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(body(signup("deferred@example.test",false))))
                 .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.code").value("POLICY_01"));
@@ -125,32 +128,34 @@ class PolicyIntegrationTest {
         assertThat(consents.count()).isZero();
     }
     @Test void malformedPublicationBlocksSignupButKeepsPublishedHistoryReadable() throws Exception {
-        assertThatThrownBy(() -> publishing.publish(new PolicyCatalog(2,List.of()))).isInstanceOf(NanacocoaException.class);
+        assertThatThrownBy(() -> new PolicyFileStore(json).initialize(new PolicyCatalog(2,List.of()))).isInstanceOf(NanacocoaException.class);
         readiness.complete(false);
         mvc.perform(get("/api/policies")).andExpect(status().isOk()).andExpect(jsonPath("$.data.signupReady").value(false));
         mvc.perform(get("/api/policies/TERMS/test-v1")).andExpect(status().isOk());
         mvc.perform(post("/api/auth/signup").with(csrf(mvc)).contentType(MediaType.APPLICATION_JSON).content(body(signup("blocked@example.test",false))))
                 .andExpect(status().isServiceUnavailable());
     }
-    @Test void immutableVersionConflictRollsBackWholePublication() {
-        var changed = new ArrayList<>(revision(2,null,"changed text").documents());
+    @Test void duplicateVersionRejectsCandidateWithoutReplacingSnapshot() {
+        var changed = new ArrayList<>(fixture.documents());
         var first = changed.get(0);
-        changed.set(0,new PolicyCatalog.Document(first.documentCode(),"test-v2",first.title(),first.body(),first.consentMode(),first.effectiveAt(),first.approvedBy(),first.approvedAt()));
-        assertThatThrownBy(() -> publishing.publish(new PolicyCatalog(2,changed))).isInstanceOf(NanacocoaException.class);
-        assertThat(service.catalog().revision()).isEqualTo(1); assertThat(documents.count()).isEqualTo(5);
+        changed.set(0, new PolicyCatalog.Document(first.documentCode(), first.version(), first.title(), "changed body",
+                first.consentMode(), first.effectiveAt(), first.approvedBy(), first.approvedAt()));
+        assertThatThrownBy(() -> new PolicyFileStore(json).initialize(new PolicyCatalog(2, changed, fixture.documents())))
+                .isInstanceOf(NanacocoaException.class);
+        assertThat(service.catalog().revision()).isEqualTo(1);
         assertThat(service.document("TERMS","test-v1").body()).isEqualTo(fixture.documents().get(0).body());
     }
     @Test void unapprovedCatalogIsNotImportedAndLoaderDefersOnlySignup() throws Exception {
         var invalid = new ArrayList<>(fixture.documents());
         var first = invalid.get(0);
         invalid.set(0,new PolicyCatalog.Document(first.documentCode(),"test-v2",first.title(),first.body(),first.consentMode(),first.effectiveAt(),"",first.approvedAt()));
-        assertThatThrownBy(() -> publishing.publish(new PolicyCatalog(2,invalid))).isInstanceOf(NanacocoaException.class);
+        assertThatThrownBy(() -> new PolicyFileStore(json).initialize(new PolicyCatalog(2,invalid))).isInstanceOf(NanacocoaException.class);
         org.springframework.test.util.ReflectionTestUtils.setField(loader,"location","classpath:policies/not-present.json");
         try { loader.run(new org.springframework.boot.DefaultApplicationArguments()); }
         finally { org.springframework.test.util.ReflectionTestUtils.setField(loader,"location","classpath:policies/catalog.json"); }
         assertThat(service.catalog().signupReady()).isFalse();
         assertThat(service.document("TERMS","test-v1").body()).isNotBlank();
-        assertThat(documents.count()).isEqualTo(5);
+        assertThat(store.snapshot().all()).hasSize(5);
     }
     @Test void explicitSignupPausePreservesPublishedDocumentsAndHistory() throws Exception {
         org.springframework.test.util.ReflectionTestUtils.setField(readiness,"signupEnabled",false);
@@ -162,11 +167,13 @@ class PolicyIntegrationTest {
             assertThat(members.count()).isZero();
         } finally { org.springframework.test.util.ReflectionTestUtils.setField(readiness,"signupEnabled",true); }
     }
-    @Test void publicationRevisionCannotBeReusedOrMoveBackwards() {
-        publishing.publish(revision(2,"test-v2",null)); publishing.publish(fixture); publishing.publish(new PolicyCatalog(0,List.of()));
-        assertThat(service.catalog().revision()).isEqualTo(2);
-        assertThatThrownBy(() -> publishing.publish(revision(2,"test-v3",null))).isInstanceOf(NanacocoaException.class);
-        assertThat(documents.count()).isEqualTo(10);
+    @Test void initializedFilesCannotBeReplacedUntilRestart() {
+        var initial = store.snapshot();
+        assertThatThrownBy(() -> store.initialize(revision(2,"test-v2",null))).isInstanceOf(NanacocoaException.class);
+        assertThatThrownBy(() -> store.initialize(new PolicyCatalog(0,List.of()))).isInstanceOf(NanacocoaException.class);
+        assertThat(store.snapshot()).isSameAs(initial);
+        assertThatThrownBy(() -> initial.current().clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> initial.all().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
     @Test void consentStorageFailureRollsBackMemberCreation() {
         doThrow(new DataIntegrityViolationException("synthetic consent failure")).when(consents).saveAllAndFlush(any());
@@ -178,24 +185,46 @@ class PolicyIntegrationTest {
                 .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("CSRF_INVALID"));
         assertThat(members.count()).isZero(); assertThat(consents.count()).isZero();
     }
-    @Test void signupHoldsPublicationLockUntilConsentTransactionCompletes() throws Exception {
-        var validated = new CountDownLatch(1); var release = new CountDownLatch(1); var started = new CountDownLatch(1);
-        var pool = Executors.newFixedThreadPool(2);
-        try {
-            var signup = pool.submit(() -> tx.execute(status -> {
-                service.validateSignup(PolicyTestFixtures.consents(false),EmailReceiveConsent.N); validated.countDown();
-                try { if (!release.await(10,TimeUnit.SECONDS)) throw new IllegalStateException("release timeout"); }
-                catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
-                auth.signUp(signup("concurrent@example.test",false)); return true;
-            }));
-            assertThat(validated.await(10,TimeUnit.SECONDS)).isTrue();
-            var publication = pool.submit(() -> { started.countDown(); publishing.publish(revision(2,"test-v2",null)); });
-            assertThat(started.await(10,TimeUnit.SECONDS)).isTrue();
-            assertThatThrownBy(() -> publication.get(150,TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);
-            release.countDown(); assertThat(signup.get(10,TimeUnit.SECONDS)).isTrue(); publication.get(10,TimeUnit.SECONDS);
-            assertThat(service.catalog().revision()).isEqualTo(2);
-            var member = members.findByEmail("concurrent@example.test").orElseThrow();
-            assertThat(consents.findByMemberId(member.getId())).hasSize(3);
-        } finally { release.countDown(); pool.shutdownNow(); }
+    @Test void signupRecordsValidatedFileVersionWithoutDocumentForeignKey() throws Exception {
+        auth.signUp(signup("file-history@example.test", false));
+        var member = members.findByEmail("file-history@example.test").orElseThrow();
+        var records = consents.findByMemberId(member.getId());
+        assertThat(records).hasSize(3).allSatisfy(record -> {
+            var file = store.snapshot().find(record.getDocumentCode(), record.getDocumentVersion()).orElseThrow();
+            assertThat(record.getContentHash()).isEqualTo(store.hash(file));
+            assertThat(record.getLegacyDocumentId()).isNull();
+            assertThat(record.getRecordedAt()).isNotNull();
+        });
+        installForRestart(withHistory(revision(2,"test-v2",null)));
+        assertThat(consents.findByMemberId(member.getId())).allSatisfy(record -> assertThat(record.getDocumentVersion()).isEqualTo("test-v1"));
+    }
+    @Test void policyReadsExecuteNoDatabaseStatements() throws Exception {
+        var stats = emf.unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        long before = stats.getPrepareStatementCount();
+        mvc.perform(get("/api/policies")).andExpect(status().isOk());
+        mvc.perform(get("/api/policies/TERMS/test-v1")).andExpect(status().isOk());
+        assertThat(stats.getPrepareStatementCount()).isEqualTo(before);
+    }
+    @Test void invalidCurrentFilesPreserveIndependentlyValidatedArchive() {
+        var candidate = new PolicyFileStore(json);
+        assertThatThrownBy(() -> candidate.initialize(new PolicyCatalog(2, List.of(), fixture.documents())))
+                .isInstanceOf(NanacocoaException.class);
+        assertThat(candidate.snapshot().revision()).isZero();
+        assertThat(candidate.snapshot().current()).isEmpty();
+        assertThat(candidate.snapshot().find("TERMS", "test-v1")).isPresent();
+    }
+    @Test void malformedJsonAndNullDocumentsDeferSignupWithoutCrashingLoader() {
+        var resources = org.mockito.Mockito.mock(org.springframework.core.io.ResourceLoader.class);
+        var candidate = new PolicyFileStore(json);
+        var candidateReadiness = new PolicyReadiness();
+        var candidateLoader = new com.nanacocoa.server.policy.config.PolicyCatalogLoader(candidate, candidateReadiness, json, resources);
+        org.springframework.test.util.ReflectionTestUtils.setField(candidateLoader, "location", "classpath:policies/broken.json");
+        for (String content : List.of("broken json", "null", "{\"revision\":1,\"documents\":[null]}",
+                "{\"revision\":0,\"documents\":[],\"archivedDocuments\":[null]}")) {
+            org.mockito.Mockito.when(resources.getResource(any())).thenReturn(new org.springframework.core.io.ByteArrayResource(content.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            candidateLoader.run(new org.springframework.boot.DefaultApplicationArguments());
+            assertThat(candidateReadiness.available()).isFalse();
+            assertThat(candidate.snapshot().current()).isEmpty();
+        }
     }
 }
