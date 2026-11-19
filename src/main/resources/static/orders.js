@@ -78,6 +78,7 @@ function renderOrderHistoryDetail(content, order) {
   }
 
   if (order.shipping) renderOrderShipping(card, order.shipping);
+  renderOrderReturns(card, order);
 
   appendOrderElement(card, "h2", "주문 당시 배송 정보");
   appendOrderFields(card, [

@@ -12,14 +12,14 @@
 | --- | ---: | --- |
 | `common` | 11 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
 | `member` | 15 | 식별, 회원가입, 로그인, 세션 |
-| `order` | 26 | 주문, 배송, 서버 가격 계산 |
+| `order` | 38 | 주문, 배송, 서버 가격 계산 |
 | `payment` | 35 | 승인, 취소, 락, 복구 |
 | `products` | 17 | 상품 목록과 이미지 저장 |
 
-- 주요 Java 파일: 105
-- 테스트 Java 파일: 25
-- Flyway 마이그레이션: 7
-- 정적 자원·페이지: 27
+- 주요 Java 파일: 117
+- 테스트 Java 파일: 26
+- Flyway 마이그레이션: 8
+- 정적 자원·페이지: 29
 
 ## 주요 패키지 디렉터리
 
@@ -87,6 +87,7 @@ src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/InventoryIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/PaymentOperationsIntegrationTest.java
+src/test/java/com/nanacocoa/server/order/inventory/ReturnRequestIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/service/OrderServiceTest.java
 src/test/java/com/nanacocoa/server/payment/config/PaymentLockConfigTest.java
 src/test/java/com/nanacocoa/server/payment/config/TossPaymentsConfigTest.java

@@ -8,6 +8,9 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ErrorCode {
 	INVALID_REQUEST(HttpStatus.BAD_REQUEST, "COMMON_01", "요청 값을 확인해주세요."),
+	RETURN_POLICY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "RETURN_01", "취소·반품 정책 승인 및 운영 준비 중입니다."),
+	RETURN_CONFLICT(HttpStatus.CONFLICT, "RETURN_02", "신청 상태 또는 요청 내용이 변경되었습니다. 다시 조회해주세요."),
+	RETURN_REQUEST_REQUIRED(HttpStatus.CONFLICT, "RETURN_03", "주문 상세에서 취소·반품을 신청해주세요."),
 
 	ALREADY_EXIST_EMAIL(HttpStatus.CONFLICT, "MEMBER_01", "이미 등록된 이메일입니다."),
 	NOT_VALID_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_02", "비밀번호를 다시 확인해주세요."),

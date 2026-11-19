@@ -21,6 +21,9 @@
   주문 당시 정보와 결제 결과 표시, 인수 테스트를 정의합니다.
 - [배송관리 구현 PRD](shipping-management-prd.md)는 관리자 출고, 구매자
   배송 조회, 결제 취소와의 경계, 인수 기준을 정의합니다.
+- [취소·반품·환불 PRD](cancellation-return-prd.md)은 구매자 신청,
+  운영 승인·회수·검수, 기존 환불·복구·재입고 연결을 정의합니다.
+  이슈 #26의 feature/26 구현은 기본 비활성이며 운영 정책 승인·main 반영·출시 검증은 별도입니다.
 - [마이페이지 PRD](../design-docs/PRD.md)는 회원 프로필·비밀번호 관리의
   인수 조건과 범위 경계를 정의합니다.
 - [기술부채 NC-TEST-001](../exec-plans/tech-debt-tracker.md)은 현재 인증·상태

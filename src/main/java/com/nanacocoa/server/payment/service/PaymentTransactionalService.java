@@ -47,19 +47,22 @@ public class PaymentTransactionalService {
 	private final Duration retryDelay;
 	private final OrderInventoryService inventoryService;
 	private final ShippingService shippingService;
+	private final com.nanacocoa.server.order.service.ReturnRequestService returnRequests;
 
 	public PaymentTransactionalService(
 			PaymentRepository paymentRepository,
 			PaymentCancellationRepository cancellationRepository,
 			OrderRepository orderRepository,
 			@Value("${payment.reconciliation.retry-delay:30s}") Duration retryDelay,
-			OrderInventoryService inventoryService, ShippingService shippingService) {
+			OrderInventoryService inventoryService, ShippingService shippingService,
+            com.nanacocoa.server.order.service.ReturnRequestService returnRequests) {
 		this.paymentRepository = paymentRepository;
 		this.cancellationRepository = cancellationRepository;
 		this.orderRepository = orderRepository;
 		this.retryDelay = retryDelay;
 		this.inventoryService = inventoryService;
 		this.shippingService = shippingService;
+        this.returnRequests = returnRequests;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -228,6 +231,37 @@ public class PaymentTransactionalService {
 				.orElseThrow(() -> new NanacocoaException(PAYMENT_IN_PROGRESS));
 		return replayCancellation(cancellation, fingerprint);
 	}
+
+    // 결제 행 -> 주문 행 순서로 잠근 뒤 승인된 신청과 환불 거래를 함께 저장한다.
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
+    public CancellationWork prepareReturnCancellation(Long paymentId, Long requestId,
+            com.nanacocoa.server.order.dto.reqeust.ReturnActionRequest input,
+            com.nanacocoa.server.common.userdetails.UserDetailsImpl user) {
+        Payment payment = paymentForUpdate(paymentId);
+        var intent = returnRequests.authorizeRefund(requestId, input, user, payment);
+        if (intent.replay()) {
+            PaymentCancellation previous = intent.event().getCancellation();
+            if (previous == null) throw new NanacocoaException(com.nanacocoa.server.common.exception.ErrorCode.RETURN_CONFLICT);
+            return CancellationWork.from(previous, true);
+        }
+        if (payment.getStatus() != PaymentStatus.SUCCESS) throw new NanacocoaException(INVALID_PAYMENT_STATUS);
+        payment.startCancellation();
+        PaymentCancellation cancellation = cancellationRepository.saveAndFlush(PaymentCancellation.pending(
+            payment, "return:" + intent.event().getId(), intent.event().getFingerprint(),
+            "전체 주문 환불", nextRetryAt()));
+        intent.request().linkCancellation(cancellation);
+        intent.event().linkCancellation(cancellation);
+        return CancellationWork.from(cancellation, false);
+    }
+
+    @Transactional(readOnly = true)
+    public void requireExistingCancellation(Long paymentId, String key, String fingerprint, String email) {
+        getOwnedOrderId(paymentId, email);
+        var existing = cancellationRepository.findByIdempotencyKey(key)
+            .orElseThrow(() -> new NanacocoaException(com.nanacocoa.server.common.exception.ErrorCode.RETURN_REQUEST_REQUIRED));
+        if (!existing.getPayment().getId().equals(paymentId) || !existing.getRequestFingerprint().equals(fingerprint))
+            throw new NanacocoaException(IDEMPOTENCY_KEY_REUSED);
+    }
 
 	private CancellationWork replayCancellation(PaymentCancellation cancellation, String fingerprint) {
 		if (!cancellation.getRequestFingerprint().equals(fingerprint)) {

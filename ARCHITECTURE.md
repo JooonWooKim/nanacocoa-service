@@ -204,6 +204,25 @@ V5의 기존 상품은 0개·판매 중지, 기존 주문은 `LEGACY`로 이행�
 토큰 전달과 화면 복구 계약은 [세션 보안 PRD](docs/product-specs/session-security-prd.md)를 참고합니다.
 [배송 운영 절차](docs/runbooks/shipping.md)
 
+## 취소·반품·환불 신청
+
+`ReturnRequestController / ReturnOperationsController -> ReturnRequestFacade -> ReturnRequestService`는
+본인 신청과 관리자 승인·회수·검수·환불·재입고를 제공한다. V8의 신청·작업 이력과
+활성 주문별 unique 제약, 주문 행 잠금과 명시적 revision이 중복·동시 수정을 제어한다.
+신청 상태와 연결된 결제 취소·재입고 상태를 분리하며 운영 메모는 구매자에게 제공하지 않는다.
+
+출고 전 취소 접수와 출고는 같은 주문 잠금에서 직렬화하고 진행 신청은 출고를 보류한다.
+환불은 기존 주문 결제 락 아래 결제 행 -> 주문 행 순서로 준비한다. 승인된 신청의 작업 이력과
+기존 취소 거래를 같은 트랜잭션에서 연결한 뒤 기존 PaymentFacade의 PG 실행·실패·복구를 사용한다.
+PG 호출 동안 DB 트랜잭션을 유지하지 않으며 기존 복구 결과를 연결된 거래에서 조회한다.
+새 직접 결제 취소는 신청을 요구하고 이미 접수한 취소의 재전송·복구는 유지한다.
+
+`returns.policy`는 기본 비활성이며 승인 정보·버전·고객 안내·기간·처리 조건이 모두 있어야
+신규 신청·운영 처리를 허용한다. 조회·기존 미확정 결제 복구는 이 설정과 독립적이다.
+전체 취소 확정과 적합 검수 뒤 기존 재입고를 사용하며 직접 API도 같은 조건을 검증한다.
+[취소·반품 PRD](docs/product-specs/cancellation-return-prd.md),
+[운영 절차](docs/runbooks/returns.md).
+
 ## 외부 경계
 
 - `TossPaymentsClient`는 결제 제공자 경계입니다. 기본 어댑터는 네트워크를 사용하지

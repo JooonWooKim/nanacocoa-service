@@ -66,7 +66,7 @@ class PaymentControllerTest {
 				LocalDateTime.now(),
 				LocalDateTime.now()
 		);
-		when(paymentFacade.cancel(eq(10L), any(), eq("cancel-idem"), isNull())).thenReturn(canceled);
+		when(paymentFacade.cancelDirect(eq(10L), any(), eq("cancel-idem"), isNull())).thenReturn(canceled);
 
 		mockMvc.perform(post("/api/payments/10/cancel")
 					.header("Idempotency-Key", "cancel-idem")

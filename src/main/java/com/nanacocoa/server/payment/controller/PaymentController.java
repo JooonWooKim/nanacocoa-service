@@ -48,7 +48,7 @@ public class PaymentController {
 			@Valid @RequestBody CancelPaymentRequest request,
 			@RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
 			@AuthenticationPrincipal UserDetailsImpl userDetails) {
-		PaymentResponse response = paymentFacade.cancel(paymentId, request, idempotencyKey, userDetails);
+		PaymentResponse response = paymentFacade.cancelDirect(paymentId, request, idempotencyKey, userDetails);
 		return response(response, "결제취소성공", "결제취소확인중");
 	}
 
