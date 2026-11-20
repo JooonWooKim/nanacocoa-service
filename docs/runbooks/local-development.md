@@ -28,8 +28,8 @@
 ./scripts/harness test-baseline
 ```
 
-NC-TEST-001이 남아 있어 엄격한 `./scripts/harness test`는 현재 실패합니다.
-기준선을 인식하는 명령을 엄격 테스트 통과로 해석하지 않습니다.
+NC-TEST-001은 feature/30에서 해소했으며 엄격 테스트 191개 실패·skip 0개를 확인했습니다.
+main 반영은 별도이며, check에 남은 아키텍처·보안 BASELINED를 제품 테스트 실패와 구분합니다.
 
 ## 전체 로컬 스택
 

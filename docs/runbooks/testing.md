@@ -1,6 +1,6 @@
 # 테스트 운영 절차
 
-상태: 2026-09-14 검증됨
+상태: 2026-11-20 상태 확인 계약 정비 검증
 
 ## 명령 단계
 
@@ -24,16 +24,15 @@
 
 ## 현재 기준선
 
-초기 엄격 실행은 테스트 63개 중 9개가 실패했고 모두
-`NanacocoaServerApplicationTests`에 있습니다. 정확한 ID는
-`harness/baselines/test-failures.txt`에 있으며 원인과 해결은 NC-TEST-001로
-추적합니다. 결제와 회원 기능 테스트를 추가했으며,
-회원가입 관련 실패 4개를 검증된 계약으로 해소했습니다. 세션 보안 작업에서 인증
-fixture와 API 계약 검증을 정비해 상태 확인 실패 1개가 남아 있습니다. 실제 HTTP 세션
-보안, 모의 PG 결제 복귀·HTTP 결제 환경·관리자 복구·취소·반품 검증을 포함한 전체 발견 기준은 187개입니다.
+초기 엄격 실행의 테스트 63개 중 9개 실패는 NC-TEST-001로 추적했습니다. 회원가입·세션
+계약을 정비한 뒤 남았던 health 실패도 feature/30에서 공식 /actuator/health 계약으로
+정합화했습니다. 기존 테스트 이름을 유지하고 실제 HTTP 정상·DOWN·OUT_OF_SERVICE·
+인증/CSRF 경계 4개를 추가해 현재 발견 기준은 191개입니다.
+전체 엄격 실패·skip 0개를 확인한 뒤 실패 목록과 fingerprint의 해결된 health 항목만
+제거했습니다. 현재 두 실패 기준선 파일은 비어 있으며 구현의 main 반영은 별도입니다.
 
 `test-baseline`은 전체 테스트를 실행하고 모든 Gradle XML을 파싱합니다.
-전체 187개 테스트 목록을 비교하고 skip 0개를 요구하며 각 알려진 실패의
+전체 191개 테스트 목록을 비교하고 skip 0개를 요구하며 각 알려진 실패의
 failure·error 종류, 예외 타입, assertion 메시지를 고정합니다. 전체 실행은
 XML 옆에 저장소 fingerprint를 기록하며 `--from-results`는 정확히 동일한
 소스·실행 비트 상태에서만 허용합니다. 다음 상황에서는 실패합니다.
@@ -78,5 +77,20 @@ node src/test/js/policies.test.cjs
 파일 정책 전환은 H2 및 격리 MySQL에서 V10 기존 이력 보존/신규 FK 없는 저장을
 확인한다. `POLICY_FILE_MIGRATION_DB_URL`은 빈 테스트 DB만 지정한다.
 `python3 -B -m unittest discover -s src/test/python -v`는 DB 연결 없이 내보내기/해시 대조를 검사한다.
-이번 발견 목록은 기존 게시 잠금 관련 3개 테스트를 파일 스냅샷/이력 검증으로 교체하고
+2026-11-20 파일 정책 전환 당시 발견 목록은 기존 게시 잠금 관련 3개 테스트를 파일 스냅샷/이력 검증으로 교체하고
 정책 3개·V10 이행 1개를 추가해 187개다. health 실패 기준선은 변경하지 않았다.
+
+## 상태 확인 계약 회귀
+
+기존 `healthApiReturnsOk`는 익명 `/actuator/health`의 HTTP 200/UP과 정보 비공개를
+검증한다. `HealthContractHttpTest`는 임의 port의 실제 HTTP로 테스트 전용 지표의
+UP/DOWN/OUT_OF_SERVICE를 확인한다. 지표에 합성 내부 상세/예외를 넣어도 공개 응답은
+상태만 포함해야 한다. 지표는 각 테스트 전후 UP으로 초기화하고 운영 외부 서비스는 호출하지 않는다.
+show-details/show-components/HTTP 상태 매핑을 테스트 설정으로 덮어쓰지 않는다.
+
+```sh
+./gradlew test --tests '*HealthContractHttpTest' --tests '*NanacocoaServerApplicationTests.healthApiReturnsOk' --tests '*SessionSecurityHttpTest'
+```
+
+실패 해소 시에는 집중·전체 엄격 통과를 먼저 확인하고 기준선을 줄인다. 이후 전체 엄격
+테스트·test-baseline·eval·check를 다시 실행한다. 아키텍처/보안의 기존 예외는 별도다.

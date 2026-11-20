@@ -116,9 +116,12 @@ Actuator health·info를 허용하며 나머지 요청은 인증된 세션이 �
 현재 비밀번호를 다시 입력하지 않습니다. 비밀번호 변경 요청의 현재 비밀번호
 검증은 유지합니다.
 
-인증 통합 테스트에는 현재 알려진 계약 실패가 있습니다. 해당 목록은
-`harness/baselines/test-failures.txt`와 NC-TEST-001에 기록되어 있습니다.
-기준선은 현재 동작이 올바르다는 의미가 아닙니다.
+공식 상태 확인은 기존 Actuator `GET /actuator/health`다. 익명 요청에 정상은
+HTTP 200/UP, DOWN·OUT_OF_SERVICE는 HTTP 503으로 응답한다. 기본 정보 비공개
+설정을 유지하며 components/details·내부 오류를 노출하지 않는다. 별도 /api/health
+API와 익명 허용 항목은 없다. 기존 health 테스트 이름을 유지해 이 계약을 검증한다.
+NC-TEST-001은 feature/30에서 해소했으며 main 미반영이다. 실패 기준선은 비어 있고
+전체 엄격 테스트 191개·skip 0개를 확인했다. 다른 구조·보안 부채는 별도 유지한다.
 
 마이페이지의 주문 내역은 `orders.html`과 인증된 `GET /api/orders`,
 `GET /api/orders/{orderId}`를 사용합니다. 주문 조회는 세션 회원의 주문만

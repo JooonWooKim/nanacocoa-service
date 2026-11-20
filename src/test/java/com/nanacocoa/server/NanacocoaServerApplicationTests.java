@@ -126,9 +126,11 @@ class NanacocoaServerApplicationTests {
 
     @Test
     void healthApiReturnsOk() throws Exception {
-        mockMvc.perform(get("/api/health"))
+        mockMvc.perform(get("/actuator/health"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("ok"));
+            .andExpect(jsonPath("$.status").value("UP"))
+            .andExpect(jsonPath("$.details").doesNotExist())
+            .andExpect(jsonPath("$.components").doesNotExist());
     }
 
     @Test

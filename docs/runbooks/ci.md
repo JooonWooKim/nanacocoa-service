@@ -32,7 +32,7 @@
 담당하며 품질 게이트가 아닙니다. NC-CI-001을 해소하려면 별도의 hosted job이
 제공자 전용 테스트 로직 없이 `./scripts/harness check`를 호출해야 합니다.
 
-NC-TEST-001, NC-ARCH-001, 검토된 보안 위험이 변경되지 않으면 `check`는
+NC-TEST-001은 feature/30에서 해소해 제품 실패 기준선이 비어 있습니다. NC-ARCH-001과 검토된 보안 위험이 변경되지 않으면 `check`는
 BASELINED를 표시하면서 종료 코드 0을 반환할 수 있습니다. 기준선 증가나
 조용한 해소는 실패하며 리뷰가 필요합니다. 엄격한 release gate는 빈 기준선과
 `./scripts/harness test` 통과를 추가로 요구해야 합니다.

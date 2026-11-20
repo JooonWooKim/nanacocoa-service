@@ -23,7 +23,7 @@ PAY-004|대기 중 결제 복구가 권위 있는 제공자 상태를 사용함|
 PAY-005|결제 취소가 허용된 상태 전이를 따름|com.nanacocoa.server.payment.service.PaymentStateTest#approvalAndFullCancellationFollowAllowedTransitions|승인된 결제와 주문이 완전 취소 상태에 도달함|docs/quality/RELIABILITY.md
 STORAGE-001|S3 어댑터가 생성된 key와 CDN 응답을 만듦|com.nanacocoa.server.products.storage.S3ProductImageStorageTest#uploadsWithGeneratedKeyAndReturnsCdnUrl|mock S3 요청과 반환 공개 URL이 어댑터 계약을 만족함|docs/product-specs/evaluation-catalog.md
 SEC-001|익명 호출자가 인증이 필요한 주문을 생성할 수 없음|com.nanacocoa.server.NanacocoaServerApplicationTests#createOrderRequiresLogin|미인증 주문 요청이 AUTH_01로 거부됨|docs/quality/SECURITY.md
-OPS-001|애플리케이션이 기계 판독 가능한 상태 API를 제공함|com.nanacocoa.server.NanacocoaServerApplicationTests#healthApiReturnsOk|상태 API가 HTTP 200과 ok 상태를 반환함|docs/quality/OBSERVABILITY.md
+OPS-001|애플리케이션이 기계 판독 가능한 상태 API를 제공함|com.nanacocoa.server.NanacocoaServerApplicationTests#healthApiReturnsOk|GET /actuator/health가 HTTP 200과 UP 상태를 반환하며 details/components를 숨김|docs/quality/OBSERVABILITY.md
 MEMBER-005|본인 확인 전 페이지와 API 직접 접근 차단|com.nanacocoa.server.member.MemberApiIntegrationTest#unverifiedPageAndApisCannotBeAccessedDirectly|페이지 redirect 및 조회·수정·비밀번호 API 거부|docs/design-docs/PRD.md
 MEMBER-006|확인 세션 격리와 재로그인·로그아웃 무효화|com.nanacocoa.server.member.MemberApiIntegrationTest#verificationIsBoundToSessionAndClearedOnLoginAndLogout|다른 세션과 재로그인한 세션에 확인이 전파되지 않음|docs/design-docs/PRD.md
 MEMBER-007|확인 재시도 제한|com.nanacocoa.server.member.MemberApiIntegrationTest#wrongPasswordRevokesGrantAndRepeatedFailuresAreLimited|5회 실패 후 확인 시도 차단|docs/design-docs/PRD.md
@@ -58,3 +58,7 @@ POLICY-003|회원만 생성되고 동의 저장 실패|com.nanacocoa.server.poli
 POLICY-004|중복 버전의 파일 충돌과 부분 적재|com.nanacocoa.server.policy.PolicyIntegrationTest#duplicateVersionRejectsCandidateWithoutReplacingSnapshot|중복 버전 후보 거부와 기존 스냅샷 보존|docs/runbooks/service-policy.md
 POLICY-005|파일 버전과 가입 동의 이력 불일치|com.nanacocoa.server.policy.PolicyIntegrationTest#signupRecordsValidatedFileVersionWithoutDocumentForeignKey|검증한 파일 버전·해시 저장과 재시작 후 기존 이력 보존|docs/product-specs/service-policy-prd.md
 POLICY-006|실행 중 정책 파일 교체|com.nanacocoa.server.policy.PolicyIntegrationTest#initializedFilesCannotBeReplacedUntilRestart|불변 스냅샷의 재설치 거부, 혼합 버전 배포는 운영 절차로 차단|docs/runbooks/service-policy.md
+OPS-002|익명 상태 응답의 내부 정보 노출|com.nanacocoa.server.HealthContractHttpTest#anonymousHealthyResponseContainsOnlyUpStatus|익명 실제 HTTP 200/UP 응답에 상태 외 정보 없음|docs/quality/OBSERVABILITY.md
+OPS-003|장애 상태를 정상으로 오인|com.nanacocoa.server.HealthContractHttpTest#downIndicatorProduces503WithoutExposingInternalDetails|실제 DOWN 지표 집계가 503/DOWN, 내부 오류 비노출|docs/quality/OBSERVABILITY.md
+OPS-004|서비스 중단 상태의 HTTP 매핑 오류|com.nanacocoa.server.HealthContractHttpTest#outOfServiceIndicatorProduces503WithoutExposingInternalDetails|실제 OUT_OF_SERVICE 지표 집계가 503, 내부 오류 비노출|docs/quality/OBSERVABILITY.md
+OPS-005|상태 API 정리 중 인증·CSRF 경계 완화|com.nanacocoa.server.HealthContractHttpTest#retiredHealthAndProtectedResourcesStillRequireAuthentication|미사용 health·주문 익명 401, 토큰 없는 로그아웃 403, Actuator 익명 200|docs/quality/OBSERVABILITY.md

@@ -68,7 +68,6 @@ public class SecurityConfig {
                     "/*.MOV",
                     "/api/auth/**",
                     "/api/products/**",
-                    "/api/health",
                     "/actuator/health",
                     "/actuator/health/**",
                     "/actuator/info"
