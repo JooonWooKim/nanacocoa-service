@@ -21,7 +21,7 @@
 | POLICY | 파일 불변 스냅샷·과거 원문, 미승인 가입 보류·동의 검증·원자적 이력 저장·DB 조회 제거 | H2·임시 MySQL 8.4 및 정책/가입 화면 검증 |
 | STORAGE | mock S3 어댑터 계약 | 집중 테스트 통과 |
 | SEC | 미인증 주문 거부, CSRF, 세션 ID 회전·폐기 | 통합 테스트 통과 |
-| OPS | 기계 판독 가능한 애플리케이션 상태 | NC-TEST-001의 BASELINED 실패 |
+| OPS | Actuator 정상/장애 HTTP 상태·공개 정보 비노출·인증 경계 | 기존 health 테스트와 실제 HTTP 회귀 4개, NC-TEST-001 로컬 해소·main 미반영 |
 
 각 카탈로그 행은 ID, 위험 설명, 정확한 JUnit 테스트 ID, 성공 조건, 문서
 경로를 가집니다. `eval`은 현재 Gradle XML을 읽어

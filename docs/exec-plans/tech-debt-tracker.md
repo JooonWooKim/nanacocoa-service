@@ -5,7 +5,7 @@
 
 | ID | 상태 | 영역 | 증거 | 다음 행동 | 제거 조건 |
 | --- | --- | --- | --- | --- | --- |
-| NC-TEST-001 | 활성 | 상태 확인 통합 | 회원가입, 로그인·세션 계약의 기존 실패를 해소했습니다. `NanacocoaServerApplicationTests#healthApiReturnsOk`의 HTTP 404가 남아 있습니다. | health route와 응답 계약을 구현합니다. | 엄격한 `./gradlew test`가 통과하고 기준선 파일이 비어 있습니다. |
+| NC-TEST-001 | 해결 · feature/30, main 미반영 | 상태 확인 통합 | 기존 health 테스트를 공식 /actuator/health 계약으로 정합화하고 실제 HTTP 정상·장애·정보 비공개·인증 경계 4개를 추가했다. 전체 엄격 191개 실패/skip 0개 확인 후 해결된 실패/fingerprint만 제거했다. | 구현 검토와 main 반영, 회귀 유지 | 빈 실패 기준선과 엄격 테스트 통과 유지. [구현 기록](completed/health-check-implementation.md) |
 | NC-ARCH-001 | 활성 | 의존 방향 | `common.userdetails`가 `member` Entity·Repository class를 import합니다. | 세션 동작을 바꾸지 않고 common 소유 identity port를 도입하거나 어댑터를 member·security로 이동합니다. | `common`에 비즈니스 도메인 import가 없고 아키텍처 예외 파일이 비어 있습니다. |
 | NC-OPS-001 | 해결 | 제공자 안전 | 애플리케이션 기본값과 운영 프로필·키 유형·호스트 검증을 [결제 환경 PRD](../product-specs/payment-environment-prd.md)에 기록했습니다. | 운영 활성화 시 결제 환경 운영 절차를 따릅니다. | 기본 실행에서는 실제 PG 어댑터와 자동 복구를 구성하지 않습니다. |
 | NC-OPS-002 | 해결 | Compose 제공자 안전 | Compose는 기본 `mysql` 프로필에서 Toss 연동과 복구를 끕니다. | 운영에서만 프로필과 활성화 플래그를 지정합니다. | 명시적 운영 활성화 없이 Compose에서 Toss에 연결할 수 없습니다. |

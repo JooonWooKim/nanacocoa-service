@@ -1,1 +1,0 @@
-com.nanacocoa.server.NanacocoaServerApplicationTests#healthApiReturnsOk|FAILURE|java.lang.AssertionError|java.lang.AssertionError: Status expected:&lt;200&gt; but was:&lt;404&gt;
