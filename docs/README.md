@@ -26,6 +26,7 @@
 
 - [로컬 개발](runbooks/local-development.md)
 - [테스트](runbooks/testing.md)
+- [구매·환불·재입고 종단 검증](runbooks/commerce-e2e.md)
 - [재고·품절 운영과 데이터 이행](runbooks/inventory.md)
 - [배송 운영 절차](runbooks/shipping.md)
 - [취소·반품·환불 운영 절차](runbooks/returns.md)

@@ -54,3 +54,10 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// 운영 jar에는 포함되지 않는 loopback 브라우저 검증 서버.
+tasks.register('commerceE2e', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.nanacocoa.server.e2e.CommerceE2eServer'
+}

@@ -75,7 +75,7 @@ returns:
 ReturnRequestIntegrationTest는 모의 PG와 H2 또는 격리된 MySQL 8.4에서 신규 V8·JPA 검증,
 정책 비활성, 권한·CSRF·개인정보, 출고 경합·중복 신청·환불·재입고·타임아웃 복구를 검증한다.
 FlywayMigrationTest는 기존 주문의 데이터 보존을 확인한다. 실제 Toss Payments·S3는 호출하지 않는다.
-브라우저 증거와 남은 검증은 [실행 기록](../exec-plans/active/issue-26-return-implementation.md)에 기록한다.
+브라우저 증거와 남은 검증은 [실행 기록](../exec-plans/completed/issue-26-return-implementation.md)에 기록한다.
 
 롤백 시 정책을 비활성화해 신규 작업을 차단하고 이미 접수된 결제 취소는 기존 복구 경로로 대조한다.
 V8과 신청·처리·취소 이력을 보존한다. 직접 취소를 허용하는 구버전 앱으로의 롤백은 정책 우회 위험을

@@ -151,6 +151,28 @@ class ReturnRequestIntegrationTest {
         conflict(() -> returns.create(p.order().getOrderId(), new CreateReturnRequest(key, ReturnRequest.Type.CANCELLATION, "changed"), buyer));
         conflict(() -> submit(p, ReturnRequest.Type.CANCELLATION));
     }
+    @Test void rejectionAllowsFreshSameReasonApplicationButReplaysDoNotCreateAnotherRequest() {
+        var p = paid();
+        long before = returnRepo.count();
+        var firstInput = new CreateReturnRequest(UUID.randomUUID(), ReturnRequest.Type.CANCELLATION, "same reason");
+        long first = returns.create(p.order().getOrderId(), firstInput, buyer).requests().get(0).id();
+        action(first, REJECT);
+        var secondInput = new CreateReturnRequest(UUID.randomUUID(), ReturnRequest.Type.CANCELLATION, "same reason");
+        long second = returns.create(p.order().getOrderId(), secondInput, buyer).requests().get(0).id();
+        assertThat(second).isNotEqualTo(first);
+        returns.create(p.order().getOrderId(), firstInput, buyer);
+        returns.create(p.order().getOrderId(), secondInput, buyer);
+        assertThat(returnRepo.count()).isEqualTo(before + 2);
+        assertThat(returns.get(first, admin).status()).isEqualTo("REJECTED");
+        assertThat(returns.get(second, admin).status()).isEqualTo("REQUESTED");
+        action(second, REJECT);
+        var thirdInput = new CreateReturnRequest(UUID.randomUUID(), ReturnRequest.Type.CANCELLATION, "same reason");
+        long third = returns.create(p.order().getOrderId(), thirdInput, buyer).requests().get(0).id();
+        assertThat(third).isNotIn(first, second);
+        returns.create(p.order().getOrderId(), thirdInput, buyer);
+        assertThat(returnRepo.count()).isEqualTo(before + 3);
+        verifyNoInteractions(provider);
+    }
     @Test void cancellationHoldsShippingAndRejectionReleasesItWithHistory() {
         var p = paid(); long id = submit(p, ReturnRequest.Type.CANCELLATION);
         assertThat(orders.getOrder(p.order().getOrderId(), buyer).getClass()).isNotNull();
