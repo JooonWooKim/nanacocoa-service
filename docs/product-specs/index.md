@@ -11,8 +11,13 @@
   테스트에 연결합니다.
 - [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
   출시 승인 조건을 정의합니다.
+- [P0 구매·환불·재입고 종단 검증 PRD](p0-commerce-e2e-prd.md)는
+  [이슈 #32](https://github.com/JooonWooKim/nanacocoa-service/issues/32)의 합성 정책·모의 PG
+  검증 환경, 구매·반품·환불·복구·재입고 시나리오와 화면/API/DB 증거 기준을 정의합니다.
+  `feature/32`에서 PRD 12개 기술 시나리오와 Safari 실제 확인창·배송/반품 전체 흐름을 검증했습니다.
+  추가 서버 재신청 회귀를 포함한 테스트 결과는 완료 기록에 연결합니다. 로컬 미커밋·main 미반영이며 운영 승인은 별도입니다.
 - [상태 확인 계약 정비 PRD](health-check-prd.md)는 이슈 #30의 Actuator 통일, 정상/장애 상태와 공개 응답 보호, health 실패 기준선 해소 인수 기준을 정의합니다.
-  `feature/30`에서 구현하고 전체 엄격 191개 실패·skip 0개를 확인했습니다. main 반영은 별도입니다.
+  `feature/30`에서 구현하고 전체 엄격 191개 실패·skip 0개를 확인했습니다. PR #31로 main에 반영됐습니다.
 - [서비스 안내·약관·가입 동의 PRD](service-policy-prd.md)는 이슈 #28의 승인 문서 게시,
   가입 동의 버전·이력, 실패 처리와 운영 활성화 선행 조건을 정의합니다.
   [준비 기록](../exec-plans/completed/issue-28-policy-preparation.md)과 [PR #29](https://github.com/JooonWooKim/nanacocoa-service/pull/29)에서 구현·검증 범위를 확인합니다.

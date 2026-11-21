@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 상태 | feature/26 구현 완료 · 자동화 집중·전체 테스트 검증 · main 미반영 · 운영 정책 미승인 · 브라우저 후반 검증 잔여 |
-| 기준 | 2026-11-19 원격 main `1eaf066060e12ae2769cc700959852d4ed276b09` |
+| 상태 | feature/26 구현 완료 · 자동화 집중·전체 테스트 검증 · PR #27으로 main 반영 완료 · 운영 정책 미승인 · 이슈 #32의 브라우저 후반 검증 완료 |
+| 기준 | 2026-11-19 원격 main `0cee3bec457cced7468d61c2d068aa0669cc9300` · [PR #27 병합](https://github.com/JooonWooKim/nanacocoa-service/pull/27) |
 | 이슈 | [P0 RETURN #26](https://github.com/JooonWooKim/nanacocoa-service/issues/26) |
 | 준비 검증 | 문서 검사 PASS, 전체 check BASELINED(기존 health 실패 1개). [준비 실행 기록](../exec-plans/completed/issue-26-return-preparation.md) 참고. 기능 구현 검증이 아님 |
-| 구현 검증 | 전체 170개 중 기존 health 실패 1개, check BASELINED. 새 집중 18개 H2·MySQL PASS, 화면 로직 5개 PASS. 브라우저 신청·승인·검수 확인, 환불·재입고 후반 확인 BLOCKED. [구현 실행 기록](../exec-plans/active/issue-26-return-implementation.md) |
+| 구현 검증 | 전체 170개 중 기존 health 실패 1개, check BASELINED. 새 집중 18개 H2·MySQL PASS, 화면 로직 5개 PASS. 초기 브라우저 후반 BLOCKED는 이슈 #32에서 Safari 확인창·배송/반품·환불·재입고 실제 조작으로 해소. 과거 테스트 수와 health 실패는 당시 기록이며 현재 결과는 종단 검증 PRD 참고. [구현 실행 기록](../exec-plans/completed/issue-26-return-implementation.md) |
 | 대상 | 구매 회원, 취소·반품·환불 운영자 |
 
 ## 목표와 범위

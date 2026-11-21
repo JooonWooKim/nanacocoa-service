@@ -18,7 +18,7 @@
 | `products` | 17 | 상품 목록과 이미지 저장 |
 
 - 주요 Java 파일: 130
-- 테스트 Java 파일: 30
+- 테스트 Java 파일: 31
 - Flyway 마이그레이션: 10
 - 정적 자원·페이지: 32
 
@@ -91,6 +91,7 @@ src/test/java/com/nanacocoa/server/HealthContractHttpTest.java
 src/test/java/com/nanacocoa/server/NanacocoaServerApplicationTests.java
 src/test/java/com/nanacocoa/server/SessionSecurityHttpTest.java
 src/test/java/com/nanacocoa/server/common/session/ProfileVerificationSessionTest.java
+src/test/java/com/nanacocoa/server/e2e/CommerceE2eServer.java
 src/test/java/com/nanacocoa/server/member/MemberApiIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/MemberConcurrencyIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/service/MemberServiceTest.java
