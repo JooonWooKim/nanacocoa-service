@@ -24,7 +24,7 @@
 | ORDER | P0 출시 검증 | 내 주문 목록·상세 조회 | PR #11 병합. [본인 주문 목록·상세](order-history-prd.md) 구현 및 배송 조회 연결 | RETURN 상태·소유권·재로그인·기존 주문 기술 회귀 완료. 배포 대상 인수 별도 |
 | SHIP | P0 출시 검증 | 배송 관리 | 배송 구현 커밋 `125e46e`가 main에 병합. 관리자 출고·송장·배송 완료 및 구매자 조회 구현 | V6 기존 주문·SEC·RETURN 기술 회귀와 브라우저 출고/배송 완료 PASS. 운영 택배사 설정·실데이터 대조 별도 |
 | CART | P1 · main 반영 완료 | [회원 장바구니·복수 상품 주문](cart-prd.md) | [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34), main `3ed0c59` 기준 `feature/34` 로컬 구현. 서버 저장·선택 checkout·승인 후 정리 및 복구/경합 검증 | PR #35 병합 완료 · 배포 대상 인수·운영 승인 별도 |
-| ACCOUNT-ADDRESS | P1 · 로컬 구현·기술 검증 / main 미반영 | [회원 배송지·checkout 선택](shipping-address-prd.md) | [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36), main `8ae5def` 기준 `feature/36` 구현. 주소록·기본 포인터·버전/재전송 방어·checkout 기본 자동 입력·주문 스냅샷 유지 | 리뷰/main 반영·배포 대상 인수 별도 |
+| ACCOUNT-ADDRESS | P1 · 리뷰 P2 로컬 수정 검증 / main 미반영 | [회원 배송지·checkout 선택](shipping-address-prd.md) | [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36), main `8ae5def` 기준 `feature/36` 구현. 주소록·기본 포인터·버전/재전송 방어·checkout 기본 자동 입력·주문 스냅샷 유지 | 지연 응답 P2 수정 원격 반영·재리뷰/main 반영·배포 대상 인수 별도 |
 | ACCOUNT-RECOVERY | P1 · 배송지 다음 후속 | 이메일 기반 계정 복구 | 로그인 화면 계정 찾기는 미연결, 이메일 발송 기능·설정 미구현 | 이메일 발송 수단 결정·모의 발송 검증·복구 토큰과 화면 구현 |
 | DISCOVERY | P1 | 검색·고객센터·알림 | 검색·문의 진입점 일부가 페이지 내부 링크 | 상품 조회, POLICY, 거래 상태 이벤트에 맞춰 구현 |
 
@@ -278,3 +278,14 @@ H2 집중 13개·격리 MySQL 8.4.10·JS 주소록 10개·배송지 HTTP 5개와
 최종 전체 check는 기존 구조 3개·보안 2개 예외만 BASELINED, Java 218개 실패·오류·skip 0개다.
 최종 MySQL 13개는 --rerun-tasks로 실제 실행했고 모두 PASS다. 테스트 서버 runtime smoke PASS,
 운영 Compose 인수는 별도 SKIPPED다. 기능 구현·검증과 원격 main 반영을 구분한다.
+
+2026-11-22 PR #37의 [지연 응답 리뷰](https://github.com/JooonWooKim/nanacocoa-service/pull/37#discussion_r4657411656)를
+로컬 수정했다. ADDRESS-07의 관리 화면 계정 전환/로그아웃 중 늦은 응답 보호를 보완하며
+신규 회귀 21개가 수정 전 실패·수정 후 통과했다(주소록 JS 총 31개).
+격리 Chrome 합성 지연 GET에서도 이전 주소 비표시와 새 계정 조회를 확인했다.
+[수정 실행 기록](../exec-plans/completed/pr37-stale-address-response.md)에 최종 검사를 기록한다.
+기존 구현 검증과 별도로 이 리뷰 수정은 미커밋·원격 미반영이며 PR 지적 해결·main 병합은 아직 하지 않았다.
+이메일 계정 복구와 운영 승인·배포·활성화는 별도다.
+
+리뷰 보완 최종 검증은 주소록 JS 31개·전체 JS 6개 파일·Java 218개 PASS, 전체 check는
+기존 구조/보안 예외만 BASELINED다. smoke는 실행 스택이 없어 SKIPPED다. 로컬 수정 완료와 원격 반영을 구분한다.

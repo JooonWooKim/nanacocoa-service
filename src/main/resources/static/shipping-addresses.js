@@ -14,13 +14,21 @@ window.NanacocoaShippingAddresses = (() => {
     }
     return session;
   }
-  async function request(account, suffix = '', options = {}) {
+  function ensureCurrent(isCurrent) {
+    if (!isCurrent()) throw new Error('무효화된 배송지 요청입니다.');
+  }
+  async function request(account, suffix = '', options = {}, isCurrent = () => true) {
+    ensureCurrent(isCurrent);
     await currentSession(account);
+    // 계정 확인 대기 중 무효화됐다면 HTTP 쓰기를 새로 시작하지 않는다.
+    ensureCurrent(isCurrent);
     const response = await requestAuth(api + suffix, {
       ...options, cache: 'no-store',
       headers: { ...options.headers, 'X-Checkout-Account': account },
     });
+    ensureCurrent(isCurrent);
     const body = await readJson(response);
+    ensureCurrent(isCurrent);
     if (!response.ok || !body.data) {
       const error = new Error(body.error || '배송지 처리 결과를 확인하지 못했습니다. 목록을 다시 조회해 주세요.');
       error.status = response.status;
@@ -54,10 +62,16 @@ window.NanacocoaShippingAddresses = (() => {
     const defaultInput = form.elements.makeDefault;
     const save = form.querySelector('[type="submit"]');
     let session, book, draft = null, pending = null, busy = false;
+    let generation = 0;
+    const isCurrent = token => token === generation;
 
     function clearPrivate() {
+      // 성공·실패·후속 조회·finally까지 이전 화면 작업을 모두 폐기한다.
+      generation++;
       list.replaceChildren(); fields.forEach(name => { form.elements[name].value = ''; });
-      book = null; draft = null; pending = null; form.hidden = true;
+      session = null; book = null; draft = null; pending = null;
+      defaultInput.checked = false; form.hidden = true;
+      lock(false);
     }
     protectHistory(clearPrivate);
     function lock(value) {
@@ -98,37 +112,63 @@ window.NanacocoaShippingAddresses = (() => {
         card.append(heading, recipient, address, edit, designate, remove); list.append(card);
       }
     }
-    async function reload() {
-      book = await request(session.checkoutAccount); render();
+    async function reload(token, account) {
+      const next = await request(account, '', {}, () => isCurrent(token));
+      if (!isCurrent(token)) return;
+      book = next; render();
     }
     async function mutate(suffix, options, savedForm = false) {
-      if (busy) return; lock(true);
+      if (busy || !session || !book) return;
+      const token = ++generation, account = session.checkoutAccount;
+      lock(true);
       try {
-        book = await request(session.checkoutAccount, suffix, options);
-        pending = null;
+        const next = await request(account, suffix, options, () => isCurrent(token));
+        if (!isCurrent(token)) return;
+        book = next; pending = null;
         if (savedForm) { draft = null; form.hidden = true; }
         render(); message.textContent = '배송지를 저장했습니다.';
         // 다른 목록 작업으로 편집 문맥이 낡아도 기존 draft revision은 유지한다.
       } catch (error) {
+        if (!isCurrent(token)) return;
         if (error.accountChanged) { clearPrivate(); loginMessage(message, error.message); return; }
         if ([400, 404, 409].includes(error.status)) pending = null;
         message.textContent = error.message + ' 입력은 보존했습니다. 목록에서 수정 대상을 다시 선택하거나 새 입력을 시작해 주세요.';
-        try { await reload(); } catch (lookupError) {
+        // 오류 후 조회는 원래 작업의 세대에 속한다. 새로운 작업으로 승격하지 않는다.
+        try { await reload(token, account); } catch (lookupError) {
+          if (!isCurrent(token)) return;
           if (lookupError.accountChanged) { clearPrivate(); loginMessage(message, lookupError.message); }
           else { list.replaceChildren(); book = null; }
         }
       } finally {
-        lock(false);
-
+        if (isCurrent(token)) lock(false);
+      }
+    }
+    async function readList(initial = false) {
+      if (busy) return;
+      const token = ++generation;
+      lock(true);
+      try {
+        if (!session) {
+          const nextSession = await currentSession();
+          if (!isCurrent(token)) return;
+          session = nextSession;
+        }
+        const account = session.checkoutAccount;
+        await reload(token, account);
+        if (!isCurrent(token)) return;
+        if (initial) form.hidden = true;
+        message.textContent = initial ? '배송지를 선택해 수정하거나 새 배송지를 등록해 주세요.'
+          : '배송지 목록을 조회했습니다. 입력 내용은 유지했습니다.';
+      } catch (error) {
+        if (!isCurrent(token)) return;
+        if (error.accountChanged) { clearPrivate(); loginMessage(message, error.message); }
+        else message.textContent = error.message;
+      } finally {
+        if (isCurrent(token)) lock(false);
       }
     }
     newButton.onclick = () => start();
-    refreshButton.onclick = async () => {
-      if (busy) return; lock(true);
-      try { if (!session) session = await currentSession(); await reload(); message.textContent = '배송지 목록을 조회했습니다. 입력 내용은 유지했습니다.'; }
-      catch (error) { if (error.accountChanged) { clearPrivate(); loginMessage(message, error.message); } else message.textContent = error.message; }
-      finally { lock(false); }
-    };
+    refreshButton.onclick = () => readList();
     form.addEventListener('submit', event => {
       event.preventDefault();
       if (busy || !book || !form.reportValidity()) return;
@@ -152,17 +192,16 @@ window.NanacocoaShippingAddresses = (() => {
       detailAddressInput: form.elements.detailAddress, searchButton: form.querySelector('[data-address-search]'),
       statusElement: form.querySelector('[data-address-search-status]'), shouldKeepDisabled: () => busy,
     });
-    try {
-      session = await currentSession(); await reload(); form.hidden = true;
-      message.textContent = '배송지를 선택해 수정하거나 새 배송지를 등록해 주세요.';
-    } catch (error) {
-      if (error.accountChanged) loginMessage(message, error.message); else message.textContent = error.message;
-    }
+    // 초기 GET 대기 중에도 다른 탭의 로그아웃·계정 변경을 감지한다.
     window.addEventListener('focus', async () => {
       if (!session) return;
-      try { await currentSession(session.checkoutAccount); }
-      catch (error) { if (error.accountChanged) { clearPrivate(); loginMessage(message, error.message); } }
+      const token = generation, account = session.checkoutAccount;
+      try { await currentSession(account); }
+      catch (error) {
+        if (isCurrent(token) && error.accountChanged) { clearPrivate(); loginMessage(message, error.message); }
+      }
     });
+    await readList(true);
   }
 
   function checkout({ form, session, hasSubmission, isSubmitting }) {

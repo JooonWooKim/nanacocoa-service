@@ -9,7 +9,9 @@ class Element {
   constructor(tag='div'){this.tag=tag;this.children=[];this.events={};this.value='';this.disabled=false;this.hidden=false;this.checked=false;this.textContent='';}
   append(...nodes){for(const node of nodes){this.children.push(node);if(node instanceof Element)node.parentElement=this;}}
   before(node){this.parentElement.append(node);}
-  replaceChildren(...nodes){this.children=[];this.append(...nodes);}
+  get textContent(){return (this._text||'')+this.children.map(node=>node instanceof Element?node.textContent:String(node)).join('');}
+  set textContent(value){this._text=String(value);this.children=[];}
+  replaceChildren(...nodes){this._text='';this.children=[];this.append(...nodes);}
   setAttribute(name,value){this[name]=value;}
   setCustomValidity(){}
   addEventListener(name,fn){this.events[name]=fn;}
@@ -19,7 +21,7 @@ class Element {
 }
 const response=book=>({ok:true,status:200,body:{data:book}});
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-function harness({book={revision:1,checkoutAccount:'buyer',items:[primary]},request,manage=false}={}){
+function harness({book={revision:1,checkoutAccount:'buyer',items:[primary]},request,sessionRequest,manage=false}={}){
   const controls=Object.fromEntries(names.map(n=>[n,new Element('input')]));
   controls.makeDefault=new Element('input');
   const form=new Element('form');form.elements=controls;
@@ -32,7 +34,7 @@ function harness({book={revision:1,checkoutAccount:'buyer',items:[primary]},requ
   const session={authenticated:true,checkoutAccount:'buyer',name:'가상 회원'},calls=[],windowEvents={};
   let submitted=false,submitting=false;
   const c={window:{location:{reload(){}},addEventListener:(name,fn)=>{(windowEvents[name]||=[]).push(fn);}},document:{querySelector:()=>manage?page:null,createElement:tag=>new Element(tag),createTextNode:s=>s},
-    loadAuthSession:async()=>({...session}),requestAuth:async(url,options)=>{calls.push({url,options});return request?request(url,options):response(book);},readJson:async r=>r.body,
+    loadAuthSession:async()=>sessionRequest?sessionRequest({...session}):({...session}),requestAuth:async(url,options)=>{calls.push({url,options});return request?request(url,options):response(book);},readJson:async r=>r.body,
     randomUuid:()=> '11111111-1111-4111-8111-111111111111',setupKakaoAddressSearch(){},formatShippingAddress:(p,b,d)=>`[${p}] ${b} ${d}`.trim(),URLSearchParams};
   vm.createContext(c);vm.runInContext(source,c);
   return {c,controls,form,fields,submit,page,nodes,session,calls,windowEvents,book,
@@ -85,4 +87,110 @@ test('lost registration response refreshes GET and reuses original key/body only
 test('shipping address login return is a fixed read page, not a mutation or arbitrary URL',()=>{
  const script=fs.readFileSync('src/main/resources/static/script.js','utf8');const code=script.slice(script.indexOf('function cartLoginReturnUrl()'),script.indexOf('function checkoutLoginReturnUrl()'));
  const c={URLSearchParams,window:{location:{search:'?return=shipping-addresses&target=https://evil.test'}}};vm.createContext(c);vm.runInContext(code,c);assert.equal(c.cartLoginReturnUrl(),'shipping-addresses.html');
+});
+
+
+// 응답 순서를 제어해 실제로 DOM/폼/안내가 오래된 요청에 의해 복원되는지 검증한다.
+function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
+async function invalidateManager(h,kind='account'){
+ if(kind==='pagehide'){h.windowEvents.pagehide[0]();return;}
+ if(kind==='logout')h.session.authenticated=false;else h.session.checkoutAccount='other';
+ assert.ok(h.windowEvents.focus?.length,'focus protection must exist while initial GET waits');
+ await h.windowEvents.focus[0]();
+}
+function assertManagerEmpty(h){
+ assert.equal(h.nodes.list.children.length,0);assert.equal(h.form.hidden,true);
+ for(const name of names)assert.equal(h.controls[name].value,'');
+}
+function fillManager(h){h.nodes.new.onclick();for(const name of names)h.controls[name].value=primary[name];}
+for(const kind of ['account','logout']){
+ test(`initial GET after ${kind} cannot restore addresses or login notice`,async()=>{
+  const wait=deferred();const h=harness({manage:true,request:()=>wait.promise});
+  const init=h.c.window.NanacocoaShippingAddresses.manage();await tick();
+  try{
+   await invalidateManager(h,kind);assertManagerEmpty(h);const notice=h.nodes.message.textContent;
+   wait.resolve(response(h.book));await init;assertManagerEmpty(h);assert.equal(h.nodes.message.textContent,notice);
+  }finally{wait.resolve(response(h.book));await init;}
+ });
+ test(`manual GET after ${kind} ignores stale success`,async()=>{
+  const wait=deferred();let delayed=false;
+  const h=harness({manage:true,request:()=>delayed?wait.promise:response(h.book)});
+  await h.c.window.NanacocoaShippingAddresses.manage();delayed=true;
+  const pending=h.nodes.refresh.onclick();await tick();await invalidateManager(h,kind);
+  const notice=h.nodes.message.textContent;wait.resolve(response(h.book));await pending;
+  assertManagerEmpty(h);assert.equal(h.nodes.message.textContent,notice);assert.equal(h.nodes.refresh.disabled,false);
+ });
+}
+for(const action of ['register','update','delete','default']){
+ for(const outcome of ['success','failure']){
+  test(`stale ${action} ${outcome} after account change cannot change UI or trigger lookup`,async()=>{
+   const wait=deferred();let checking=0;
+   const h=harness({manage:true,sessionRequest:s=>{checking++;return s;},request:(url,options)=>options.method&&options.method!=='GET'?wait.promise:response(h.book)});
+   await h.c.window.NanacocoaShippingAddresses.manage();
+   let pending;
+   if(action==='register'){fillManager(h);pending=h.form.events.submit({preventDefault(){}});}
+   else if(action==='update'){h.nodes.list.all().find(x=>x.textContent==='수정').onclick();h.controls.label.value='새 이름';pending=h.form.events.submit({preventDefault(){}});}
+   else pending=h.nodes.list.all().find(x=>x.textContent===(action==='delete'?'삭제':'기본으로 지정')).onclick();
+   await tick();await invalidateManager(h);const notice=h.nodes.message.textContent;const count=h.calls.length,sessionChecks=checking;
+   if(outcome==='success')wait.resolve(response(h.book));else wait.reject(new Error('synthetic delayed failure'));
+   await pending;assertManagerEmpty(h);assert.equal(h.nodes.message.textContent,notice);
+   assert.equal(h.calls.length,count);assert.equal(checking,sessionChecks);assert.equal(h.nodes.refresh.disabled,false);
+  });
+ }
+}
+for(const write of [false,true]){
+ test(`pagehide ignores delayed ${write?'write':'read'} and its UI effects`,async()=>{
+  const wait=deferred();let delayed=false;
+  const h=harness({manage:true,request:()=>delayed?wait.promise:response(h.book)});
+  await h.c.window.NanacocoaShippingAddresses.manage();delayed=true;
+  let pending;
+  if(write){fillManager(h);pending=h.form.events.submit({preventDefault(){}});}else pending=h.nodes.refresh.onclick();
+  await tick();await invalidateManager(h,'pagehide');const notice=h.nodes.message.textContent;
+  wait.resolve(response(h.book));await pending;assertManagerEmpty(h);assert.equal(h.nodes.message.textContent,notice);
+ });
+}
+for(const outcome of ['success','failure']){
+ test(`obsolete ${outcome} and finally cannot unlock a newer pending request`,async()=>{
+  const old=deferred(),fresh=deferred();let phase=0;
+  const h=harness({manage:true,request:()=>phase===1?old.promise:phase===2?fresh.promise:response(h.book)});
+  await h.c.window.NanacocoaShippingAddresses.manage();phase=1;
+  const oldPending=h.nodes.refresh.onclick();await tick();await invalidateManager(h);
+  phase=2;const freshPending=h.nodes.refresh.onclick();await tick();
+  assert.equal(h.nodes.refresh.disabled,true);const notice=h.nodes.message.textContent;const count=h.calls.length;
+  if(outcome==='success')old.resolve(response(h.book));else old.reject(new Error('synthetic obsolete failure'));
+  await oldPending;assert.equal(h.nodes.refresh.disabled,true);assert.equal(h.nodes.message.textContent,notice);assert.equal(h.calls.length,count);
+  const newer={revision:4,checkoutAccount:'other',items:[{...primary,label:'new-account-only'}]};
+  fresh.resolve(response(newer));await freshPending;assert.match(h.nodes.list.textContent,/new-account-only/);assert.equal(h.nodes.refresh.disabled,false);
+ });
+ test(`old ${outcome} after newer completion cannot replace new list or notice`,async()=>{
+  const old=deferred();let phase=0;
+  const newer={revision:4,checkoutAccount:'other',items:[{...primary,label:'new-account-only'}]};
+  const h=harness({manage:true,request:()=>phase===1?old.promise:response(phase===2?newer:h.book)});
+  await h.c.window.NanacocoaShippingAddresses.manage();phase=1;
+  const pending=h.nodes.refresh.onclick();await tick();await invalidateManager(h);phase=2;
+  await h.nodes.refresh.onclick();const notice=h.nodes.message.textContent;
+  if(outcome==='success')old.resolve(response(h.book));else old.reject(new Error('synthetic obsolete failure'));
+  await pending;assert.match(h.nodes.list.textContent,/new-account-only/);assert.equal(h.nodes.message.textContent,notice);
+ });
+}
+test('invalidation during session verification prevents starting the mutation HTTP request',async()=>{
+ const wait=deferred();let hold=false,checks=0;
+ const h=harness({manage:true,sessionRequest:s=>hold&&++checks===1?wait.promise:s});
+ await h.c.window.NanacocoaShippingAddresses.manage();fillManager(h);hold=true;
+ const pending=h.form.events.submit({preventDefault(){}});await tick();await invalidateManager(h);
+ const count=h.calls.length;wait.resolve({authenticated:true,checkoutAccount:'buyer',name:'synthetic'});await pending;
+ assert.equal(h.calls.length,count);assert.equal(h.calls.filter(x=>x.options.method==='POST').length,0);assertManagerEmpty(h);
+});
+test('pagehide during initial session verification prevents the initial GET',async()=>{
+ const wait=deferred();const h=harness({manage:true,sessionRequest:()=>wait.promise});
+ const pending=h.c.window.NanacocoaShippingAddresses.manage();await tick();h.windowEvents.pagehide[0]();
+ wait.resolve({authenticated:true,checkoutAccount:'buyer',name:'synthetic'});await pending;
+ assert.equal(h.calls.length,0);assertManagerEmpty(h);
+});
+test('obsolete focus rejection cannot clear a freshly loaded account',async()=>{
+ const wait=deferred();let delay=false;
+ const h=harness({manage:true,sessionRequest:s=>delay?wait.promise:s,request:()=>response({...h.book,checkoutAccount:h.session.checkoutAccount,items:[{...primary,label:'current-only'}]})});
+ await h.c.window.NanacocoaShippingAddresses.manage();delay=true;const focus=h.windowEvents.focus[0]();await tick();
+ h.windowEvents.pagehide[0]();h.session.checkoutAccount='other';delay=false;await h.nodes.refresh.onclick();
+ wait.resolve({authenticated:false});await focus;assert.match(h.nodes.list.textContent,/current-only/);
 });
