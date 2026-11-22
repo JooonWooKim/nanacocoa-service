@@ -11,9 +11,12 @@
   테스트에 연결합니다.
 - [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
   출시 승인 조건을 정의합니다.
+- [회원 배송지 관리 PRD](shipping-address-prd.md)는 [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36)의
+  주소록·기본 배송지·checkout 자동 입력/선택·기존 주문 보존 인수 기준을 정의합니다.
+  `feature/36`에서 [준비](../exec-plans/completed/issue-36-shipping-address-preparation.md) 후 주소록·기본값·checkout 연결을 로컬 구현·검증했습니다. main 미반영이며 ACCOUNT 계정 복구는 후속입니다.
 - [회원 장바구니와 복수 상품 주문 PRD](cart-prd.md)는 [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34)의
   회원별 저장·선택 구매·가격/재고 재검증·승인 확정 후 정리와 경합·권한 인수 기준을 정의합니다.
-  `feature/34`에서 [준비](../exec-plans/completed/cart-preparation.md) 후 로컬 구현·기술 검증을 진행했습니다. 서버 승인 후 별도 정리·실패 재처리·변경 항목 보존을 제공하며 main 미반영입니다.
+  `feature/34`에서 [준비](../exec-plans/completed/cart-preparation.md) 후 로컬 구현·기술 검증을 진행했습니다. 서버 승인 후 별도 정리·실패 재처리·변경 항목 보존을 제공하며 [PR #35](https://github.com/JooonWooKim/nanacocoa-service/pull/35)로 main에 반영했습니다.
 - [P0 구매·환불·재입고 종단 검증 PRD](p0-commerce-e2e-prd.md)는
   [이슈 #32](https://github.com/JooonWooKim/nanacocoa-service/issues/32)의 합성 정책·모의 PG
   검증 환경, 구매·반품·환불·복구·재입고 시나리오와 화면/API/DB 증거 기준을 정의합니다.

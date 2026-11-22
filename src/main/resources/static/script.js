@@ -494,6 +494,7 @@ function orderHistoryLoginReturnUrl() {
 
 function cartLoginReturnUrl() {
   const params = new URLSearchParams(window.location.search);
+  if (params.get("return") === "shipping-addresses") return "shipping-addresses.html";
   if (params.get("return") === "cart") return "cart.html";
   const id=params.get("id");
   if(params.get("return")==="product" && /^[1-9][0-9]{0,18}$/.test(id||""))return `product-detail.html?id=${id}`;
@@ -721,7 +722,7 @@ function renderAuthenticatedSession(menuSession, session) {
       renderAnonymousSession(menuSession);
       authSessionPromise = Promise.resolve({ authenticated: false, admin: false });
       renderCartCount({totalQuantity:0});
-      if(document.querySelector("[data-cart-page], [data-checkout-page]"))window.location.reload();
+      if(document.querySelector("[data-cart-page], [data-checkout-page], [data-shipping-address-page]"))window.location.reload();
     } catch (error) {
       message.textContent = error.message || "로그아웃에 실패했습니다. 다시 시도해 주세요.";
       logoutButton.disabled = false;
@@ -729,7 +730,9 @@ function renderAuthenticatedSession(menuSession, session) {
     }
   });
 
-  actions.append(mypageLink, logoutButton);
+  const addressLink = document.createElement("a");
+  addressLink.href = "shipping-addresses.html"; addressLink.textContent = "배송지 관리";
+  actions.append(mypageLink, addressLink, logoutButton);
   menuSession.replaceChildren(message, actions);
 }
 
@@ -2356,6 +2359,7 @@ async function initCheckoutPage() {
   guard.hidden = true;
   form.hidden = false;
   renderOrderTotal();
+  window.NanacocoaShippingAddresses?.checkout({form,session,hasSubmission:()=>Boolean(submissionKey),isSubmitting:()=>submissionInProgress});
 }
 
 initMenu();
@@ -2547,3 +2551,5 @@ async function initInventoryPage() {
   catch (error) { message.textContent = error.message; }
 }
 initInventoryPage();
+
+window.NanacocoaShippingAddresses?.manage();

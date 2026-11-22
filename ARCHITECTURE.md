@@ -246,6 +246,19 @@ V9 테이블을 보존한다. 신규 이력은 문서 FK를 만들지 않는다.
 텍스트로 표시하고 공개 DTO에서 내부 승인 정보와 회원 이력을 제외한다.
 [구현 PRD](docs/product-specs/service-policy-prd.md), [운영 절차](docs/runbooks/service-policy.md).
 
+## 회원 배송지 주소록
+
+`ShippingAddressController -> ShippingAddressService -> ShippingAddress*Repository`는 로그인한
+본인의 구조화된 주소록을 제공한다. 프로필 본인 확인과 저장 주소는 독립적이며 기존
+Member.address를 자동 이행/동기화하지 않는다. 변경은 회원 쓰기 잠금 아래 주소록 revision과
+항목 version을 검사한다. 기본값은 회원별 단일 포인터이며 V12의 복합 FK가 타인 주소 지정을 막는다.
+등록 요청 키와 정규화 입력 hash는 재전송을 한 번만 반영하고 삭제 후 재전송도 재등록하지 않는다.
+
+checkout은 기존 주문 제출 결과 조회를 우선하며 신규 미편집 배송 정보에만 기본값을 한 번
+입력한다. 사용자 편집·지연 응답·접수된 주문은 덮어쓰지 않는다. 주문 API는 최종 배송 값을
+기존 주문 스냅샷에 저장하므로 주소록 수정·삭제가 과거 주문을 바꾸지 않는다.
+[배송지 PRD](docs/product-specs/shipping-address-prd.md), [운영 절차](docs/runbooks/shipping-addresses.md).
+
 ## 회원 장바구니와 선택 주문
 
 `CartController -> CartService -> CartItemRepository/CartAdditionRepository`는 본인 저장·수정·삭제를

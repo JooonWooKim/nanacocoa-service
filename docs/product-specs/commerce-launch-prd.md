@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 상태 | 기술 개발·검증 우선 · 판매자 운영 기준 협의는 후순위 대기(실제 출시 전 필수) |
-| 기준일 | 2026-11-22 원격 main `3ed0c59bf49c47426e0d92805adfa2e8c3fac114`, [PR #33](https://github.com/JooonWooKim/nanacocoa-service/pull/33) 병합 확인. 이번 병합 상태 문서 갱신은 로컬 미커밋 |
+| 기준일 | 2026-11-22 원격 main `8ae5defcbff84a1da7f2453ad3365729a975cb28`, [PR #35](https://github.com/JooonWooKim/nanacocoa-service/pull/35) 병합 확인. 배송지 기능 준비 문서는 로컬 미커밋 |
 | 대상 | 구매 회원, 배송·환불 운영자, 출시 승인 담당자 |
 
 ## 목표
@@ -23,11 +23,12 @@
 | STOCK | P0 출시 검증 | 재고·품절 관리 | PR #9 병합. 재고 예약·판매 확정·해제·검수 재입고 구현 | 실재고 등록과 판매 활성화, RETURN·PAY 기술 회귀는 이슈 #32에서 완료 |
 | ORDER | P0 출시 검증 | 내 주문 목록·상세 조회 | PR #11 병합. [본인 주문 목록·상세](order-history-prd.md) 구현 및 배송 조회 연결 | RETURN 상태·소유권·재로그인·기존 주문 기술 회귀 완료. 배포 대상 인수 별도 |
 | SHIP | P0 출시 검증 | 배송 관리 | 배송 구현 커밋 `125e46e`가 main에 병합. 관리자 출고·송장·배송 완료 및 구매자 조회 구현 | V6 기존 주문·SEC·RETURN 기술 회귀와 브라우저 출고/배송 완료 PASS. 운영 택배사 설정·실데이터 대조 별도 |
-| CART | P1 · 로컬 구현·기술 검증 / main 미반영 | [회원 장바구니·복수 상품 주문](cart-prd.md) | [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34), main `3ed0c59` 기준 `feature/34` 로컬 구현. 서버 저장·선택 checkout·승인 후 정리 및 복구/경합 검증 | 커밋/리뷰/main 반영·배포 대상 인수 별도 |
-| ACCOUNT | P1 | 계정 복구·배송지 관리 | 마이페이지 회원정보 및 주소 검색은 구현. 계정 찾기 링크는 미연결이며 checkout은 회원 이름만 자동 입력 | SEC 및 이메일 발송 수단 결정 후 계정 복구·주소록·checkout 배송지 선택 구현 |
+| CART | P1 · main 반영 완료 | [회원 장바구니·복수 상품 주문](cart-prd.md) | [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34), main `3ed0c59` 기준 `feature/34` 로컬 구현. 서버 저장·선택 checkout·승인 후 정리 및 복구/경합 검증 | PR #35 병합 완료 · 배포 대상 인수·운영 승인 별도 |
+| ACCOUNT-ADDRESS | P1 · 리뷰 P2 로컬 수정 검증 / main 미반영 | [회원 배송지·checkout 선택](shipping-address-prd.md) | [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36), main `8ae5def` 기준 `feature/36` 구현. 주소록·기본 포인터·버전/재전송 방어·checkout 기본 자동 입력·주문 스냅샷 유지 | 지연 응답 P2 수정 원격 반영·재리뷰/main 반영·배포 대상 인수 별도 |
+| ACCOUNT-RECOVERY | P1 · 배송지 다음 후속 | 이메일 기반 계정 복구 | 로그인 화면 계정 찾기는 미연결, 이메일 발송 기능·설정 미구현 | 이메일 발송 수단 결정·모의 발송 검증·복구 토큰과 화면 구현 |
 | DISCOVERY | P1 | 검색·고객센터·알림 | 검색·문의 진입점 일부가 페이지 내부 링크 | 상품 조회, POLICY, 거래 상태 이벤트에 맞춰 구현 |
 
-1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART는 이슈 #34에서 로컬 구현·기술 검증을 완료했으며 다음 미구현 기능은 ACCOUNT → DISCOVERY 순서다. 운영 기준에 의존하지 않는 범위부터 진행할 수 있다. 운영 인수·정책 승인은 별도로 남아 있다.
+1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART는 이슈 #34에서 로컬 구현·기술 검증을 완료했으며 ACCOUNT 배송지 관리(이슈 #36)는 로컬 구현·검증했으며 다음 미구현 순서는 계정 복구 → DISCOVERY다. 운영 기준에 의존하지 않는 범위부터 진행할 수 있다. 운영 인수·정책 승인은 별도로 남아 있다.
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
 3. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
 
@@ -250,3 +251,41 @@ Chrome에서 복수 품목 124,000원 모의 승인/정리와 거절/유지·재
 
 최종 하네스는 기존 구조·보안 예외만 BASELINED, Java 205개 실패·오류·skip 0개다.
 테스트 서버 runtime smoke PASS이며 운영 Compose 스택 인수는 별도 SKIPPED다.
+
+2026-11-22 현재 head f2c955e의 Codex 리뷰가 지적 없음으로 완료되고 미해결 스레드가 없음을 확인한 뒤 [PR #35](https://github.com/JooonWooKim/nanacocoa-service/pull/35)를 main에 병합했다. 병합 커밋은 `8ae5defcbff84a1da7f2453ad3365729a975cb28`다. CART 구현·검증은 main에 반영됐으며 다음 미구현 순서는 ACCOUNT → DISCOVERY다. 이전 main 미반영 표현은 당시 기록이다. 이번 상태 문서 갱신은 로컬 미커밋이며 운영 정책 승인·배포·활성화는 별도다.
+
+2026-11-22 사용자 선택에 따라 ACCOUNT 중 [배송지 관리](shipping-address-prd.md)를 먼저
+[이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36)으로 준비한다.
+최신 main `8ae5def`에서 `feature/36` → `origin/feature/36`을 추적한다.
+기본 배송지는 신규 checkout의 미편집 배송 정보에만 자동 입력하고 사용자 입력·기존 주문은
+덮어쓰지 않는다. 기존 회원 주소는 자동 분해·이행·동기화하지 않는다.
+이메일 계정 복구는 별도 후속이며 ACCOUNT 전체를 완료 처리하지 않는다.
+준비·기능 구현·검증·main 반영을 구분하고 판매자 정책 승인·배포·운영 활성화 대기는 유지한다.
+
+배송지 [준비 실행 기록](../exec-plans/completed/issue-36-shipping-address-preparation.md)을 완료 보관했다.
+문서·diff PASS, 전체 check BASELINED(기존 구조/보안 예외만 유지, Java 205개 실패·skip 0개),
+smoke SKIPPED다. 신규 기능 구현·검증·main 반영은 미수행이며 문서는 로컬 미커밋이다.
+
+2026-11-22 [이슈 #36 배송지 기능](shipping-address-prd.md)을 feature/36에서 구현·집중 검증했다.
+주소록은 프로필과 독립적이고 기본 배송지는 신규 미편집 폼에만 자동 입력한다. 기존 주문의
+배송 정보는 주소록 수정·삭제 후에도 유지하며 주소록 변경·복구를 로그인 후 자동 실행하지 않는다.
+H2 집중 13개·격리 MySQL 8.4.10·JS 주소록 10개·배송지 HTTP 5개와 Chrome 등록/수정/기본/삭제·
+직접/복수 checkout·입력 보존·모의 승인·실제 만료/재로그인/로그아웃 보호 증거를 남겼다.
+최종 전체 check 결과는 [구현 실행 기록](../exec-plans/completed/issue-36-shipping-address-implementation.md)에 기록한다.
+현재 로컬 미커밋·main 미반영이며 계정 복구·운영 승인·실데이터·배포·활성화는 별도다.
+이전 준비 완료/미구현 문구는 당시 기록이다. ACCOUNT 전체를 완료 처리하지 않는다.
+
+최종 전체 check는 기존 구조 3개·보안 2개 예외만 BASELINED, Java 218개 실패·오류·skip 0개다.
+최종 MySQL 13개는 --rerun-tasks로 실제 실행했고 모두 PASS다. 테스트 서버 runtime smoke PASS,
+운영 Compose 인수는 별도 SKIPPED다. 기능 구현·검증과 원격 main 반영을 구분한다.
+
+2026-11-22 PR #37의 [지연 응답 리뷰](https://github.com/JooonWooKim/nanacocoa-service/pull/37#discussion_r4657411656)를
+로컬 수정했다. ADDRESS-07의 관리 화면 계정 전환/로그아웃 중 늦은 응답 보호를 보완하며
+신규 회귀 21개가 수정 전 실패·수정 후 통과했다(주소록 JS 총 31개).
+격리 Chrome 합성 지연 GET에서도 이전 주소 비표시와 새 계정 조회를 확인했다.
+[수정 실행 기록](../exec-plans/completed/pr37-stale-address-response.md)에 최종 검사를 기록한다.
+기존 구현 검증과 별도로 이 리뷰 수정은 미커밋·원격 미반영이며 PR 지적 해결·main 병합은 아직 하지 않았다.
+이메일 계정 복구와 운영 승인·배포·활성화는 별도다.
+
+리뷰 보완 최종 검증은 주소록 JS 31개·전체 JS 6개 파일·Java 218개 PASS, 전체 check는
+기존 구조/보안 예외만 BASELINED다. smoke는 실행 스택이 없어 SKIPPED다. 로컬 수정 완료와 원격 반영을 구분한다.
