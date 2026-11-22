@@ -246,6 +246,22 @@ V9 테이블을 보존한다. 신규 이력은 문서 FK를 만들지 않는다.
 텍스트로 표시하고 공개 DTO에서 내부 승인 정보와 회원 이력을 제외한다.
 [구현 PRD](docs/product-specs/service-policy-prd.md), [운영 절차](docs/runbooks/service-policy.md).
 
+## 회원 장바구니와 선택 주문
+
+`CartController -> CartService -> CartItemRepository/CartAdditionRepository`는 본인 저장·수정·삭제를
+제공한다. 회원 행 잠금이 담기 요청 키와 동일 상품 생성을 직렬화하고 항목 버전이 동시 수정을
+거부한다. 담기는 재고를 예약하지 않는다. 주문 생성은 기존 회원·상품 잠금 뒤
+`CartCheckoutService`에서 선택 항목·버전·수량·확인 가격을 검증하고 주문 연결을 저장한다.
+기존 제출 키 조회가 장바구니 재검증보다 먼저 수행되어 정리 후에도 최초 주문을 재조회한다.
+
+승인 완료 트랜잭션은 `CartCheckout`을 READY로 표시한다. `CartCleanupWorker`는 커밋 후
+별도 트랜잭션의 `CartCleanupService`로 정리하고 실패를 결제 보상 경로에 전파하지 않는다.
+30초/100개 DB 전용 재처리는 PG 복구 활성화와 독립적이며 외부 호출이 없다.
+정리는 주문→연결→항목 ID 순 잠금이며 회원·상품을 잠그지 않는다. 항목 ID·버전이 다른
+후속 변경은 보존하고 각 결과와 DONE을 원자적으로 저장한다. V11은 기존 데이터와 스키마를
+수정하지 않고 장바구니·요청 기록·주문 연결/정리 테이블을 추가한다.
+[장바구니 PRD](docs/product-specs/cart-prd.md), [운영 절차](docs/runbooks/cart.md).
+
 ## 외부 경계
 
 - `TossPaymentsClient`는 결제 제공자 경계입니다. 기본 어댑터는 네트워크를 사용하지

@@ -50,6 +50,7 @@ public class OrderService {
 	private static final Pattern SUBMISSION_KEY = Pattern.compile(
 			"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
+	private final com.nanacocoa.server.cart.service.CartCheckoutService cartCheckout;
 	private final OrderRepository orderRepository;
 	private final ProductsRepository productsRepository;
 	private final MemberRepository memberRepository;
@@ -143,7 +144,7 @@ public class OrderService {
 		var existing = orderRepository.findByMemberIdAndSubmissionKey(member.getId(), key);
 		if (existing.isPresent()) {
 			Order order = existing.get();
-			if (!matchesSubmission(order, request)) {
+			if (!matchesSubmission(order, request) || !cartCheckout.matches(order, request)) {
 				throw new NanacocoaException(ORDER_SUBMISSION_CONFLICT);
 			}
 			return new Submission(OrderResponse.from(order), false);
@@ -158,6 +159,7 @@ public class OrderService {
 			throw new NanacocoaException(INVALID_ORDER_ITEMS);
 		}
 
+        var cartSnapshots = cartCheckout.validate(member.getId(), request, productsById);
 		Order order = Order.createForSubmission(
 				"NC_" + UUID.randomUUID(),
 				member,
@@ -174,7 +176,9 @@ public class OrderService {
 		}
 
 		order.reserveStock(LocalDateTime.now().plusMinutes(15));
-		return new Submission(OrderResponse.from(orderRepository.save(order)), true);
+		orderRepository.saveAndFlush(order);
+        cartCheckout.attach(order, cartSnapshots);
+        return new Submission(OrderResponse.from(order), true);
 	}
 
 	public record Submission(OrderResponse order, boolean created) {}

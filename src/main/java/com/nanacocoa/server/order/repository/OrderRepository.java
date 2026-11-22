@@ -98,4 +98,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select o from PurchaseOrder o where o.orderId = :orderId")
 	Optional<Order> findByOrderIdForUpdate(@Param("orderId") String orderId);
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select o from PurchaseOrder o where o.id=:id")
+    Optional<Order> findByIdForCartUpdate(@org.springframework.data.repository.query.Param("id") Long id);
 }
