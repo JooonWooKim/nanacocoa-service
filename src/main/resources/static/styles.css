@@ -2768,3 +2768,10 @@ textarea.product-register-input {
 .cart-checkout-lines p { overflow-wrap:anywhere; }
 .checkout-product[hidden] { display:none; }
 @media(max-width:600px) { .cart-item { grid-template-columns:auto 64px minmax(0,1fr); gap:12px; } .cart-item img { width:64px; height:80px; } }
+
+/* 저장 배송지 선택과 관리 폼은 기존 checkout 카드를 사용한다. */
+.saved-address-picker { display:grid; gap:10px; padding:16px 0; }
+.saved-address-picker label { display:grid; gap:8px; }
+.saved-address-picker select { width:100%; min-width:0; }
+[data-shipping-address-page] p { overflow-wrap:anywhere; }
+[data-address-form][hidden] { display:none; }

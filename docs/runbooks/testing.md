@@ -106,3 +106,14 @@ CART_TEST_DB_URL로 격리 MySQL 8.4에서도 같은 테스트를 실행한다.
 JS cart.test.cjs와 테스트 전용 cart_e2e_http.py는 화면 상태·실제 HTTP를 별도로 확인한다.
 기존 192개 테스트·실패 기준선과 구조/보안 예외는 유지한다.
 [운영 절차](cart.md), [PRD](../product-specs/cart-prd.md).
+
+
+## 회원 배송지 검증
+
+feature/36은 ShippingAddressIntegrationTest 13개를 추가해 발견 기준을 218개로 늘린다.
+기본값 경합·등록 재전송·독립된 프로필·주문/장바구니 스냅샷·DB 소유권 제약·입력/보안,
+V11→V12 회원·주문·장바구니 보존을 검증한다. ADDRESS_TEST_DB_URL은 격리 MySQL만,
+ADDRESS_MIGRATION_TEST_DB_URL은 빈 이행 검증 DB만 사용한다. 환경 전환은 --rerun-tasks로 실행한다.
+JS shipping-addresses.test.cjs는 지연 응답·사용자 편집·재조회·계정 변경·등록 응답 유실을 다루고,
+shipping_address_e2e_http.py는 실제 HTTP 검증 결과에 원문 주소·연락처를 기록하지 않는다.
+[운영 절차](shipping-addresses.md), [PRD](../product-specs/shipping-address-prd.md).

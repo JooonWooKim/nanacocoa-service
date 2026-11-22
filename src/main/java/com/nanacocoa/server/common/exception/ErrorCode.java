@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum ErrorCode {
+	ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "ADDRESS_01", "배송지를 찾을 수 없습니다."),
+	ADDRESS_CONFLICT(HttpStatus.CONFLICT, "ADDRESS_02", "배송지 정보가 변경되었습니다. 다시 조회해주세요."),
 	CART_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_01", "장바구니 항목을 찾을 수 없습니다."),
 	CART_CONFLICT(HttpStatus.CONFLICT, "CART_02", "장바구니 또는 상품 가격이 변경되었습니다. 다시 확인해주세요."),
 	INVALID_REQUEST(HttpStatus.BAD_REQUEST, "COMMON_01", "요청 값을 확인해주세요."),
