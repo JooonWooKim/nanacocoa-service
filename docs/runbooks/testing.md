@@ -95,3 +95,14 @@ show-details/show-components/HTTP 상태 매핑을 테스트 설정으로 덮어
 
 실패 해소 시에는 집중·전체 엄격 통과를 먼저 확인하고 기준선을 줄인다. 이후 전체 엄격
 테스트·test-baseline·eval·check를 다시 실행한다. 아키텍처/보안의 기존 예외는 별도다.
+
+
+## 회원 장바구니 검증
+
+feature/34는 CartIntegrationTest 13개를 추가해 발견 기준을 205개로 늘린다.
+장바구니 저장·동시 담기/수정·소유권/CSRF·가격/재고·주문 응답 복구와 승인 후 정리,
+정리 DB 실패 원자성·재처리, 자동/수동 승인 복구·변경 항목 보존을 검증한다.
+CART_TEST_DB_URL로 격리 MySQL 8.4에서도 같은 테스트를 실행한다.
+JS cart.test.cjs와 테스트 전용 cart_e2e_http.py는 화면 상태·실제 HTTP를 별도로 확인한다.
+기존 192개 테스트·실패 기준선과 구조/보안 예외는 유지한다.
+[운영 절차](cart.md), [PRD](../product-specs/cart-prd.md).

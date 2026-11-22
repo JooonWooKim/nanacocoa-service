@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 상태 | 기술 개발·검증 우선 · 판매자 운영 기준 협의는 후순위 대기(실제 출시 전 필수) |
-| 기준일 | 2026-11-21 원격 main `afc8cc293975d5cdfd971a0822ca810267aa5e2d`, [PR #31](https://github.com/JooonWooKim/nanacocoa-service/pull/31) 병합 확인. 이번 병합 상태 문서 갱신은 로컬 미커밋 |
+| 기준일 | 2026-11-22 원격 main `3ed0c59bf49c47426e0d92805adfa2e8c3fac114`, [PR #33](https://github.com/JooonWooKim/nanacocoa-service/pull/33) 병합 확인. 이번 병합 상태 문서 갱신은 로컬 미커밋 |
 | 대상 | 구매 회원, 배송·환불 운영자, 출시 승인 담당자 |
 
 ## 목표
@@ -14,7 +14,7 @@
 
 | ID | 우선순위 | 기능 | main 반영 상태 | 남은 출시 작업 |
 | --- | --- | --- | --- | --- |
-| P0-E2E | 구현된 기술 시나리오 검증 완료 | [구매·환불·재입고 종단 검증](p0-commerce-e2e-prd.md) | [이슈 #32](https://github.com/JooonWooKim/nanacocoa-service/issues/32), main `afc8cc2` 기준 `feature/32` 로컬 구현·main 미반영. PRD 12개 시나리오에 Java/JS·HTTP·Safari 증거 연결. 확인창 취소/수락·전체 배송/반품·환불 복구 PASS | 검토·main 반영, 운영 정책 승인·실데이터·배포 대상 인수는 별도 |
+| P0-E2E | 구현된 기술 시나리오 검증 완료 | [구매·환불·재입고 종단 검증](p0-commerce-e2e-prd.md) | [이슈 #32](https://github.com/JooonWooKim/nanacocoa-service/issues/32), main `afc8cc2` 기준 `feature/32` 구현을 [PR #33](https://github.com/JooonWooKim/nanacocoa-service/pull/33)로 main 반영 완료 (`3ed0c59`). PRD 12개 시나리오에 Java/JS·HTTP·Safari 증거 연결. 확인창 취소/수락·전체 배송/반품·환불 복구 PASS | 운영 정책 승인·실데이터·배포 대상 인수는 별도 |
 | OPS-HEALTH | main 반영 완료 / 운영 확인 잔여 | [상태 확인 계약 정비](health-check-prd.md) | [이슈 #30](https://github.com/JooonWooKim/nanacocoa-service/issues/30), main `de5c595` 기준 `feature/30` 로컬 구현. Actuator 정합화·실제 HTTP 4개·전체 엄격 191개 PASS 후 health 실패 기준선 제거. PR #31로 main 반영 완료 | 환경 smoke와 다른 기술부채는 별도 |
 | SEC | P0 | [세션 보안](session-security-prd.md) | PR #15 병합. 세션 쓰기 전반의 CSRF 보호, POST 로그아웃, 로그인 세션 ID 회전 구현 | 이슈 #32 기술 회귀 완료. 배포 대상 최종 검증은 별도 |
 | PAY | P0 | [결제 환경 분리와 모의 PG 검증](payment-environment-prd.md) | 결제 승인·취소·조회·복구 구현. PR #17의 환경 분리·모의 PG와 PR #21의 주문 제출 멱등성 병합. [PR #23](https://github.com/JooonWooKim/nanacocoa-service/pull/23)으로 [미확정 거래 운영 조회·개별 복구](payment-operations-prd.md) 구현·검증 및 main 반영 완료 | 미확정 거래 점검 담당자·문의 대응 절차 승인, 모의 PG·RETURN 기술 종단 검증은 이슈 #32에서 완료. 운영 설정·배포 대상 인수 별도 |
@@ -23,11 +23,11 @@
 | STOCK | P0 출시 검증 | 재고·품절 관리 | PR #9 병합. 재고 예약·판매 확정·해제·검수 재입고 구현 | 실재고 등록과 판매 활성화, RETURN·PAY 기술 회귀는 이슈 #32에서 완료 |
 | ORDER | P0 출시 검증 | 내 주문 목록·상세 조회 | PR #11 병합. [본인 주문 목록·상세](order-history-prd.md) 구현 및 배송 조회 연결 | RETURN 상태·소유권·재로그인·기존 주문 기술 회귀 완료. 배포 대상 인수 별도 |
 | SHIP | P0 출시 검증 | 배송 관리 | 배송 구현 커밋 `125e46e`가 main에 병합. 관리자 출고·송장·배송 완료 및 구매자 조회 구현 | V6 기존 주문·SEC·RETURN 기술 회귀와 브라우저 출고/배송 완료 PASS. 운영 택배사 설정·실데이터 대조 별도 |
-| CART | P1 | 실제 장바구니 | 담기 표시가 새로고침 후 유지되지 않음 | 출시 주문·결제 흐름 확정 후 구현 |
+| CART | P1 · 로컬 구현·기술 검증 / main 미반영 | [회원 장바구니·복수 상품 주문](cart-prd.md) | [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34), main `3ed0c59` 기준 `feature/34` 로컬 구현. 서버 저장·선택 checkout·승인 후 정리 및 복구/경합 검증 | 커밋/리뷰/main 반영·배포 대상 인수 별도 |
 | ACCOUNT | P1 | 계정 복구·배송지 관리 | 마이페이지 회원정보 및 주소 검색은 구현. 계정 찾기 링크는 미연결이며 checkout은 회원 이름만 자동 입력 | SEC 및 이메일 발송 수단 결정 후 계정 복구·주소록·checkout 배송지 선택 구현 |
 | DISCOVERY | P1 | 검색·고객센터·알림 | 검색·문의 진입점 일부가 페이지 내부 링크 | 상품 조회, POLICY, 거래 상태 이벤트에 맞춰 구현 |
 
-1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. 이후 기능 준비는 기존 P1 우선순위(CART → ACCOUNT → DISCOVERY)를 따르고 운영 기준에 의존하지 않는 범위부터 진행할 수 있다. 운영 인수·정책 승인은 별도로 남아 있다.
+1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART는 이슈 #34에서 로컬 구현·기술 검증을 완료했으며 다음 미구현 기능은 ACCOUNT → DISCOVERY 순서다. 운영 기준에 의존하지 않는 범위부터 진행할 수 있다. 운영 인수·정책 승인은 별도로 남아 있다.
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
 3. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
 
@@ -54,6 +54,13 @@ JS/Python 검증이 PASS다. 최종 check는 기존 구조/보안 예외만 BASE
 검증 서버 runtime smoke는 PASS이며 운영 Compose 스택 인수와 구분한다.
 이 검증의 기능적 BLOCKED는 해소했고 운영 정책·배포·main 반영은 미완료로 유지한다.
 
+2026-11-22 현재 head `9e393e4`의 Codex 코드 리뷰가 지적 없음으로 완료됐고
+미해결 리뷰 스레드가 없음을 확인한 뒤 사용자 요청에 따라 [PR #33](https://github.com/JooonWooKim/nanacocoa-service/pull/33)를 main에 병합했다.
+병합 커밋은 `3ed0c59bf49c47426e0d92805adfa2e8c3fac114`이며 GitHub API와 origin/main fetch로 확인했다.
+이슈 #32의 검증 도구·회귀·문서가 main에 반영됐으며 기존 P1 구현 순서를 유지한다.
+운영 정책 승인·실데이터·배포 대상 인수·실거래 활성화는 미완료로 유지한다.
+아래와 이전 문단의 main 미반영/로컬 미커밋 표현은 당시 기록이다. 이번 상태 갱신은 로컬 미커밋이다.
+
 ### 후순위 운영 작업 · 판매자 협의 대기
 
 2026-11-20 사용자 요청에 따라 실제 운영 기준 확정은 기술 개발·검증보다 뒤로 미룬다.
@@ -67,7 +74,7 @@ JS/Python 검증이 PASS다. 최종 check는 기존 구조/보안 예외만 BASE
 | 운영 정책 원문 작성·검토·적용 | 위 기준 확정 후 진행 | 이용약관·개인정보·선택 수신·판매자·배송/반품 안내를 파일로 작성하고 승인·버전 대조 |
 | 운영 설정·가입 및 거래 활성화 | 정책 승인·최종 출시 검증 후 진행 | 운영 DB 원문 이행, 설정 대조·실재고 등록·배포 확인 후 명시적 활성화 |
 
-첫 출시 범위는 회원 바로 구매, 주문당 송장 1개, 주문 전체 취소·반품·환불로 제안한다. 출시 메뉴는 실제 동작하는 화면과 문의 경로로 연결한다. 부분 출고·부분 환불, 장바구니, 자동 배송 상태 수집은 후속 범위에서 검토한다.
+첫 출시 범위는 회원 바로 구매, 주문당 송장 1개, 주문 전체 취소·반품·환불로 제안한다. 출시 메뉴는 실제 동작하는 화면과 문의 경로로 연결한다. 부분 출고·부분 환불과 자동 배송 상태 수집은 후속 범위에서 검토한다. 회원 장바구니는 P1 이슈 #34에서 로컬 구현·검증하며 main 반영과 첫 출시 포함 여부는 별도다.
 
 ## OPS-HEALTH · 상태 확인 계약 정비
 
@@ -219,3 +226,27 @@ MySQL 8.4.10 집중 18개도 통과했고 전체 187개 중 기존 health 실패
 - [평가 카탈로그](evaluation-catalog.md)
 
 2026-11-22 사용자의 별도 요청에 따라 이슈 #32 검증 작업을 feature/32의 커밋으로 관리한다. 원격 main 반영·운영 승인·활성화는 별도다. 위 로컬 미커밋·push 미수행 문구는 검증 완료 당시의 기록이다.
+
+2026-11-22 다음 P1 기능으로 [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34)의
+[회원 장바구니 PRD](cart-prd.md)를 준비한다. 최신 원격 main `3ed0c59`에서
+`feature/34` → `origin/feature/34`를 추적한다. 사용자 결정은 서버 결제 승인 확정 후
+주문 연결 항목만 정리하며 주문 이후 변경된 항목은 보존하는 것이다. 준비 문서는 로컬
+미커밋이며 기능 구현·검증·main 반영은 아직 없다. ACCOUNT → DISCOVERY 순서와
+판매자 운영 기준 협의·정책 승인·운영 활성화·배포 대기는 유지한다.
+
+장바구니 [준비 실행 기록](../exec-plans/completed/cart-preparation.md)을 완료 보관했다.
+문서·diff PASS, 전체 check는 기존 구조·보안 예외만 BASELINED(Java 192개 실패·skip 0개),
+Compose smoke는 SKIPPED다. 준비 완료이며 장바구니 기능 구현·검증 완료는 아니다.
+
+2026-11-22 이슈 #34의 회원 장바구니·선택 복수 상품 checkout·가격/재고 재검증·
+서버 승인 커밋 후 별도 정리를 feature/34에서 구현했다. 정리 DB 실패는 READY로
+재처리하며 결제 보상 취소로 전파하지 않는다. 주문 이후 수정·재등록 항목을 보존한다.
+H2 전체 Java 205개·격리 MySQL 8.4.10 집중 13개·장바구니 JS 8개와 기존 JS 4개 파일,
+Python 3개·장바구니 실제 HTTP 5개·기존 구매/RETURN HTTP 6개가 PASS다.
+Chrome에서 복수 품목 124,000원 모의 승인/정리와 거절/유지·재로그인·로그아웃 보호를 확인했다.
+최종 하네스는 BASELINED이며 결과는 [실행 기록](../exec-plans/completed/issue-34-cart-implementation.md)에 기록한다.
+기존 준비 미구현 문구는 당시 기록이며 현재 코드는 로컬 미커밋·main 미반영이다.
+판매자 정책 승인·실데이터·배포·운영 활성화는 완료하지 않았다.
+
+최종 하네스는 기존 구조·보안 예외만 BASELINED, Java 205개 실패·오류·skip 0개다.
+테스트 서버 runtime smoke PASS이며 운영 Compose 스택 인수는 별도 SKIPPED다.

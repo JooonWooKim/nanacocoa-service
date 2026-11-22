@@ -41,6 +41,7 @@ import static com.nanacocoa.server.common.exception.ErrorCode.UNSUPPORTED_PAYMEN
 
 @Service
 public class PaymentTransactionalService {
+	private final com.nanacocoa.server.cart.service.CartCheckoutService cartCheckout;
 	private final PaymentRepository paymentRepository;
 	private final PaymentCancellationRepository cancellationRepository;
 	private final OrderRepository orderRepository;
@@ -55,7 +56,8 @@ public class PaymentTransactionalService {
 			OrderRepository orderRepository,
 			@Value("${payment.reconciliation.retry-delay:30s}") Duration retryDelay,
 			OrderInventoryService inventoryService, ShippingService shippingService,
-            com.nanacocoa.server.order.service.ReturnRequestService returnRequests) {
+            com.nanacocoa.server.order.service.ReturnRequestService returnRequests, com.nanacocoa.server.cart.service.CartCheckoutService cartCheckout) {
+		this.cartCheckout = cartCheckout;
 		this.paymentRepository = paymentRepository;
 		this.cancellationRepository = cancellationRepository;
 		this.orderRepository = orderRepository;
@@ -133,12 +135,14 @@ public class PaymentTransactionalService {
 	public PaymentResponse completeApproval(Long paymentId, TossPaymentResponse pgResponse) {
 		Payment payment = paymentForUpdate(paymentId);
 		if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            cartCheckout.approved(payment.getOrder());
 			return PaymentResponse.from(payment);
 		}
 		validateApprovalResponse(payment, pgResponse);
 		inventoryService.complete(payment.getOrder());
 		payment.complete(pgResponse.getStatus(), pgResponse.getMethod(), pgResponse.approvedAtLocal());
-		paymentRepository.flush();
+		cartCheckout.approved(payment.getOrder());
+        paymentRepository.flush();
 		return PaymentResponse.from(payment);
 	}
 

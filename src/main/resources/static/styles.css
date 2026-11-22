@@ -2760,3 +2760,11 @@ textarea.product-register-input {
 .signup-page button:disabled { cursor: not-allowed; }
 @media (min-width: 768px) { .signup-page .login-content { padding-top: 64px; } }
 @media (max-width: 360px) { .signup-page .login-content { padding-inline: 20px; } }
+
+/* 장바구니는 기존 checkout 카드와 상품 행을 재사용한다. */
+.cart-item { grid-template-columns: auto 100px minmax(0,1fr); }
+.cart-item input[type="number"] { width: 6rem; max-width: 100%; }
+.cart-item .checkout-product-copy { min-width:0; overflow-wrap:anywhere; }
+.cart-checkout-lines p { overflow-wrap:anywhere; }
+.checkout-product[hidden] { display:none; }
+@media(max-width:600px) { .cart-item { grid-template-columns:auto 64px minmax(0,1fr); gap:12px; } .cart-item img { width:64px; height:80px; } }

@@ -54,7 +54,7 @@ class OrderServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		orderService = new OrderService(orderRepository, productsRepository, memberRepository,
+		orderService = new OrderService(org.mockito.Mockito.mock(com.nanacocoa.server.cart.service.CartCheckoutService.class), orderRepository, productsRepository, memberRepository,
 				new OrderInventoryService(productsRepository, org.mockito.Mockito.mock(com.nanacocoa.server.order.repository.ReturnRequestRepository.class), new com.nanacocoa.server.order.config.ReturnPolicy()), paymentRepository, paymentCancellationRepository, shippingService, org.mockito.Mockito.mock(ReturnRequestService.class));
 		member = Member.builder()
 				.email("buyer@example.com")
@@ -73,7 +73,7 @@ class OrderServiceTest {
 		when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
 		when(productsRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cocoa));
 		when(productsRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(cake));
-		when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(orderRepository.saveAndFlush(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		OrderResponse response = orderService.createOrder(
 				request(
@@ -138,7 +138,7 @@ class OrderServiceTest {
 		setId(product, 1L);
 		when(memberRepository.findByEmailForUpdate(member.getEmail())).thenReturn(Optional.of(member));
 		when(productsRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
-		when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(orderRepository.saveAndFlush(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		OrderResponse response = orderService.createOrder(
 				request("   ", List.of(new OrderItemRequest(1L, 1))),
