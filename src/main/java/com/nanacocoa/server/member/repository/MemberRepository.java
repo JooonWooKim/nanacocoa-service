@@ -15,6 +15,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Optional<Member> findByEmail(String email);
 
+    @Query("select m.authenticationGeneration from Member m where m.id = :id")
+    Optional<Long> findAuthenticationGeneration(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select m from Member m where m.id = :id")
+    Optional<Member> findByIdForUpdate(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select m from Member m where m.email = :email")
     Optional<Member> findByEmailForUpdate(@Param("email") String email);

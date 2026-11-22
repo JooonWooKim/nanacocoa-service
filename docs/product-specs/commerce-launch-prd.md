@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 상태 | 기술 개발·검증 우선 · 판매자 운영 기준 협의는 후순위 대기(실제 출시 전 필수) |
-| 기준일 | 2026-11-22 원격 main `8ae5defcbff84a1da7f2453ad3365729a975cb28`, [PR #35](https://github.com/JooonWooKim/nanacocoa-service/pull/35) 병합 확인. 배송지 기능 준비 문서는 로컬 미커밋 |
+| 기준일 | 2026-11-22 원격 main `f2ccaf466587822f63a8af860764f6c7f532a010`, [PR #37](https://github.com/JooonWooKim/nanacocoa-service/pull/37) 병합 확인. 이메일 비밀번호 복구 구현·검증 코드와 문서는 로컬 미커밋 |
 | 대상 | 구매 회원, 배송·환불 운영자, 출시 승인 담당자 |
 
 ## 목표
@@ -24,11 +24,11 @@
 | ORDER | P0 출시 검증 | 내 주문 목록·상세 조회 | PR #11 병합. [본인 주문 목록·상세](order-history-prd.md) 구현 및 배송 조회 연결 | RETURN 상태·소유권·재로그인·기존 주문 기술 회귀 완료. 배포 대상 인수 별도 |
 | SHIP | P0 출시 검증 | 배송 관리 | 배송 구현 커밋 `125e46e`가 main에 병합. 관리자 출고·송장·배송 완료 및 구매자 조회 구현 | V6 기존 주문·SEC·RETURN 기술 회귀와 브라우저 출고/배송 완료 PASS. 운영 택배사 설정·실데이터 대조 별도 |
 | CART | P1 · main 반영 완료 | [회원 장바구니·복수 상품 주문](cart-prd.md) | [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34), main `3ed0c59` 기준 `feature/34` 로컬 구현. 서버 저장·선택 checkout·승인 후 정리 및 복구/경합 검증 | PR #35 병합 완료 · 배포 대상 인수·운영 승인 별도 |
-| ACCOUNT-ADDRESS | P1 · 리뷰 P2 로컬 수정 검증 / main 미반영 | [회원 배송지·checkout 선택](shipping-address-prd.md) | [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36), main `8ae5def` 기준 `feature/36` 구현. 주소록·기본 포인터·버전/재전송 방어·checkout 기본 자동 입력·주문 스냅샷 유지 | 지연 응답 P2 수정 원격 반영·재리뷰/main 반영·배포 대상 인수 별도 |
-| ACCOUNT-RECOVERY | P1 · 배송지 다음 후속 | 이메일 기반 계정 복구 | 로그인 화면 계정 찾기는 미연결, 이메일 발송 기능·설정 미구현 | 이메일 발송 수단 결정·모의 발송 검증·복구 토큰과 화면 구현 |
+| ACCOUNT-ADDRESS | P1 · main 반영 완료 | [회원 배송지·checkout 선택](shipping-address-prd.md) | [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36), main `8ae5def` 기준 `feature/36` 구현. 주소록·기본 포인터·버전/재전송 방어·checkout 기본 자동 입력·주문 스냅샷 유지 | PR #37 병합 완료 · 배포 대상 인수·운영 승인 별도 |
+| ACCOUNT-RECOVERY | P1 · 로컬 구현·기술 검증 완료 / main 미반영 | [이메일 비밀번호 복구](account-recovery-prd.md) | [이슈 #38](https://github.com/JooonWooKim/nanacocoa-service/issues/38), main `f2ccaf4` 기준 `feature/38`에서 익명 요청·DB 제한·SMTP/모의 발송·일회용 토큰·모든 세션 만료·화면 구현. RECOVERY-01~10 PASS, 최종 check는 기존 구조/보안 예외만 BASELINED | 커밋·원격 반영·main 병합, 실제 발송 공급자 선정·배포 대상 인수·운영 활성화 별도 |
 | DISCOVERY | P1 | 검색·고객센터·알림 | 검색·문의 진입점 일부가 페이지 내부 링크 | 상품 조회, POLICY, 거래 상태 이벤트에 맞춰 구현 |
 
-1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART는 이슈 #34에서 로컬 구현·기술 검증을 완료했으며 ACCOUNT 배송지 관리(이슈 #36)는 로컬 구현·검증했으며 다음 미구현 순서는 계정 복구 → DISCOVERY다. 운영 기준에 의존하지 않는 범위부터 진행할 수 있다. 운영 인수·정책 승인은 별도로 남아 있다.
+1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART(이슈 #34)는 PR #35, ACCOUNT 배송지 관리(이슈 #36)는 PR #37로 main 반영을 완료했다. 이메일 비밀번호 복구(이슈 #38)는 feature/38에서 로컬 구현·기술 검증했으며 main 반영은 대기한다. 다음 미구현 순서는 DISCOVERY다. 운영 인수·정책 승인은 별도로 남아 있다.
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
 3. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
 
@@ -289,3 +289,33 @@ H2 집중 13개·격리 MySQL 8.4.10·JS 주소록 10개·배송지 HTTP 5개와
 
 리뷰 보완 최종 검증은 주소록 JS 31개·전체 JS 6개 파일·Java 218개 PASS, 전체 check는
 기존 구조/보안 예외만 BASELINED다. smoke는 실행 스택이 없어 SKIPPED다. 로컬 수정 완료와 원격 반영을 구분한다.
+
+2026-11-22 최신 head `fb1352a`의 Codex 재리뷰가 지적 없음으로 완료된 뒤 [PR #37](https://github.com/JooonWooKim/nanacocoa-service/pull/37)을 main `f2ccaf466587822f63a8af860764f6c7f532a010`에 병합했다. 이전 P2 스레드는 outdated이며 최신 리뷰의 미해결 지적은 없다. 위 main 미반영 표현은 당시 기록이다. 이번 상태 문서 갱신은 로컬 미커밋이며 운영 승인·배포·활성화는 별도다.
+
+
+2026-11-22 다음 P1 작업을 [이슈 #38](https://github.com/JooonWooKim/nanacocoa-service/issues/38)의
+[이메일 비밀번호 복구 PRD](account-recovery-prd.md)로 준비했다. 원격 main `f2ccaf4`에서
+`origin/feature/38`을 생성하고 현재 작업 트리를 로컬 추적 브랜치 `feature/38`로 전환했다.
+가입 이메일을 아는 회원의 재설정, SMTP와 모의 발송, 복구 후 모든 기존 세션 만료를
+선택했다. 이메일을 잊은 경우의 본인 확인은 별도 후속이다. [준비 기록](../exec-plans/completed/account-recovery-preparation.md)에
+기존 파일 보존과 검사 결과를 남긴다. 준비 문서는 로컬 미커밋이며 기능 구현·
+RECOVERY-01~10 검증·main 반영은 미수행이다. 실제 이메일 공급자 선정·실발송·
+판매자 정책 승인·배포·운영 활성화는 대기한다. 위의 기존 미반영 문구는 당시 기록이다.
+
+이슈 #38 준비 검사는 docs·diff PASS, check BASELINED(기존 구조 예외 3개·보안 예외 2개),
+Java 218개 실패·오류·skip 0개다. doctor·smoke는 환경 미검증/실행 스택 부재로 SKIPPED다.
+이 결과는 기존 기능 회귀이며 RECOVERY-01~10은 구현 대기/미실행이다. 준비 실행 기록을 completed에 보관했다.
+
+2026-11-22 이슈 #38의 이메일 비밀번호 복구를 feature/38에서 로컬 구현했다.
+익명 요청·DB 요청 제한·일회용 토큰·SMTP/모의 발송·재설정 화면·모든 기존 세션 만료를
+구현했으며 RECOVERY-01~10은 H2·격리 MySQL 8.4·SMTP 수신기·실제 HTTP·Chrome
+증거를 조합해 PASS다. 실제 Java 프로세스 재시작 후 비밀번호·토큰 소비·요청 제한도
+보존됐다. 전체 Java 237개(기존 218개 + 신규 19개)와 전체 JS 7개 파일을 통과했다.
+최종 하네스 검사는 기존 구조 예외 3개·보안 예외 2개만 BASELINED이며 [구현 기록](../exec-plans/completed/account-recovery-implementation.md)에 결과를 남겼다.
+위 준비/미구현 표현은 당시 기록이다. 다음 미구현 기능은 DISCOVERY이며 이메일을
+잊은 경우의 본인 확인은 후속이다. 코드·문서는 로컬 미커밋이고 main 기준은 f2ccaf4다.
+커밋·push·PR·main 반영과 실제 이메일 공급자 선정·운영 정책 승인·실발송·배포·활성화는 미수행이다.
+
+최종 check의 Java 237개·문서·마이그레이션·평가는 PASS다. 검증 서버 runtime smoke도
+PASS이며 doctor와 운영 Compose 스택 인수는 SKIPPED다. 실제 MySQL은 격리된 8.4.13이다.
+코드·문서는 로컬 미커밋으로 유지하고 판매자 승인·실제 공급자·전 인스턴스 배포·운영 활성화는 대기한다.

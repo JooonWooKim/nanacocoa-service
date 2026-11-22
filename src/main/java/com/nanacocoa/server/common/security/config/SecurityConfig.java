@@ -16,6 +16,9 @@ import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nanacocoa.server.common.exception.ErrorCode;
 import com.nanacocoa.server.common.exception.ErrorMessage;
+import com.nanacocoa.server.common.security.SessionGenerationFilter;
+import com.nanacocoa.server.common.security.SessionGenerationVerifier;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -32,9 +35,10 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, HttpSessionCsrfTokenRepository csrfTokens,
-                                            ObjectMapper json) throws Exception {
+                                            ObjectMapper json, SessionGenerationVerifier generations) throws Exception {
         var defaultDeniedHandler = new AccessDeniedHandlerImpl();
         return http
+            .addFilterAfter(new SessionGenerationFilter(generations, json), SecurityContextHolderFilter.class)
             .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))
             .logout(logout -> logout.disable())
             .formLogin(formLogin -> formLogin.disable())

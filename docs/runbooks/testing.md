@@ -2,6 +2,11 @@
 
 상태: 2026-11-20 상태 확인 계약 정비 검증
 
+최신 추가: 2026-11-22 feature/38 복구 검증은 전체 Java 237개(기존 218개 + 신규 19개),
+실패·오류·skip 0개다. 기존 발견 ID를 보존하고 실패 기준선·구조/보안 예외를 완화하지 않았다.
+[복구 운영·검증](account-recovery.md)의 H2/격리 MySQL 8.4·SMTP·JS·HTTP·브라우저와
+실제 Java 프로세스 재시작 증거는 [복구 PRD](../product-specs/account-recovery-prd.md)에 연결한다.
+
 ## 명령 단계
 
 | 명령 | 의미 |

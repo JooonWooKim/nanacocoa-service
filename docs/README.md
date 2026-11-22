@@ -28,6 +28,7 @@
 - [테스트](runbooks/testing.md)
 - [구매·환불·재입고 종단 검증](runbooks/commerce-e2e.md)
 - [회원 배송지 운영·검증](runbooks/shipping-addresses.md)
+- [이메일 비밀번호 복구 운영·검증](runbooks/account-recovery.md)
 - [회원 장바구니 운영·검증](runbooks/cart.md)
 - [재고·품절 운영과 데이터 이행](runbooks/inventory.md)
 - [배송 운영 절차](runbooks/shipping.md)

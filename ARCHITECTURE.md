@@ -27,6 +27,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 | 영역 | 책임 | 진입 경계 | 영속성 |
 | --- | --- | --- | --- |
 | `member` | 회원가입, 로그인, 세션 식별, 마이페이지 프로필·비밀번호 관리 | `AuthController` / `MemberController` | `MemberRepository` |
+| `recovery` | 이메일 비밀번호 복구, DB 요청 제한, 일회용 토큰·SMTP 어댑터 | `RecoveryController` / `RecoveryService` | 복구 토큰·제한 Repository |
 | `products` | 상품 목록과 이미지 등록 | `ProductsController` / `ProductsService` | `ProductsRepository` |
 | `order` | 서버 가격 기반 주문과 배송 정보 | `OrderController` / `OrderService` | `OrderRepository` |
 | `payment` | 승인, 취소, 멱등성, 락, 복구 | `PaymentController` / `PaymentFacade` | 결제 Repository |
@@ -56,6 +57,13 @@ controller -> service/facade -> repository -> entity/database
 `common.userdetails`는 현재 `member` Entity·Repository 타입에 의존합니다.
 이 역방향 의존성은 이상적 구조로 숨기지 않고 기준선과 기계적 래칫으로
 고정했으며 NC-ARCH-001로 추적합니다.
+
+복구의 세션 무효화는 common의 `SessionGenerationVerifier` 포트를 member Service가
+구현한다. common에 새 도메인 import를 추가하지 않는다. 로그인은 회원 잠금에서
+credential 검증·세대 스냅샷을 생성하고, SecurityContext 복원 뒤 필터가 매 요청마다
+DB 세대를 검증한다. 복구 트랜잭션이 비밀번호·토큰 소비·세대를 함께 갱신하며 메일
+전송은 토큰 발급 커밋 후 제한된 별도 스레드에서 수행한다. DB 조회 실패는 인증을
+허용하지 않으며 공개 복구 API와 재설정 화면은 no-store를 적용한다.
 
 ### 기계적 강제 범위
 

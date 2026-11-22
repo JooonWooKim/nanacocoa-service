@@ -775,18 +775,8 @@ class NanacocoaServerApplicationTests {
         mockMvc.perform(get("/api/payments/client-config"))
             .andExpect(status().isUnauthorized());
 
-        UserDetailsImpl principal = new UserDetailsImpl(null, "payment-config@example.com");
-        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
-            principal,
-            null,
-            principal.getAuthorities()
-        ));
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute(
-            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-            securityContext
-        );
+        // 실제 회원·로그인 세션으로 결제 비활성 계약을 검증한다.
+        MockHttpSession session = loginMember("payment-config@example.com", "fixture123!", "가상 결제 회원", false);
 
         mockMvc.perform(get("/api/payments/client-config").session(session))
             .andExpect(status().isServiceUnavailable())

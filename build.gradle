@@ -61,3 +61,10 @@ tasks.register('commerceE2e', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.nanacocoa.server.e2e.CommerceE2eServer'
 }
+
+// 합성 회원·메모리 수신함만 사용하는 loopback 복구 검증 서버.
+tasks.register('recoveryE2e', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.nanacocoa.server.e2e.RecoveryE2eServer'
+}

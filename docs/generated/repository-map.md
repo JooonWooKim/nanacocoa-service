@@ -11,17 +11,18 @@
 | 영역 | Java 파일 | 주요 역할 |
 | --- | ---: | --- |
 | `cart` | 14 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
-| `common` | 11 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
-| `member` | 25 | 식별, 회원가입, 로그인, 세션 |
+| `common` | 13 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
+| `member` | 26 | 식별, 회원가입, 로그인, 세션 |
 | `order` | 38 | 주문, 배송, 서버 가격 계산 |
 | `payment` | 35 | 승인, 취소, 락, 복구 |
 | `policy` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 | `products` | 17 | 상품 목록과 이미지 저장 |
+| `recovery` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 
-- 주요 Java 파일: 154
-- 테스트 Java 파일: 33
-- Flyway 마이그레이션: 12
-- 정적 자원·페이지: 35
+- 주요 Java 파일: 170
+- 테스트 Java 파일: 37
+- Flyway 마이그레이션: 13
+- 정적 자원·페이지: 38
 
 ## 주요 패키지 디렉터리
 
@@ -90,6 +91,15 @@ src/main/java/com/nanacocoa/server/products/entity
 src/main/java/com/nanacocoa/server/products/repository
 src/main/java/com/nanacocoa/server/products/service
 src/main/java/com/nanacocoa/server/products/storage
+src/main/java/com/nanacocoa/server/recovery
+src/main/java/com/nanacocoa/server/recovery/config
+src/main/java/com/nanacocoa/server/recovery/controller
+src/main/java/com/nanacocoa/server/recovery/dto
+src/main/java/com/nanacocoa/server/recovery/dto/reqeust
+src/main/java/com/nanacocoa/server/recovery/entity
+src/main/java/com/nanacocoa/server/recovery/mail
+src/main/java/com/nanacocoa/server/recovery/repository
+src/main/java/com/nanacocoa/server/recovery/service
 ```
 
 ## 테스트 클래스
@@ -102,6 +112,7 @@ src/test/java/com/nanacocoa/server/SessionSecurityHttpTest.java
 src/test/java/com/nanacocoa/server/cart/CartIntegrationTest.java
 src/test/java/com/nanacocoa/server/common/session/ProfileVerificationSessionTest.java
 src/test/java/com/nanacocoa/server/e2e/CommerceE2eServer.java
+src/test/java/com/nanacocoa/server/e2e/RecoveryE2eServer.java
 src/test/java/com/nanacocoa/server/member/MemberApiIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/MemberConcurrencyIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/ShippingAddressIntegrationTest.java
@@ -109,6 +120,7 @@ src/test/java/com/nanacocoa/server/member/service/MemberServiceTest.java
 src/test/java/com/nanacocoa/server/migration/FilePolicyConsentMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
+src/test/java/com/nanacocoa/server/migration/RecoveryMigrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/InventoryIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/PaymentOperationsIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/ReturnRequestIntegrationTest.java
@@ -128,6 +140,8 @@ src/test/java/com/nanacocoa/server/policy/PolicyIntegrationTest.java
 src/test/java/com/nanacocoa/server/policy/PolicyTestFixtures.java
 src/test/java/com/nanacocoa/server/products/service/ProductsServiceTest.java
 src/test/java/com/nanacocoa/server/products/storage/S3ProductImageStorageTest.java
+src/test/java/com/nanacocoa/server/recovery/RecoveryIntegrationTest.java
+src/test/java/com/nanacocoa/server/recovery/config/RecoveryMailTest.java
 ```
 
 ## 운영 진입점
