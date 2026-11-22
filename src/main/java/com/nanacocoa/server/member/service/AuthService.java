@@ -45,8 +45,9 @@ public class AuthService {
         policyService.recordSignup(member, verifiedConsents);
     }
 
+    @Transactional
     public void login(LoginRequest request) {
-        Member member = memberRepository.findByEmail(request.getEmail()).orElseThrow(
+        Member member = memberRepository.findByEmailForUpdate(request.getEmail()).orElseThrow(
                 () -> new NanacocoaException(ALREADY_EXIST_EMAIL)
         );
         member.checkPassword(passwordEncoder, request.getPassword());

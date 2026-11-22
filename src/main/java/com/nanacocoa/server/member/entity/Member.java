@@ -33,6 +33,9 @@ public class Member {
     @Column(name = "password", nullable = false, length = 100)
     private String password;
 
+    @Column(name = "authentication_generation", nullable = false)
+    private Long authenticationGeneration = 0L;
+
     @Column(name = "address", nullable = false, length = 500)
     private String address;
 

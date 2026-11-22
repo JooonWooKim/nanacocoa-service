@@ -7,6 +7,10 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum ErrorCode {
+	RECOVERY_INVALID(HttpStatus.BAD_REQUEST, "RECOVERY_01", "복구 링크를 사용할 수 없습니다. 복구 안내를 다시 요청해주세요."),
+	RECOVERY_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "RECOVERY_02", "요청이 많습니다. 잠시 후 다시 시도해주세요."),
+	RECOVERY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "RECOVERY_03", "비밀번호 복구를 이용할 수 없습니다. 잠시 후 다시 시도해주세요."),
+	SESSION_CHECK_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_05", "로그인 상태를 확인할 수 없습니다. 잠시 후 다시 시도해주세요."),
 	ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "ADDRESS_01", "배송지를 찾을 수 없습니다."),
 	ADDRESS_CONFLICT(HttpStatus.CONFLICT, "ADDRESS_02", "배송지 정보가 변경되었습니다. 다시 조회해주세요."),
 	CART_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_01", "장바구니 항목을 찾을 수 없습니다."),

@@ -11,9 +11,14 @@
   테스트에 연결합니다.
 - [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
   출시 승인 조건을 정의합니다.
+- [이메일 비밀번호 복구 PRD](account-recovery-prd.md)는 [이슈 #38](https://github.com/JooonWooKim/nanacocoa-service/issues/38)의
+  SMTP·모의 발송·일회용 복구 링크·비밀번호 재설정·모든 기존 세션 만료 계약을 정의합니다.
+  `feature/38` → `origin/feature/38`에서 [준비](../exec-plans/completed/account-recovery-preparation.md) 후
+  [로컬 구현·기술 검증](../exec-plans/completed/account-recovery-implementation.md)을 수행했습니다. RECOVERY-01~10은 PASS입니다.
+  최종 check는 기존 구조/보안 예외만 BASELINED이며 코드·문서는 로컬 미커밋입니다. main 반영·실발송·배포·활성화는 미수행입니다.
 - [회원 배송지 관리 PRD](shipping-address-prd.md)는 [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36)의
   주소록·기본 배송지·checkout 자동 입력/선택·기존 주문 보존 인수 기준을 정의합니다.
-  `feature/36`에서 [준비](../exec-plans/completed/issue-36-shipping-address-preparation.md) 후 주소록·기본값·checkout 연결을 로컬 구현·검증했습니다. main 미반영이며 ACCOUNT 계정 복구는 후속입니다.
+  `feature/36`에서 [준비](../exec-plans/completed/issue-36-shipping-address-preparation.md) 후 주소록·기본값·checkout 연결을 로컬 구현·검증했습니다. [PR #37](https://github.com/JooonWooKim/nanacocoa-service/pull/37)로 main에 반영했습니다. ACCOUNT 계정 복구는 후속입니다.
 - [회원 장바구니와 복수 상품 주문 PRD](cart-prd.md)는 [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34)의
   회원별 저장·선택 구매·가격/재고 재검증·승인 확정 후 정리와 경합·권한 인수 기준을 정의합니다.
   `feature/34`에서 [준비](../exec-plans/completed/cart-preparation.md) 후 로컬 구현·기술 검증을 진행했습니다. 서버 승인 후 별도 정리·실패 재처리·변경 항목 보존을 제공하며 [PR #35](https://github.com/JooonWooKim/nanacocoa-service/pull/35)로 main에 반영했습니다.
