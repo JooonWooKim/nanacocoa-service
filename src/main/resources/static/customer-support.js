@@ -67,6 +67,8 @@
   const reply = page.querySelector("[data-support-reply]");
   const filter = page.querySelector("[data-support-filter]");
   const refresh = page.querySelector("[data-support-refresh]");
+  const linkedInquiryId = admin ? null : supportInquiryId(new URLSearchParams(window.location.search).get("inquiryId"));
+  if (linkedInquiryId) login.href = "login.html?return=support-inquiries&inquiryId=" + linkedInquiryId;
   let pageNumber = 0;
   let orderPage = 0;
   let selectedId = null;
@@ -149,7 +151,10 @@
     status.textContent = "문의를 불러오는 중입니다.";
     try {
       await assertAccount(signal);
+      if (signal.aborted) return;
       const row = await call(endpoint + "/" + id, {signal});
+      if (signal.aborted) return;
+      if (linkedInquiryId) await assertAccount(signal);
       if (signal.aborted) return;
       displayDetail(row);
       status.textContent = "";
@@ -159,7 +164,7 @@
   }
 
   async function loadList(number = 0, preserveDetail = false) {
-    if (busy) return;
+    if (busy) return false;
     const {signal} = begin();
     if (!preserveDetail) clearDetail();
     status.textContent = "문의 목록을 불러오는 중입니다.";
@@ -169,7 +174,9 @@
       const params = new URLSearchParams({page: String(number)});
       if (filter?.value) params.set("status", filter.value);
       const result = await call(endpoint + "?" + params, {signal});
-      if (signal.aborted) return;
+      if (signal.aborted) return false;
+      if (linkedInquiryId) await assertAccount(signal);
+      if (signal.aborted) return false;
       pageNumber = result.page;
       list.replaceChildren(...result.items.map(row => {
         const item = element("li", "");
@@ -185,11 +192,13 @@
       panel.hidden = false;
       login.hidden = true;
       status.textContent = result.items.length ? "" : "조회할 문의가 없습니다.";
+      return true;
     } catch (error) {
       if (!signal.aborted) {
         list.replaceChildren();
         failure(error, "문의 목록을 불러오지 못했습니다.");
       }
+      return false;
     }
   }
 
@@ -263,20 +272,25 @@
   filter?.addEventListener("change", () => loadList());
   previous.addEventListener("click", () => loadList(pageNumber - 1));
   next.addEventListener("click", () => loadList(pageNumber + 1));
-  refresh.addEventListener("click", () => selectedId ? loadDetail(selectedId) : loadList(pageNumber));
+  async function openInitial() {
+    if (await loadList() && linkedInquiryId) await loadDetail(linkedInquiryId);
+  }
+  refresh.addEventListener("click", () => selectedId ? loadDetail(selectedId)
+    : linkedInquiryId ? openInitial() : loadList(pageNumber));
   window.addEventListener("focus", async () => {
     const observed = account;
     if (!observed) return;
+    const request = active;
     try {
       const session = await call("/api/auth/session");
-      if (account === observed && (!session.authenticated || observed !== session.checkoutAccount || admin && !session.admin)) {
+      if (active === request && account === observed && (!session.authenticated || observed !== session.checkoutAccount || admin && !session.admin)) {
         failure({status: 401});
       }
     } catch {
-      if (account === observed) failure({status: 401});
+      if (active === request && account === observed) failure({status: 401});
     }
   });
   window.addEventListener("pagehide", clearPrivate);
-  window.addEventListener("pageshow", event => { if (event.persisted) loadList(); });
-  loadList();
+  window.addEventListener("pageshow", event => { if (event.persisted) openInitial(); });
+  openInitial();
 })();

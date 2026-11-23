@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {"spring.flyway.enabled=true", "spring.jpa.hibernate.ddl-auto=validate",
     "spring.sql.init.mode=never", "spring.jpa.open-in-view=false", "notifications.enabled=true",
     "notifications.starts-at=2026-01-01T00:00:00Z", "notifications.initial-delay=3600000",
+    "notifications.support.enabled=true", "notifications.support.starts-at=2026-02-01T00:00:00Z",
     "product-image.storage-mode=mock", "toss-payments.enabled=false"})
 class OrderNotificationIntegrationTest {
     static final String PASSWORD = "SyntheticNotify123!";
@@ -110,7 +111,7 @@ class OrderNotificationIntegrationTest {
             tx.setRollbackOnly();
         });
         assertThat(rows.existsByOrderIdAndEventType(eligible, OrderNotification.Type.SHIPPED)).isFalse();
-        var restartedWorker = new NotificationWorker(rows, publisher, CUTOFF.toInstant(ZoneOffset.UTC).toString());
+        var restartedWorker = new NotificationWorker(rows, publisher, CUTOFF.toInstant(ZoneOffset.UTC).toString(), false, "");
         var workers = Executors.newFixedThreadPool(2);
         try {
             var a=workers.submit(worker::run);
@@ -184,5 +185,110 @@ class OrderNotificationIntegrationTest {
         assertThat(published.getStatus()).isEqualTo(OrderNotification.Status.PUBLISHED);
         assertThat(published.getAttemptCount()).isEqualTo(4);
         assertThat(sql.queryForObject("select status from orders where id=?", String.class, job.getOrderId())).isEqualTo("CREATED");
+    }
+
+    @Test void confirmedReplyWithoutOrderJoinsInboxAndRemainsPrivateAcrossRetries() throws Exception {
+        var owner = member(false);
+        var ownerSession = login(owner);
+        var other = login(member(false));
+        var admin = login(member(true));
+        String inquiryApi = "/api/support/inquiries";
+        String adminApi = "/api/admin/support/inquiries";
+        String id = json.readTree(mvc.perform(post(inquiryApi).session(ownerSession).with(csrf(mvc))
+                .header("Idempotency-Key", UUID.randomUUID())
+                .contentType("application/json").content("{\"title\":\"synthetic title\",\"body\":\"synthetic inquiry\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString())
+                .at("/data/id").asText();
+        String reply = adminApi + "/" + id + "/reply";
+        var body = "{\"body\":\"synthetic private reply\"}";
+        var orderJob = pending(owner);
+        worker.run();
+        assertThat(rows.existsByInquiryId(Long.valueOf(id))).isFalse();
+        mvc.perform(post(reply).session(admin).with(csrf(mvc)).contentType("application/json").content(body))
+                .andExpect(status().isOk());
+        mvc.perform(post(reply).session(admin).with(csrf(mvc)).contentType("application/json").content(body))
+                .andExpect(status().isConflict());
+        assertThat(sql.queryForObject("select notification_confirmed_at from support_inquiries where id=?",
+                LocalDateTime.class, Long.valueOf(id))).isNotNull();
+        var paused = new NotificationWorker(rows, publisher, "2026-01-01T00:00:00Z", false, "");
+        paused.run();
+        assertThat(rows.existsByInquiryId(Long.valueOf(id))).isFalse();
+        var supportCutoff = LocalDateTime.parse("2026-02-01T00:00:00");
+        sql.update("update support_inquiries set notification_confirmed_at=? where id=?",supportCutoff,Long.valueOf(id));
+        var event = rows.undiscoveredReplies(supportCutoff).stream()
+                .filter(r -> r.getInquiryId().equals(Long.valueOf(id))).findFirst().orElseThrow();
+        publisher.discoverReply(event);
+        paused.run();
+        var notificationId = sql.queryForObject("select id from order_notifications where inquiry_id=?", Long.class, Long.valueOf(id));
+        assertThat(rows.findById(notificationId).orElseThrow().getStatus()).isEqualTo(OrderNotification.Status.PENDING);
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("synthetic")).when(rows).flush();
+        for (int i = 0; i < 4; i++) worker.run();
+        reset(rows);
+        mvc.perform(get(inquiryApi + "/" + id).session(ownerSession))
+                .andExpect(jsonPath("$.data.replyBody").value("synthetic private reply"));
+        mvc.perform(get(inquiryApi + "/" + id).session(other)).andExpect(status().isNotFound());
+        String retry = ADMIN + "/" + notificationId + "/retry";
+        mvc.perform(post(retry).session(other).with(csrf(mvc))).andExpect(status().isForbidden());
+        mvc.perform(get(ADMIN).session(admin))
+                .andExpect(jsonPath("$.data.items[?(@.id == " + notificationId + ")].attemptCount").value(3));
+        mvc.perform(post(retry).session(admin).with(csrf(mvc)))
+                .andExpect(jsonPath("$.data.inquiryId").value(id));
+        var resumed = new NotificationWorker(rows, publisher, "2026-01-01T00:00:00Z", true, "2026-02-01T00:00:00Z");
+        var threads = Executors.newFixedThreadPool(2);
+        try {
+            var a = threads.submit(worker::run);
+            var b = threads.submit(resumed::run);
+            a.get(15, TimeUnit.SECONDS);
+            b.get(15, TimeUnit.SECONDS);
+        } finally { threads.shutdownNow(); }
+        assertThat(rows.findById(notificationId).orElseThrow().getAttemptCount()).isEqualTo(4);
+        mvc.perform(get(API).session(ownerSession)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(2))
+                .andExpect(jsonPath("$.data.items[0].inquiryId").value(id))
+                .andExpect(jsonPath("$.data.items[0].type").value("SUPPORT_ANSWERED"))
+                .andExpect(jsonPath("$.data.items[0].orderId").doesNotExist())
+                .andExpect(jsonPath("$.data.items[0].replyBody").doesNotExist())
+                .andExpect(jsonPath("$.data.items[0].title").doesNotExist())
+                .andExpect(jsonPath("$.data.items[1].id").value(orderJob.getId()))
+                .andExpect(jsonPath("$.data.items[1].inquiryId").doesNotExist())
+                .andExpect(jsonPath("$.data.unreadCount").value(2));
+        String read = API + "/" + notificationId + "/read";
+        mvc.perform(put(read).session(ownerSession)).andExpect(status().isForbidden());
+        mvc.perform(put(read).session(other).with(csrf(mvc))).andExpect(status().isNotFound());
+        mvc.perform(put(read).session(ownerSession).with(csrf(mvc))).andExpect(status().isOk());
+        mvc.perform(get(API).session(ownerSession)).andExpect(jsonPath("$.data.unreadCount").value(1));
+    }
+
+    @Test void replyDiscoveryIgnoresLegacyEarlyAndRolledBackConfirmationsUnderConcurrency() throws Exception {
+        var owner = member(false);
+        var boundary = LocalDateTime.parse("2026-02-01T00:00:00");
+        long eligible = insertAnsweredInquiry(owner, boundary);
+        insertAnsweredInquiry(owner, boundary.minusSeconds(1));
+        insertAnsweredInquiry(owner, null);
+        transactions.executeWithoutResult(tx -> {
+            insertAnsweredInquiry(owner, boundary);
+            tx.setRollbackOnly();
+        });
+        var second = new NotificationWorker(rows, publisher, "2026-01-01T00:00:00Z", true, "2026-02-01T00:00:00Z");
+        var workers = Executors.newFixedThreadPool(2);
+        try {
+            var a = workers.submit(worker::run);
+            var b = workers.submit(second::run);
+            a.get(15, TimeUnit.SECONDS);
+            b.get(15, TimeUnit.SECONDS);
+        } finally { workers.shutdownNow(); }
+        mvc.perform(get(API).session(login(owner))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].inquiryId").value(Long.toString(eligible)));
+    }
+
+    private long insertAnsweredInquiry(Member owner, LocalDateTime confirmedAt) {
+        String key = UUID.randomUUID().toString();
+        sql.update("""
+            insert into support_inquiries (member_id,request_key,title,body,status,created_at,notification_confirmed_at)
+            values (?,?,'synthetic','synthetic','ANSWERED',current_timestamp,?)
+            """, owner.getId(), key, confirmedAt);
+        return sql.queryForObject("select id from support_inquiries where member_id=? and request_key=?",
+                Long.class, owner.getId(), key);
     }
 }

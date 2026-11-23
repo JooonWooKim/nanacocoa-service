@@ -5,6 +5,7 @@ import com.nanacocoa.server.notification.entity.OrderNotification.Status;
 import com.nanacocoa.server.notification.entity.OrderNotification.Type;
 import com.nanacocoa.server.notification.repository.OrderNotificationRepository;
 import com.nanacocoa.server.notification.repository.OrderNotificationRepository.Confirmation;
+import com.nanacocoa.server.notification.repository.OrderNotificationRepository.ReplyConfirmation;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,14 @@ public class NotificationPublisher {
         if (!notifications.existsByOrderIdAndEventType(event.getOrderId(), type)) {
             notifications.saveAndFlush(new OrderNotification(event.getOrderId(), event.getMemberId(),
                     event.getOrderNumber(), type, event.getConfirmedAt()));
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void discoverReply(ReplyConfirmation event) {
+        if (!notifications.existsByInquiryId(event.getInquiryId())) {
+            notifications.saveAndFlush(OrderNotification.supportReply(event.getInquiryId(), event.getMemberId(),
+                    event.getConfirmedAt()));
         }
     }
 

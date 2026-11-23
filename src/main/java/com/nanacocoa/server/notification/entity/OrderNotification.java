@@ -10,14 +10,15 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class OrderNotification {
-    public enum Type { PAYMENT_COMPLETED, SHIPPED, REFUND_COMPLETED }
+    public enum Type { PAYMENT_COMPLETED, SHIPPED, REFUND_COMPLETED, SUPPORT_ANSWERED }
     public enum Status { PENDING, PUBLISHED, FAILED }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false) private Long orderId;
+    private Long orderId;
+    private Long inquiryId;
     @Column(nullable = false) private Long memberId;
-    @Column(nullable = false, length = 64) private String orderNumber;
+    @Column(length = 64) private String orderNumber;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24) private Type eventType;
     @Column(nullable = false) private LocalDateTime confirmedAt;
@@ -36,6 +37,12 @@ public class OrderNotification {
         this.eventType = eventType;
         this.confirmedAt = confirmedAt;
         this.status = Status.PENDING;
+    }
+
+    public static OrderNotification supportReply(Long inquiryId, Long memberId, LocalDateTime confirmedAt) {
+        var notification = new OrderNotification(null, memberId, null, Type.SUPPORT_ANSWERED, confirmedAt);
+        notification.inquiryId = inquiryId;
+        return notification;
     }
 
     public void publish() {

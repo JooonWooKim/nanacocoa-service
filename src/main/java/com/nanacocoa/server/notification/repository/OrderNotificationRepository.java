@@ -45,8 +45,33 @@ public interface OrderNotificationRepository extends JpaRepository<OrderNotifica
         """, nativeQuery = true)
     List<Confirmation> undiscovered(@Param("cutoff") LocalDateTime cutoff);
 
+    interface ReplyConfirmation {
+        Long getInquiryId();
+        Long getMemberId();
+        LocalDateTime getConfirmedAt();
+    }
+
+    @Query(value = """
+        SELECT i.id AS inquiryId, i.member_id AS memberId, i.notification_confirmed_at AS confirmedAt
+        FROM support_inquiries i
+        WHERE i.status = 'ANSWERED' AND i.notification_confirmed_at >= :cutoff
+          AND NOT EXISTS (SELECT 1 FROM order_notifications n WHERE n.inquiry_id = i.id)
+        ORDER BY i.notification_confirmed_at, i.id
+        LIMIT 100
+        """, nativeQuery = true)
+    List<ReplyConfirmation> undiscoveredReplies(@Param("cutoff") LocalDateTime cutoff);
+
     boolean existsByOrderIdAndEventType(Long orderId, Type eventType);
-    List<OrderNotification> findByStatusAndConfirmedAtGreaterThanEqualOrderByIdAsc(Status status, LocalDateTime cutoff, Pageable pageable);
+    boolean existsByInquiryId(Long inquiryId);
+
+    @Query("""
+        select n.id from OrderNotification n
+        where n.status = :status and n.confirmedAt >= :cutoff
+          and ((:replies = true and n.inquiryId is not null) or (:replies = false and n.inquiryId is null))
+        order by n.id
+        """)
+    List<Long> pendingIds(@Param("status") Status status, @Param("cutoff") LocalDateTime cutoff,
+                          @Param("replies") boolean replies, Pageable pageable);
     Slice<OrderNotification> findByStatus(Status status, Pageable pageable);
     Slice<OrderNotification> findByMemberIdAndStatus(Long memberId, Status status, Pageable pageable);
     long countByMemberIdAndStatusAndReadAtIsNull(Long memberId, Status status);

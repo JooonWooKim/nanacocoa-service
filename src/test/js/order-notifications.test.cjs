@@ -36,6 +36,15 @@ function harness(request, menu = false) {
 const row = {id: 4, orderId: "NC_fixture", type: "SHIPPED", confirmedAt: "2026-11-23T00:00:00"};
 const page = item => ({ok: true, data: {items:[item],page:0,hasNext:false,unreadCount:item.readAt ? 0 : 1}});
 
+test("문의 알림은 주문 없이 본인 문의 링크를 표시한다", async () => {
+  const h = harness(() => page({id: 7, type: "SUPPORT_ANSWERED", inquiryId: "42", confirmedAt: row.confirmedAt}));
+  await tick();
+  const card = h.node("list").children[0];
+  assert.equal(card.children[0].textContent, "문의에 답변이 등록되었습니다");
+  assert.equal(card.children.find(child => child.href).href, "support-inquiries.html?inquiryId=42");
+  assert.ok(h.calls.every(({method}) => method === "GET"));
+});
+
 test("회원 알림은 주문 링크를 만들고 읽음 처리 후 새 미읽음 수를 조회한다", async () => {
   let read = false;
   const h = harness((path, options) => {
