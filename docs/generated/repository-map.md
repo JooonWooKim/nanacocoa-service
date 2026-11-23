@@ -13,6 +13,7 @@
 | `cart` | 14 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 | `common` | 13 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
 | `member` | 26 | 식별, 회원가입, 로그인, 세션 |
+| `notification` | 7 | 주문 상태 알림, 읽음, 운영자 재시도 |
 | `order` | 38 | 주문, 배송, 서버 가격 계산 |
 | `payment` | 35 | 승인, 취소, 락, 복구 |
 | `policy` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
@@ -20,10 +21,10 @@
 | `recovery` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 | `support` | 8 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 
-- 주요 Java 파일: 184
-- 테스트 Java 파일: 41
-- Flyway 마이그레이션: 15
-- 정적 자원·페이지: 44
+- 주요 Java 파일: 191
+- 테스트 Java 파일: 43
+- Flyway 마이그레이션: 16
+- 정적 자원·페이지: 47
 
 ## 주요 패키지 디렉터리
 
@@ -53,6 +54,13 @@ src/main/java/com/nanacocoa/server/member/dto/response
 src/main/java/com/nanacocoa/server/member/entity
 src/main/java/com/nanacocoa/server/member/repository
 src/main/java/com/nanacocoa/server/member/service
+src/main/java/com/nanacocoa/server/notification
+src/main/java/com/nanacocoa/server/notification/controller
+src/main/java/com/nanacocoa/server/notification/dto
+src/main/java/com/nanacocoa/server/notification/dto/response
+src/main/java/com/nanacocoa/server/notification/entity
+src/main/java/com/nanacocoa/server/notification/repository
+src/main/java/com/nanacocoa/server/notification/service
 src/main/java/com/nanacocoa/server/order
 src/main/java/com/nanacocoa/server/order/config
 src/main/java/com/nanacocoa/server/order/controller
@@ -130,8 +138,10 @@ src/test/java/com/nanacocoa/server/migration/CustomerSupportMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FilePolicyConsentMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
+src/test/java/com/nanacocoa/server/migration/OrderNotificationMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/ProductDiscoveryMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/RecoveryMigrationTest.java
+src/test/java/com/nanacocoa/server/notification/OrderNotificationIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/InventoryIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/PaymentOperationsIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/ReturnRequestIntegrationTest.java

@@ -51,6 +51,7 @@ generate_repository_map() {
 				member) role='식별, 회원가입, 로그인, 세션' ;;
 				products) role='상품 목록과 이미지 저장' ;;
 				order) role='주문, 배송, 서버 가격 계산' ;;
+				notification) role='주문 상태 알림, 읽음, 운영자 재시도' ;;
 				payment) role='승인, 취소, 락, 복구' ;;
 				*) role='분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요' ;;
 			esac

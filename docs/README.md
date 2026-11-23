@@ -30,6 +30,7 @@
 - [회원 배송지 운영·검증](runbooks/shipping-addresses.md)
 - [이메일 비밀번호 복구 운영·검증](runbooks/account-recovery.md)
 - [회원 장바구니 운영·검증](runbooks/cart.md)
+- [주문 상태 알림 운영·검증](runbooks/order-notifications.md)
 - [재고·품절 운영과 데이터 이행](runbooks/inventory.md)
 - [배송 운영 절차](runbooks/shipping.md)
 - [취소·반품·환불 운영 절차](runbooks/returns.md)

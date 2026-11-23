@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_PAYMENT_STATUS;
 
@@ -71,6 +72,9 @@ public class PaymentCancellation {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@Column(name = "notification_confirmed_at")
+	private LocalDateTime notificationConfirmedAt;
+
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
@@ -100,6 +104,7 @@ public class PaymentCancellation {
 	public void complete(String transactionKey) {
 		requirePending();
 		status = CancellationStatus.SUCCESS;
+		this.notificationConfirmedAt = LocalDateTime.now(ZoneOffset.UTC);
 		pgTransactionKey = transactionKey;
 		failureCode = null;
 		failureMessage = null;

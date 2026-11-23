@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "shipment_events")
@@ -58,6 +59,9 @@ public class ShipmentEvent {
     @Column(nullable = false)
     private LocalDateTime recordedAt;
 
+    @Column(name = "notification_confirmed_at")
+    private LocalDateTime notificationConfirmedAt;
+
     @Column(nullable = false, length = 500)
     private String reason;
 
@@ -76,6 +80,9 @@ public class ShipmentEvent {
         this.nextTracking = shipment.getTrackingNumber();
         this.operatorId = operatorId;
         this.recordedAt = recordedAt;
+        if (action == Action.SHIP) {
+            this.notificationConfirmedAt = LocalDateTime.now(ZoneOffset.UTC);
+        }
         this.reason = reason;
     }
 }

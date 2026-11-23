@@ -19,7 +19,7 @@ class CustomerSupportMigrationTest {
             sql.executeUpdate("insert into orders (id,order_id,member_id,total_amount,status,version,created_at,updated_at) values (1,'support-fixture',1,42000,'CREATED',0,current_timestamp,current_timestamp)");
         }
         var flyway = Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
         flyway.validate();
         try (var connection = DriverManager.getConnection(url,user,""); var sql = connection.createStatement()) {
             try (var order = sql.executeQuery("select order_id,member_id,total_amount,status from orders where id=1")) {

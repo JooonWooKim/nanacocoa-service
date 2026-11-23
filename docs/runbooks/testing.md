@@ -134,3 +134,7 @@ shipping_address_e2e_http.py는 실제 HTTP 검증 결과에 원문 주소·연�
 `./gradlew test --tests '*CustomerSupport*Test'`는 H2에서 FAQ, 회원·운영자 권한, 문의 경합, V14→V15 이행을 확인한다. 격리 MySQL에서는 `SUPPORT_TEST_DB_URL`과 별도의 빈 `SUPPORT_MIGRATION_DB_URL`을 지정하고 `--rerun-tasks`로 실행한다. 두 URL은 loopback 격리 DB만 허용한다.
 
 `node src/test/js/customer-support.test.cjs`는 재시도와 화면 복원 동작을 확인한다. `./gradlew commerceE2e`로 합성 런타임을 시작하고 `python3 -B src/test/python/customer_support_e2e_http.py` 및 기존 커머스 HTTP 검증을 실행한다. [고객센터 PRD](../product-specs/customer-support-prd.md)의 검증 표를 참고한다.
+
+## 주문 상태 알림 회귀 검증
+
+`./gradlew test --tests '*OrderNotification*'`와 `node --test src/test/js/order-notifications.test.cjs`로 확정·읽음·재처리·권한과 화면 회귀를 확인한다. 모의 PG HTTP와 실제 브라우저 재현 절차는 [주문 상태 알림 운영·검증](order-notifications.md)을 따른다.
