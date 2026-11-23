@@ -18,11 +18,12 @@
 | `policy` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 | `products` | 23 | 상품 목록과 이미지 저장 |
 | `recovery` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
+| `support` | 8 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 
-- 주요 Java 파일: 176
-- 테스트 Java 파일: 39
-- Flyway 마이그레이션: 14
-- 정적 자원·페이지: 40
+- 주요 Java 파일: 184
+- 테스트 Java 파일: 41
+- Flyway 마이그레이션: 15
+- 정적 자원·페이지: 44
 
 ## 주요 패키지 디렉터리
 
@@ -100,6 +101,14 @@ src/main/java/com/nanacocoa/server/recovery/entity
 src/main/java/com/nanacocoa/server/recovery/mail
 src/main/java/com/nanacocoa/server/recovery/repository
 src/main/java/com/nanacocoa/server/recovery/service
+src/main/java/com/nanacocoa/server/support
+src/main/java/com/nanacocoa/server/support/controller
+src/main/java/com/nanacocoa/server/support/dto
+src/main/java/com/nanacocoa/server/support/dto/reqeust
+src/main/java/com/nanacocoa/server/support/dto/response
+src/main/java/com/nanacocoa/server/support/entity
+src/main/java/com/nanacocoa/server/support/repository
+src/main/java/com/nanacocoa/server/support/service
 ```
 
 ## 테스트 클래스
@@ -117,6 +126,7 @@ src/test/java/com/nanacocoa/server/member/MemberApiIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/MemberConcurrencyIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/ShippingAddressIntegrationTest.java
 src/test/java/com/nanacocoa/server/member/service/MemberServiceTest.java
+src/test/java/com/nanacocoa/server/migration/CustomerSupportMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FilePolicyConsentMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
@@ -144,6 +154,7 @@ src/test/java/com/nanacocoa/server/products/service/ProductsServiceTest.java
 src/test/java/com/nanacocoa/server/products/storage/S3ProductImageStorageTest.java
 src/test/java/com/nanacocoa/server/recovery/RecoveryIntegrationTest.java
 src/test/java/com/nanacocoa/server/recovery/config/RecoveryMailTest.java
+src/test/java/com/nanacocoa/server/support/CustomerSupportIntegrationTest.java
 ```
 
 ## 운영 진입점

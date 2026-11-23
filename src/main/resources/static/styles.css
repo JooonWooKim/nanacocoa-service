@@ -2789,3 +2789,14 @@ textarea.product-register-input {
   gap: 0.75rem;
   margin-block: 1rem;
 }
+
+[data-support-private][hidden],
+[data-support-detail][hidden],
+[data-support-reply][hidden] {
+  display: none;
+}
+
+.support-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

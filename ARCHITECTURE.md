@@ -32,6 +32,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 | `order` | 서버 가격 기반 주문과 배송 정보 | `OrderController` / `OrderService` | `OrderRepository` |
 | `payment` | 승인, 취소, 멱등성, 락, 복구 | `PaymentController` / `PaymentFacade` | 결제 Repository |
 | `policy` | 승인 정책 게시·원문 보존·가입 동의 | `PolicyController` / `PolicyService` | 파일 스냅샷·동의 Repository |
+| `support` | 공개 FAQ, 회원 문의·답변·선택 주문, 운영자 응답 | `SupportController` / `SupportOperationsController` → `SupportService` | 검토형 FAQ 파일·`InquiryRepository` |
 | `common` | 응답, 예외, 보안, 세션, 사용자 상세 | 공통 프레임워크 어댑터 | 회원 조회는 기록된 예외 |
 
 생성된 패키지 목록은

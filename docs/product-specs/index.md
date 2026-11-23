@@ -11,6 +11,7 @@
   테스트에 연결합니다.
 - [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
   출시 승인 조건을 정의합니다.
+- [고객센터 FAQ·1:1 문의 PRD](customer-support-prd.md)는 [이슈 #42](https://github.com/JooonWooKim/nanacocoa-service/issues/42)의 공개 FAQ, 본인 주문 선택 연결, 문의 접수·조회, 운영자 답변의 인수 기준을 정의합니다. feature/42에서 로컬 구현과 기술 검증을 완료했으며 main 반영은 별도입니다.
 - [상품 검색·카테고리 관리 PRD](product-discovery-prd.md)는 [이슈 #40](https://github.com/JooonWooKim/nanacocoa-service/issues/40)의 공개 상품명 검색·필터·페이지와 운영자 카테고리 관리 인수 기준을 정의합니다. feature/40에서 로컬 구현·기술 검증을 완료했습니다. FAQ·문의 처리와 주문 상태 알림은 후속입니다.
 - [이메일 비밀번호 복구 PRD](account-recovery-prd.md)는 [이슈 #38](https://github.com/JooonWooKim/nanacocoa-service/issues/38)의
   SMTP·모의 발송·일회용 복구 링크·비밀번호 재설정·모든 기존 세션 만료 계약을 정의합니다.
