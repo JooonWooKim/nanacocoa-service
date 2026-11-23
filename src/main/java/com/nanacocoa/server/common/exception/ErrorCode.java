@@ -35,6 +35,8 @@ public enum ErrorCode {
 	PROFILE_VERIFICATION_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_04", "본인 확인에 여러 번 실패했습니다. 5분 후 다시 시도해주세요."),
 	ADMIN_ACCESS_REQUIRED(HttpStatus.FORBIDDEN, "AUTH_02", "운영자만 접근할 수 있습니다."),
 
+	CATEGORY_UNAVAILABLE(HttpStatus.NOT_FOUND, "PRODUCTS_08", "카테고리를 이용할 수 없습니다."),
+	CATEGORY_NAME_CONFLICT(HttpStatus.CONFLICT, "PRODUCTS_09", "이미 등록된 카테고리 이름입니다."),
 	ALREADY_EXIST_PRODUCTS(HttpStatus.CONFLICT, "PRODUCTS_01", "이미 등록된 상품입니다."),
 	NOT_FOUND_PRODUCTS(HttpStatus.NOT_FOUND, "PRODUCTS_02", "상품을 찾을 수 없습니다."),
 	INVALID_PRODUCT_IMAGE(HttpStatus.BAD_REQUEST, "PRODUCTS_03", "JPEG, PNG, WebP 이미지만 등록할 수 있습니다."),

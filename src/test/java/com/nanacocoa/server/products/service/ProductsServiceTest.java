@@ -50,7 +50,8 @@ class ProductsServiceTest {
 				productsRepository,
 				memberRepository,
 				productImageStorage,
-				new ProductImageValidator()
+				new ProductImageValidator(),
+                org.mockito.Mockito.mock(ProductDiscoveryService.class)
 		);
 		Member admin = Member.builder()
 				.email("admin@example.com")

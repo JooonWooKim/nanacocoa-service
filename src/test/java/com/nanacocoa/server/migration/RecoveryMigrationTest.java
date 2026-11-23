@@ -20,7 +20,7 @@ class RecoveryMigrationTest {
             sql.executeUpdate("insert into shipping_address_books (member_id,revision,default_address_id) values (1,1,1)");
         }
         var flyway=Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);flyway.validate();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);flyway.validate();
         try(var connection=DriverManager.getConnection(url,user,"");var sql=connection.createStatement()) {
             try(var rows=sql.executeQuery("select authentication_generation,address from members where id=1")){
                 assertThat(rows.next()).isTrue();assertThat(rows.getLong(1)).isZero();assertThat(rows.getString(2)).isEqualTo("original profile");

@@ -34,12 +34,15 @@ public class ProductsService {
 	private final MemberRepository memberRepository;
 	private final ProductImageStorage productImageStorage;
 	private final ProductImageValidator productImageValidator;
+	private final ProductDiscoveryService discovery;
 
 	@Transactional
 	public ProductsResponse registerProducts(RegisterProductsRequest request, UserDetailsImpl userDetails) {
 		validateRegistration(request, userDetails);
 
-		Products savedProduct = productsRepository.save(request.toProducts());
+		Products product = request.toProducts();
+		if (request.getCategoryId() != null) product.assignCategory(discovery.validatedCategory(request.getCategoryId()));
+		Products savedProduct = productsRepository.save(product);
 		return ProductsResponse.from(savedProduct);
 	}
 
@@ -54,7 +57,9 @@ public class ProductsService {
 		StoredProductImage storedImage = productImageStorage.upload(image, format);
 		registerImageRollback(storedImage.objectKey());
 
-		Products savedProduct = productsRepository.saveAndFlush(request.toProducts(storedImage.publicUrl()));
+		Products product = request.toProducts(storedImage.publicUrl());
+		if (request.getCategoryId() != null) product.assignCategory(discovery.validatedCategory(request.getCategoryId()));
+		Products savedProduct = productsRepository.saveAndFlush(product);
 		return ProductsResponse.from(savedProduct);
 	}
 

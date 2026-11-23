@@ -122,3 +122,9 @@ ADDRESS_MIGRATION_TEST_DB_URL은 빈 이행 검증 DB만 사용한다. 환경 �
 JS shipping-addresses.test.cjs는 지연 응답·사용자 편집·재조회·계정 변경·등록 응답 유실을 다루고,
 shipping_address_e2e_http.py는 실제 HTTP 검증 결과에 원문 주소·연락처를 기록하지 않는다.
 [운영 절차](shipping-addresses.md), [PRD](../product-specs/shipping-address-prd.md).
+
+## 상품 탐색 회귀 검증
+
+`./gradlew test --tests '*ProductDiscovery*Test'`는 H2 API·V13→V14 이행을 검증한다. 격리 MySQL에서는 `DISCOVERY_TEST_DB_URL` 및 별도의 빈 이행 DB를 가리키는 `DISCOVERY_MIGRATION_DB_URL`을 설정하고 `--rerun-tasks`를 지정한다. 두 URL은 loopback 격리 DB만 허용한다.
+
+`node src/test/js/product-discovery.test.cjs`는 페이지·오류·요청 순서를 검증한다. 합성 데이터로 `./gradlew commerceE2e`를 시작한 뒤 `python3 -B src/test/python/product_discovery_e2e_http.py`와 기존 장바구니 HTTP 검증을 실행한다. 브라우저 증거와 결과는 [상품 탐색 PRD](../product-specs/product-discovery-prd.md)를 참고한다.

@@ -3,10 +3,29 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>재고 관리 | nanacocoa</title><link rel="stylesheet" href="styles.css"></head>
 <body>
 <main class="inventory-page" data-inventory-page>
-<nav><a href="products.html">상품 목록</a> · <a href="product-register.html">상품 등록</a> · <a href="login.html">로그인</a> · <a href="payment-operations.html">결제·환불 운영</a></nav>
+<nav><a href="products.html">상품 목록</a> · <a href="product-register.html">상품 등록</a> · <a href="login.html?return=inventory">로그인</a> · <a href="payment-operations.html">결제·환불 운영</a></nav>
 <h1>재고 관리</h1>
 <p role="status" aria-live="polite" data-inventory-message>운영자 권한을 확인하고 있습니다.</p>
 <section hidden data-inventory-content>
+<section aria-labelledby="inventory-categories" data-category-admin>
+<h2 id="inventory-categories">상품 카테고리 관리</h2>
+<p role="status" aria-live="polite" data-category-message>카테고리를 불러오는 중입니다.</p>
+<button type="button" data-category-refresh>카테고리·분류 새로고침</button>
+<fieldset data-category-controls hidden>
+<legend>분류 및 공개 설정</legend>
+<form class="inventory-card" data-category-create>
+<label>새 카테고리 이름 <input name="name" required maxlength="80"></label>
+<button type="submit">추가</button>
+</form>
+<div class="inventory-grid" data-category-list></div>
+<form class="inventory-card" data-category-assignment>
+<h3>상품 분류</h3>
+<label>상품 <select name="productId" required></select></label>
+<label>카테고리 <select name="categoryId"></select></label>
+<button type="submit">분류 저장</button>
+</form>
+</fieldset>
+</section>
 <button type="button" data-inventory-refresh>재고 새로고침</button>
 <div class="inventory-grid" data-inventory-grid></div>
 <form class="inventory-card" data-restock-form>
@@ -19,4 +38,5 @@
 </section>
 </main>
 <script src="script.js"></script>
+<script src="product-category-admin.js"></script>
 </body></html>

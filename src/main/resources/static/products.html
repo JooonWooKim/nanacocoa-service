@@ -22,7 +22,7 @@
       </a>
 
       <nav class="quick-actions" aria-label="빠른 메뉴">
-        <a class="icon-button" href="#product-list" aria-label="검색">
+        <a class="icon-button" href="#product-search" aria-label="검색">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="11" cy="11" r="7"></circle>
             <path d="m16.5 16.5 4 4"></path>
@@ -62,11 +62,11 @@
           </button>
           <div class="drawer-panel">
             <a href="products.html" aria-current="page">All</a>
-            <a href="index.html#shop">New In</a>
-            <a href="index.html#shop">Tableware</a>
-            <a href="index.html#shop">Mugs</a>
+            <a href="products.html">New In</a>
+            <a href="products.html?category=2" hidden data-discovery-category="2">Tableware</a>
+            <a href="products.html?category=1" hidden data-discovery-category="1">Mugs</a>
             <a href="index.html#shop">Ritual</a>
-            <a href="index.html#shop">One Piece, Only</a>
+            <a href="products.html?category=3" hidden data-discovery-category="3">One Piece, Only</a>
           </div>
         </div>
 
@@ -95,17 +95,23 @@
 
     <main class="products-page" id="top" data-products-page>
       <section class="products-section" id="product-list" aria-labelledby="products-title">
-        <div class="products-toolbar">
-          <p class="product-total"><strong data-products-total>0</strong> items</p>
-          <button class="sort-button" type="button" aria-label="정렬 기준: 신상품">
-            <span>신상품</span>
-            <span class="chevron" aria-hidden="true"></span>
-          </button>
-        </div>
-
-        <h1 id="products-title" class="visually-hidden">전체 제품 목록</h1>
+        <h1 id="products-title">상품 목록</h1>
+        <form id="product-search" class="products-toolbar" action="products.html" method="get" data-discovery-form>
+          <label>상품명 <input type="search" name="q" maxlength="100"></label>
+          <label>카테고리 <select name="category"><option value="">전체</option></select></label>
+          <button type="submit">검색</button>
+        </form>
+        <p class="product-total" data-discovery-count hidden>검색 결과 <strong data-products-total></strong>개</p>
+        <p role="status" aria-live="polite" data-discovery-state></p>
+        <button type="button" data-discovery-retry hidden>다시 시도</button>
+        <button type="button" data-discovery-recover hidden></button>
 
         <div class="products-grid" aria-label="제품 목록" data-products-grid></div>
+        <nav class="products-toolbar" aria-label="상품 목록 페이지" data-discovery-pagination hidden>
+          <button type="button" data-page-previous>이전</button>
+          <span data-page-position></span>
+          <button type="button" data-page-next>다음</button>
+        </nav>
       </section>
     </main>
 
@@ -118,5 +124,6 @@
     </footer>
 
     <script src="script.js"></script>
+    <script src="product-discovery.js"></script>
   </body>
 </html>
