@@ -25,6 +25,7 @@ public class Inquiry {
     @Column(length = 2000) private String replyBody;
     private Long repliedBy;
     private LocalDateTime repliedAt;
+    private LocalDateTime notificationConfirmedAt;
 
     public Inquiry(Long memberId, Long orderRecordId, String requestKey, String title, String body, LocalDateTime now) {
         this.memberId = memberId;
@@ -40,6 +41,7 @@ public class Inquiry {
         replyBody = body;
         repliedBy = operator;
         repliedAt = now;
+        notificationConfirmedAt = now;
         status = Status.ANSWERED;
     }
 }

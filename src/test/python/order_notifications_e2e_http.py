@@ -18,14 +18,14 @@ def run(path):
         expected[case["orderId"]] = types
     for _ in range(30):
         data = buyer.call("GET", "/api/notifications")[1]["data"]
-        hits = [row for row in data["items"] if row["orderId"] in expected]
+        hits = [row for row in data["items"] if row.get("orderId") in expected]
         if len(hits) == sum(map(len, expected.values())):
             break
         time.sleep(0.5)
     actual = {(row["orderId"], row["type"]) for row in hits}
     assert len(actual) == len(hits) and actual == {(order, kind) for order, kinds in expected.items() for kind in kinds}
-    unread = sum(not row["readAt"] for row in hits)
-    assert data["unreadCount"] == unread
+    unread = data["unreadCount"]
+    assert not data["hasNext"] and unread == sum(not row["readAt"] for row in data["items"])
     row = next((item for item in hits if not item["readAt"]), hits[0])
     read = f"/api/notifications/{row['id']}/read"
     other.call("PUT", read, expected=(404,))

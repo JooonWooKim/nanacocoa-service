@@ -492,10 +492,18 @@ function orderHistoryLoginReturnUrl() {
   return target ? `orders.html?${orderHistoryQuery(target)}` : null;
 }
 
+function supportInquiryId(value) {
+  if (!/^[1-9][0-9]{0,18}$/.test(value ?? "")) return null;
+  return value.length === 19 && value > "9223372036854775807" ? null : value;
+}
+
 function cartLoginReturnUrl() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("return") === "shipping-addresses") return "shipping-addresses.html";
-  if (params.get("return") === "support-inquiries") return "support-inquiries.html";
+  if (params.get("return") === "support-inquiries") {
+    const id = supportInquiryId(params.get("inquiryId"));
+    return id ? `support-inquiries.html?inquiryId=${id}` : "support-inquiries.html";
+  }
   if (params.get("return") === "support-admin") return "support-admin.html";
   if (params.get("return") === "notifications") return "notifications.html";
   if (params.get("return") === "notification-admin") return "notification-admin.html";

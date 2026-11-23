@@ -18,7 +18,7 @@ class OrderNotificationMigrationTest {
             sql.executeUpdate("insert into shipments (id,order_id,status,revision) values (1,1,'SHIPPED',1)");
             sql.executeUpdate("insert into shipment_events (shipment_id,request_key,fingerprint,action,previous_status,next_status,operator_id,recorded_at,reason) values (1,'synthetic',repeat('a',64),'SHIP','NOT_SHIPPED','SHIPPED',1,current_timestamp,'synthetic')");
         }
-        var flyway = Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").load();
+        var flyway = Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").target("16").load();
         assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
         flyway.validate();
         try (var connection = DriverManager.getConnection(url,user,""); var sql = connection.createStatement()) {
