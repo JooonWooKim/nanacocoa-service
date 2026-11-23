@@ -35,6 +35,7 @@ public enum ErrorCode {
 	PROFILE_VERIFICATION_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_04", "본인 확인에 여러 번 실패했습니다. 5분 후 다시 시도해주세요."),
 	ADMIN_ACCESS_REQUIRED(HttpStatus.FORBIDDEN, "AUTH_02", "운영자만 접근할 수 있습니다."),
 
+	NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFY_01", "알림을 찾을 수 없습니다."),
 	FAQ_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SUPPORT_01", "FAQ를 불러오지 못했습니다."),
 	SUPPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "SUPPORT_02", "문의를 찾을 수 없습니다."),
 	SUPPORT_REQUEST_CONFLICT(HttpStatus.CONFLICT, "SUPPORT_03", "같은 요청 키로 다른 문의를 제출할 수 없습니다."),

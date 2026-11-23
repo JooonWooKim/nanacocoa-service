@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>주문 알림 운영 | nanacocoa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="inventory-page" data-order-notifications="admin">
+  <nav aria-label="알림 메뉴"><a href="inventory.html">재고 관리</a> · <a href="index.html">홈</a></nav>
+  <h1>주문 알림 운영</h1>
+  <p role="status" data-notification-status>알림을 불러오는 중입니다.</p>
+  <a data-notification-login hidden href="login.html?return=notification-admin">로그인</a>
+  <section data-notification-panel hidden>
+    <label>처리 상태 <select data-notification-filter><option value="FAILED">실패</option><option value="PENDING">대기</option><option value="PUBLISHED">게시 완료</option></select></label>
+    <ul data-notification-list></ul>
+    <button type="button" data-notification-prev disabled>이전</button>
+    <button type="button" data-notification-next disabled>다음</button>
+  </section>
+  <button type="button" data-notification-refresh>다시 조회</button>
+</main>
+<script src="script.js"></script>
+<script src="order-notifications.js"></script>
+</body>
+</html>

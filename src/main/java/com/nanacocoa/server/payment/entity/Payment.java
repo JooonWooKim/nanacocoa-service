@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static com.nanacocoa.server.common.exception.ErrorCode.INVALID_PAYMENT_STATUS;
 
@@ -78,6 +79,9 @@ public class Payment {
 
 	@Column(name = "next_retry_at")
 	private LocalDateTime nextRetryAt;
+
+	@Column(name = "notification_confirmed_at")
+	private LocalDateTime notificationConfirmedAt;
 
 	@Column(name = "approved_at")
 	private LocalDateTime approvedAt;
@@ -139,6 +143,7 @@ public class Payment {
 		this.pgStatus = pgStatus;
 		this.pgMethod = pgMethod;
 		this.approvedAt = approvedAt;
+		this.notificationConfirmedAt = LocalDateTime.now(ZoneOffset.UTC);
 		this.failureCode = null;
 		this.failureMessage = null;
 		clearRecovery();

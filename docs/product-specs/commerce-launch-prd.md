@@ -28,9 +28,9 @@
 | ACCOUNT-RECOVERY | P1 · 로컬 구현·기술 검증 완료 / main 미반영 | [이메일 비밀번호 복구](account-recovery-prd.md) | [이슈 #38](https://github.com/JooonWooKim/nanacocoa-service/issues/38), main `f2ccaf4` 기준 `feature/38`에서 익명 요청·DB 제한·SMTP/모의 발송·일회용 토큰·모든 세션 만료·화면 구현. RECOVERY-01~10 PASS, 최종 check는 기존 구조/보안 예외만 BASELINED | 커밋·원격 반영·main 병합, 실제 발송 공급자 선정·배포 대상 인수·운영 활성화 별도 |
 | DISCOVERY-SEARCH | P1 · 로컬 구현·검증 완료 | [상품 검색·카테고리 관리](product-discovery-prd.md) | [이슈 #40](https://github.com/JooonWooKim/nanacocoa-service/issues/40), `feature/40` · 공개 검색·페이지와 운영자 카테고리 관리, DISCOVERY-01~06 PASS | main 반영·배포 검증 별도 |
 | DISCOVERY-SUPPORT | P1 · 로컬 구현·검증 완료 | [고객센터 FAQ·1:1 문의](customer-support-prd.md) | [이슈 #42](https://github.com/JooonWooKim/nanacocoa-service/issues/42), `feature/42` · 공개 FAQ, 회원 문의·본인 주문 연결 및 운영자 답변, SUPPORT-01~06 PASS | main 반영·배포 검증 별도 |
-| DISCOVERY-NOTIFY | P1 · 후속 | 주문 상태 알림 | 주문·출고·환불 알림 미구현 | 발송 채널과 중복·실패 처리 준비 |
+| DISCOVERY-NOTIFY | P1 · 로컬 구현·기술 검증 | [사이트 내 주문 상태 알림](order-notification-prd.md) | [이슈 #44](https://github.com/JooonWooKim/nanacocoa-service/issues/44), `feature/44` · 거래 확정 알림, 회원 알림함, 운영자 재시도 · main 반영 대기 | 배포 대상 인수·활성화 기준 시각 확정과 운영 활성화 |
 
-1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART(이슈 #34)는 PR #35, ACCOUNT 배송지 관리(이슈 #36)는 PR #37로 main 반영을 완료했다. 이메일 비밀번호 복구(이슈 #38)는 feature/38에서 로컬 구현·기술 검증했으며 main 반영은 대기한다. 상품 검색·카테고리 관리(이슈 #40)는 로컬 구현·검증을 완료했다. 고객센터 FAQ·1:1 문의(이슈 #42)는 로컬 구현·검증을 완료했다. 다음 미구현 작업은 주문 상태 알림이다. 운영 인수·정책 승인은 별도로 남아 있다.
+1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART(이슈 #34)는 PR #35, ACCOUNT 배송지 관리(이슈 #36)는 PR #37로 main 반영을 완료했다. 이메일 비밀번호 복구(이슈 #38)는 feature/38에서 로컬 구현·기술 검증했으며 main 반영은 대기한다. 상품 검색·카테고리 관리(이슈 #40)는 로컬 구현·검증을 완료했다. 고객센터 FAQ·1:1 문의(이슈 #42)는 로컬 구현·검증을 완료했다. 주문 상태 알림은 feature/44에서 구현·검증했으며 main 반영 대기 중이다. 운영 인수·정책 승인은 별도로 남아 있다.
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
 3. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
 
@@ -329,3 +329,5 @@ PASS이며 doctor와 운영 Compose 스택 인수는 SKIPPED다. 실제 MySQL은
 2026-11-23 [이슈 #42](https://github.com/JooonWooKim/nanacocoa-service/issues/42)의 [FAQ·1:1 문의 PRD](customer-support-prd.md)를 준비했다. 원격 `main` `0765330`에서 생성한 `origin/feature/42`를 로컬 `feature/42`가 추적한다. 문서는 로컬 미커밋이며 기능 구현과 인수 검증은 대기한다.
 
 2026-11-23 [이슈 #42](https://github.com/JooonWooKim/nanacocoa-service/issues/42)의 공개 FAQ·회원 문의·본인 주문 선택 연결·운영자 답변을 feature/42에서 구현했다. SUPPORT-01~06은 H2·격리 MySQL, JavaScript, 실제 HTTP·Chrome으로 검증했다. 준비 당시 미구현 표기는 이전 기록이며 이번 구현은 로컬 미커밋이다. [검증 기록](../exec-plans/completed/customer-support-implementation.md)을 참조한다.
+
+2026-11-23 `feature/44`에서 [주문 상태 알림](order-notification-prd.md)을 로컬 구현했다. 결제·정상 출고·확정 환불을 회원 알림함에서 조회하고 읽음으로 표시할 수 있다. 운영자는 실패 알림을 확인하고 개별 재시도한다. H2·격리 MySQL 8.4, 모의 PG HTTP, Chrome에서 기술 동작을 검증했다. main 반영과 운영 인수는 대기 중이다. [구현 및 검증 기록](../exec-plans/completed/order-notification-implementation.md)
