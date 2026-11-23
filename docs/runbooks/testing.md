@@ -128,3 +128,9 @@ shipping_address_e2e_http.py는 실제 HTTP 검증 결과에 원문 주소·연�
 `./gradlew test --tests '*ProductDiscovery*Test'`는 H2 API·V13→V14 이행을 검증한다. 격리 MySQL에서는 `DISCOVERY_TEST_DB_URL` 및 별도의 빈 이행 DB를 가리키는 `DISCOVERY_MIGRATION_DB_URL`을 설정하고 `--rerun-tasks`를 지정한다. 두 URL은 loopback 격리 DB만 허용한다.
 
 `node src/test/js/product-discovery.test.cjs`는 페이지·오류·요청 순서를 검증한다. 합성 데이터로 `./gradlew commerceE2e`를 시작한 뒤 `python3 -B src/test/python/product_discovery_e2e_http.py`와 기존 장바구니 HTTP 검증을 실행한다. 브라우저 증거와 결과는 [상품 탐색 PRD](../product-specs/product-discovery-prd.md)를 참고한다.
+
+## 고객센터 회귀 검증
+
+`./gradlew test --tests '*CustomerSupport*Test'`는 H2에서 FAQ, 회원·운영자 권한, 문의 경합, V14→V15 이행을 확인한다. 격리 MySQL에서는 `SUPPORT_TEST_DB_URL`과 별도의 빈 `SUPPORT_MIGRATION_DB_URL`을 지정하고 `--rerun-tasks`로 실행한다. 두 URL은 loopback 격리 DB만 허용한다.
+
+`node src/test/js/customer-support.test.cjs`는 재시도와 화면 복원 동작을 확인한다. `./gradlew commerceE2e`로 합성 런타임을 시작하고 `python3 -B src/test/python/customer_support_e2e_http.py` 및 기존 커머스 HTTP 검증을 실행한다. [고객센터 PRD](../product-specs/customer-support-prd.md)의 검증 표를 참고한다.

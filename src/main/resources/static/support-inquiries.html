@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>1:1 문의 | nanacocoa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="inventory-page" data-support-inquiries>
+  <nav aria-label="문의 메뉴"><a href="support.html">고객센터 FAQ</a> · <a href="orders.html">내 주문</a></nav>
+  <h1>1:1 문의</h1>
+  <p role="status" data-support-status>로그인 상태를 확인 중입니다.</p>
+  <a href="login.html?return=support-inquiries" data-support-login hidden>로그인</a>
+  <section data-support-private hidden>
+    <form class="inventory-card" data-support-create>
+      <h2>새 문의</h2>
+      <p>비밀번호, 카드번호 등 민감한 정보는 입력하지 마세요.</p>
+      <label>제목 <input name="title" required maxlength="100"></label>
+      <label>문의 내용 <textarea name="body" required maxlength="2000" rows="5"></textarea></label>
+      <label>관련 주문 (선택) <select name="orderId"><option value="">연결하지 않음</option></select></label>
+      <button type="button" data-support-orders>내 주문 불러오기</button>
+      <p role="status" data-support-order-status></p>
+      <button type="submit">문의 접수</button>
+    </form>
+    <section aria-label="내 문의">
+      <h2>내 문의</h2>
+      <ul data-support-list></ul>
+      <button type="button" data-support-prev>이전</button>
+      <button type="button" data-support-next>다음</button>
+    </section>
+    <article class="inventory-card" data-support-detail hidden></article>
+    <button type="button" data-support-refresh>다시 조회</button>
+  </section>
+</main>
+<script src="script.js"></script>
+<script src="customer-support.js"></script>
+</body>
+</html>

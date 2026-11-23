@@ -495,6 +495,8 @@ function orderHistoryLoginReturnUrl() {
 function cartLoginReturnUrl() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("return") === "shipping-addresses") return "shipping-addresses.html";
+  if (params.get("return") === "support-inquiries") return "support-inquiries.html";
+  if (params.get("return") === "support-admin") return "support-admin.html";
   if (params.get("return") === "inventory") return "inventory.html";
   if (params.get("return") === "product-register") return "product-register.html";
   if (params.get("return") === "cart") return "cart.html";

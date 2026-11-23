@@ -1,0 +1,23 @@
+[
+  {
+    "id": "recover-account",
+    "question": "비밀번호를 잊었어요.",
+    "answer": "로그인 화면의 비밀번호 찾기에서 가입한 이메일로 복구 안내를 요청할 수 있습니다."
+  },
+  {
+    "id": "order-status",
+    "question": "주문과 배송 상태는 어디에서 확인하나요?",
+    "answer": "로그인한 뒤 내 주문에서 주문을 선택하면 출고 및 배송 상태를 확인할 수 있습니다."
+  },
+  {
+    "id": "shipping-returns",
+    "question": "배송비와 반품 조건은 어디에서 확인하나요?",
+    "answer": "현재 게시된 배송·취소·반품 안내를 확인해 주세요. 안내가 준비 중이면 정확한 조건은 1:1 문의로 확인해 주세요.",
+    "policyHref": "policies.html?document=SHIPPING_RETURN"
+  },
+  {
+    "id": "inquiry-answer",
+    "question": "문의에 대한 답변은 어디에서 보나요?",
+    "answer": "로그인 후 고객센터의 내 문의에서 등록한 문의와 운영자 답변을 확인할 수 있습니다."
+  }
+]

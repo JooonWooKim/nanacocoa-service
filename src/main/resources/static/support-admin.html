@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>문의 운영 | nanacocoa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="inventory-page" data-support-inquiries="admin">
+  <nav aria-label="문의 운영 메뉴"><a href="inventory.html">재고 관리</a> · <a href="support.html">고객센터 FAQ</a></nav>
+  <h1>문의 운영</h1>
+  <p role="status" data-support-status>운영자 권한을 확인 중입니다.</p>
+  <a href="login.html?return=support-admin" data-support-login hidden>운영자 로그인</a>
+  <section data-support-private hidden>
+    <label>답변 상태 <select data-support-filter><option value="PENDING">답변 대기</option><option value="ANSWERED">답변 완료</option><option value="">전체</option></select></label>
+    <ul data-support-list></ul>
+    <button type="button" data-support-prev>이전</button>
+    <button type="button" data-support-next>다음</button>
+    <article class="inventory-card" data-support-detail hidden></article>
+    <form class="inventory-card" data-support-reply hidden>
+      <h2>답변 등록</h2>
+      <label>답변 <textarea name="body" required maxlength="2000" rows="5"></textarea></label>
+      <button type="submit">답변 확정</button>
+    </form>
+    <button type="button" data-support-refresh>다시 조회</button>
+  </section>
+</main>
+<script src="script.js"></script>
+<script src="customer-support.js"></script>
+</body>
+</html>
