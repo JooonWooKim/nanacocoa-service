@@ -28,7 +28,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 | --- | --- | --- | --- |
 | `member` | 회원가입, 로그인, 세션 식별, 마이페이지 프로필·비밀번호 관리 | `AuthController` / `MemberController` | `MemberRepository` |
 | `recovery` | 이메일 비밀번호 복구, DB 요청 제한, 일회용 토큰·SMTP 어댑터 | `RecoveryController` / `RecoveryService` | 복구 토큰·제한 Repository |
-| `products` | 상품 목록과 이미지 등록 | `ProductsController` / `ProductsService` | `ProductsRepository` |
+| `products` | 상품 목록·공개 탐색, 이미지 등록, 운영자 카테고리·재고 관리 | `ProductsController` / `ProductsService`, `ProductDiscoveryController` / `ProductDiscoveryService` | 상품·카테고리 Repository |
 | `order` | 서버 가격 기반 주문과 배송 정보 | `OrderController` / `OrderService` | `OrderRepository` |
 | `payment` | 승인, 취소, 멱등성, 락, 복구 | `PaymentController` / `PaymentFacade` | 결제 Repository |
 | `policy` | 승인 정책 게시·원문 보존·가입 동의 | `PolicyController` / `PolicyService` | 파일 스냅샷·동의 Repository |

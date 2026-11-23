@@ -16,13 +16,13 @@
 | `order` | 38 | 주문, 배송, 서버 가격 계산 |
 | `payment` | 35 | 승인, 취소, 락, 복구 |
 | `policy` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
-| `products` | 17 | 상품 목록과 이미지 저장 |
+| `products` | 23 | 상품 목록과 이미지 저장 |
 | `recovery` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 
-- 주요 Java 파일: 170
-- 테스트 Java 파일: 37
-- Flyway 마이그레이션: 13
-- 정적 자원·페이지: 38
+- 주요 Java 파일: 176
+- 테스트 Java 파일: 39
+- Flyway 마이그레이션: 14
+- 정적 자원·페이지: 40
 
 ## 주요 패키지 디렉터리
 
@@ -120,6 +120,7 @@ src/test/java/com/nanacocoa/server/member/service/MemberServiceTest.java
 src/test/java/com/nanacocoa/server/migration/FilePolicyConsentMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/FlywayMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/JpaSchemaValidationTest.java
+src/test/java/com/nanacocoa/server/migration/ProductDiscoveryMigrationTest.java
 src/test/java/com/nanacocoa/server/migration/RecoveryMigrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/InventoryIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/PaymentOperationsIntegrationTest.java
@@ -138,6 +139,7 @@ src/test/java/com/nanacocoa/server/payment/service/PaymentStateTest.java
 src/test/java/com/nanacocoa/server/payment/service/PaymentTransactionalServiceTest.java
 src/test/java/com/nanacocoa/server/policy/PolicyIntegrationTest.java
 src/test/java/com/nanacocoa/server/policy/PolicyTestFixtures.java
+src/test/java/com/nanacocoa/server/products/ProductDiscoveryIntegrationTest.java
 src/test/java/com/nanacocoa/server/products/service/ProductsServiceTest.java
 src/test/java/com/nanacocoa/server/products/storage/S3ProductImageStorageTest.java
 src/test/java/com/nanacocoa/server/recovery/RecoveryIntegrationTest.java

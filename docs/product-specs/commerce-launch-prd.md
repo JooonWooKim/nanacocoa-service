@@ -26,9 +26,11 @@
 | CART | P1 · main 반영 완료 | [회원 장바구니·복수 상품 주문](cart-prd.md) | [이슈 #34](https://github.com/JooonWooKim/nanacocoa-service/issues/34), main `3ed0c59` 기준 `feature/34` 로컬 구현. 서버 저장·선택 checkout·승인 후 정리 및 복구/경합 검증 | PR #35 병합 완료 · 배포 대상 인수·운영 승인 별도 |
 | ACCOUNT-ADDRESS | P1 · main 반영 완료 | [회원 배송지·checkout 선택](shipping-address-prd.md) | [이슈 #36](https://github.com/JooonWooKim/nanacocoa-service/issues/36), main `8ae5def` 기준 `feature/36` 구현. 주소록·기본 포인터·버전/재전송 방어·checkout 기본 자동 입력·주문 스냅샷 유지 | PR #37 병합 완료 · 배포 대상 인수·운영 승인 별도 |
 | ACCOUNT-RECOVERY | P1 · 로컬 구현·기술 검증 완료 / main 미반영 | [이메일 비밀번호 복구](account-recovery-prd.md) | [이슈 #38](https://github.com/JooonWooKim/nanacocoa-service/issues/38), main `f2ccaf4` 기준 `feature/38`에서 익명 요청·DB 제한·SMTP/모의 발송·일회용 토큰·모든 세션 만료·화면 구현. RECOVERY-01~10 PASS, 최종 check는 기존 구조/보안 예외만 BASELINED | 커밋·원격 반영·main 병합, 실제 발송 공급자 선정·배포 대상 인수·운영 활성화 별도 |
-| DISCOVERY | P1 | 검색·고객센터·알림 | 검색·문의 진입점 일부가 페이지 내부 링크 | 상품 조회, POLICY, 거래 상태 이벤트에 맞춰 구현 |
+| DISCOVERY-SEARCH | P1 · 로컬 구현·검증 완료 | [상품 검색·카테고리 관리](product-discovery-prd.md) | [이슈 #40](https://github.com/JooonWooKim/nanacocoa-service/issues/40), `feature/40` · 공개 검색·페이지와 운영자 카테고리 관리, DISCOVERY-01~06 PASS | main 반영·배포 검증 별도 |
+| DISCOVERY-SUPPORT | P1 · 후속 | FAQ·문의 처리 | 문의 진입점은 페이지 내부 링크 | FAQ 확정과 문의 접수·답변 확인 준비 |
+| DISCOVERY-NOTIFY | P1 · 후속 | 주문 상태 알림 | 주문·출고·환불 알림 미구현 | 발송 채널과 중복·실패 처리 준비 |
 
-1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART(이슈 #34)는 PR #35, ACCOUNT 배송지 관리(이슈 #36)는 PR #37로 main 반영을 완료했다. 이메일 비밀번호 복구(이슈 #38)는 feature/38에서 로컬 구현·기술 검증했으며 main 반영은 대기한다. 다음 미구현 순서는 DISCOVERY다. 운영 인수·정책 승인은 별도로 남아 있다.
+1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART(이슈 #34)는 PR #35, ACCOUNT 배송지 관리(이슈 #36)는 PR #37로 main 반영을 완료했다. 이메일 비밀번호 복구(이슈 #38)는 feature/38에서 로컬 구현·기술 검증했으며 main 반영은 대기한다. 상품 검색·카테고리 관리(이슈 #40)는 로컬 구현·검증을 완료했다. 다음 미구현 작업은 FAQ·문의 처리와 주문 상태 알림이다. 운영 인수·정책 승인은 별도로 남아 있다.
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
 3. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
 
@@ -319,3 +321,7 @@ Java 218개 실패·오류·skip 0개다. doctor·smoke는 환경 미검증/실�
 최종 check의 Java 237개·문서·마이그레이션·평가는 PASS다. 검증 서버 runtime smoke도
 PASS이며 doctor와 운영 Compose 스택 인수는 SKIPPED다. 실제 MySQL은 격리된 8.4.13이다.
 코드·문서는 로컬 미커밋으로 유지하고 판매자 승인·실제 공급자·전 인스턴스 배포·운영 활성화는 대기한다.
+
+2026-11-23 [이슈 #40](https://github.com/JooonWooKim/nanacocoa-service/issues/40)의 [상품 검색·카테고리 관리 PRD](product-discovery-prd.md)를 준비했다. 원격 `main` `8b9eaae`에서 만든 `origin/feature/40`을 로컬 `feature/40`이 추적한다. 준비 문서는 로컬 미커밋이며 기능 구현과 인수 검증은 후속이다.
+
+2026-11-23 [이슈 #40](https://github.com/JooonWooKim/nanacocoa-service/issues/40)의 상품 검색·카테고리 관리를 feature/40에서 구현했다. V14 이행, 공개 상품 검색·필터·페이지, 운영자 분류 관리를 H2·격리 MySQL, 실제 HTTP·Chrome, JavaScript로 대조했다. DISCOVERY-01~06은 PASS이며 준비 당시 미구현 표기는 이전 기록이다. main 기준은 PR #39 병합 커밋 8b9eaae이고 이번 구현은 로컬 미커밋이다. [검증 기록](../exec-plans/completed/product-discovery-implementation.md)을 참조한다.

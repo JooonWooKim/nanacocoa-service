@@ -53,6 +53,14 @@ public class Products {
 	@Setter(AccessLevel.NONE)
 	private SaleStatus saleStatus = SaleStatus.STOPPED;
 
+	@Column(name = "category_id")
+	@Setter(AccessLevel.NONE)
+	private Long categoryId;
+
+	public void assignCategory(Long categoryId) {
+		this.categoryId = categoryId;
+	}
+
 	@Version
 	@Column(name = "stock_version", nullable = false)
 	@Setter(AccessLevel.NONE)

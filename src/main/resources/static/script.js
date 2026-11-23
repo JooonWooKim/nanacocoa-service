@@ -495,6 +495,8 @@ function orderHistoryLoginReturnUrl() {
 function cartLoginReturnUrl() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("return") === "shipping-addresses") return "shipping-addresses.html";
+  if (params.get("return") === "inventory") return "inventory.html";
+  if (params.get("return") === "product-register") return "product-register.html";
   if (params.get("return") === "cart") return "cart.html";
   const id=params.get("id");
   if(params.get("return")==="product" && /^[1-9][0-9]{0,18}$/.test(id||""))return `product-detail.html?id=${id}`;
@@ -1197,11 +1199,20 @@ async function initProductRegisterPage() {
   const submitButton = form?.querySelector("[data-product-register-submit]");
   const session = await loadAuthSession();
 
-  if (!session.authenticated || !session.admin) {
-    if (guard) {
-      guard.textContent = "운영자만 상품 등록 페이지를 이용할 수 있습니다.";
+  function showRegistrationGuard() {
+    form.hidden = true;
+    guard.hidden = false;
+    const login = document.createElement("a");
+    login.href = "login.html?return=product-register";
+    login.textContent = "운영자 로그인";
+    guard.replaceChildren("상품을 등록하려면 운영자 권한이 필요합니다. ", login);
+  }
+
+  if (session.loadFailed || !session.authenticated || !session.admin) {
+    if (guard && form) {
+      if (session.loadFailed) guard.textContent = "로그인 상태를 확인하지 못했습니다. 새로고침해 주세요.";
+      else showRegistrationGuard();
     }
-    window.alert("접근 권한이 없습니다.");
     return;
   }
 
@@ -1210,6 +1221,21 @@ async function initProductRegisterPage() {
       guard.textContent = "상품 등록 화면을 불러오지 못했습니다.";
     }
     return;
+  }
+
+  const category = form.elements.categoryId;
+  try {
+    const response = await requestAuth("/api/products/categories", {cache: "no-store"});
+    const body = await readJson(response);
+    if (!response.ok || !Array.isArray(body.data)) throw new Error();
+    for (const item of body.data) {
+      const option = document.createElement("option");
+      option.value = String(item.id);
+      option.textContent = item.name;
+      category.append(option);
+    }
+  } catch {
+    setProductRegisterMessage("상품 분류를 불러오지 못했습니다. 미분류로 등록하거나 새로고침 후 다시 시도해주세요.");
   }
 
   guard.hidden = true;
@@ -1245,6 +1271,7 @@ async function initProductRegisterPage() {
       summary: String(formValues.get("summary") || ""),
       detailTitle: String(formValues.get("detailTitle") || ""),
       description: String(formValues.get("description") || ""),
+      categoryId: category.value ? Number(category.value) : null,
     };
     const requestBody = new FormData();
     requestBody.append("product", new Blob([JSON.stringify(payload)], { type: "application/json" }));
@@ -1261,10 +1288,7 @@ async function initProductRegisterPage() {
       const body = await readJson(response);
 
       if (response.status === 401 || response.status === 403) {
-        form.hidden = true;
-        guard.hidden = false;
-        guard.textContent = "운영자만 상품 등록 페이지를 이용할 수 있습니다.";
-        window.alert("접근 권한이 없습니다.");
+        showRegistrationGuard();
         return;
       }
 
@@ -1314,49 +1338,27 @@ function createProductCard(product) {
   return link;
 }
 
-function renderProductsState(grid, message) {
-  const state = document.createElement("p");
-  state.className = "products-empty";
-  state.textContent = message;
-  grid.replaceChildren(state);
+function renderDiscoveryCategoryLinks(categories) {
+  const byId = new Map(categories.map(category => [String(category.id), category]));
+  for (const link of document.querySelectorAll("[data-discovery-category]")) {
+    const category = byId.get(link.dataset.discoveryCategory);
+    link.hidden = !category;
+    if (category) {
+      const name = link.querySelector(".category-name");
+      if (name) name.textContent = category.name;
+      else link.textContent = category.name;
+    }
+  }
 }
 
-async function initProductsPage() {
-  const productsPage = document.querySelector("[data-products-page]");
-
-  if (!productsPage) {
-    return;
-  }
-
-  const grid = document.querySelector("[data-products-grid]");
-  const total = document.querySelector("[data-products-total]");
-
-  if (!grid || !total) {
-    return;
-  }
-
-  renderProductsState(grid, "상품을 불러오는 중입니다.");
-
+async function initHomeDiscoveryLinks() {
+  if (document.querySelector("[data-products-page]") || !document.querySelector("[data-discovery-category]")) return;
   try {
-    const response = await requestAuth(productsApi.list);
+    const response = await requestAuth("/api/products/categories", {cache: "no-store"});
     const body = await readJson(response);
-
-    if (!response.ok) {
-      throw new Error(body.error || "상품을 불러오지 못했습니다.");
-    }
-
-    const products = Array.isArray(body.data) ? body.data : [];
-    total.textContent = String(products.length);
-
-    if (products.length === 0) {
-      renderProductsState(grid, "등록된 상품이 없습니다.");
-      return;
-    }
-
-    grid.replaceChildren(...products.map(createProductCard));
-  } catch (error) {
-    total.textContent = "0";
-    renderProductsState(grid, error.message || "상품을 불러오지 못했습니다.");
+    if (response.ok && Array.isArray(body.data)) renderDiscoveryCategoryLinks(body.data);
+  } catch {
+    // 전체 상품 링크는 항상 남겨 둔다.
   }
 }
 
@@ -2366,7 +2368,6 @@ initMenu();
 initLoginPage();
 initSignupPage();
 initAuthSession();
-initProductsPage();
 
 async function freshCartSession() {
   authSessionPromise=null;
@@ -2462,6 +2463,7 @@ initCartNavigation();
 initCartPage();
 initProductDetail();
 initProductRegisterPage();
+initHomeDiscoveryLinks();
 initCheckoutPage();
 initMyPage();
 initMypageVerification();

@@ -2775,3 +2775,17 @@ textarea.product-register-input {
 .saved-address-picker select { width:100%; min-width:0; }
 [data-shipping-address-page] p { overflow-wrap:anywhere; }
 [data-address-form][hidden] { display:none; }
+
+[data-discovery-category][hidden],
+[data-discovery-pagination][hidden],
+[data-discovery-count][hidden],
+[data-category-controls][hidden] {
+  display: none;
+}
+
+[data-discovery-form],
+[data-discovery-pagination] {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}

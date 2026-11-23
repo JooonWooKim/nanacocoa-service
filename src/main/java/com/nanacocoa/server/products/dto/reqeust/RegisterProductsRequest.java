@@ -30,6 +30,14 @@ public class RegisterProductsRequest {
 
 	private String imageUrl;
 
+    @Positive
+    private Long categoryId;
+
+    public RegisterProductsRequest(String name, Long price, String summary, String detailTitle,
+            String description, String imageUrl) {
+        this(name, price, summary, detailTitle, description, imageUrl, null);
+    }
+
 	public Products toProducts() {
 		return toProducts(imageUrl);
 	}
