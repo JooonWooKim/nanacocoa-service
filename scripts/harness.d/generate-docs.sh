@@ -76,12 +76,14 @@ generate_repository_map() {
 			printf '%s\n' '- 빌드: `./gradlew`, `build.gradle`'
 		[ -x "$PROJECT_DIR/scripts/harness" ] &&
 			printf '%s\n' '- 하네스: `./scripts/harness`'
-		[ -f "$PROJECT_DIR/compose.yaml" ] && [ -f "$PROJECT_DIR/Dockerfile" ] &&
-			printf '%s\n' '- 로컬 스택: `compose.yaml`, `Dockerfile`'
+		[ -f "$PROJECT_DIR/deploy/templates/compose.template.yml" ] && [ -f "$PROJECT_DIR/deploy/templates/Dockerfile.template" ] &&
+			printf '%s\n' '- 로컬 스택: `deploy/templates/compose.template.yml`, `deploy/templates/Dockerfile.template`'
+		[ -x "$PROJECT_DIR/scripts/setup-release-config.sh" ] &&
+			printf '%s\n' '- 공통 설정 초기화: `scripts/setup-release-config.sh`'
 		[ -f "$PROJECT_DIR/scripts/init-env.sh" ] &&
 			printf '%s\n' '- 환경 초기화: `scripts/init-env.sh`'
-		[ -f "$PROJECT_DIR/src/main/resources/application.yml" ] &&
-			printf '%s\n' '- 실행 환경 설정: `src/main/resources/application.yml`'
+		[ -f "$PROJECT_DIR/deploy/templates/application.template.yml" ] &&
+			printf '%s\n' '- 실행 환경 설정 템플릿: `deploy/templates/application.template.yml`'
 		[ -f "$PROJECT_DIR/AGENTS.md" ] && [ -f "$PROJECT_DIR/ARCHITECTURE.md" ] && [ -d "$PROJECT_DIR/docs" ] &&
 			printf '%s\n' '- 지식 root: `AGENTS.md`, `ARCHITECTURE.md`, `docs/`'
 	} > "$output"

@@ -175,7 +175,8 @@ src/test/java/com/nanacocoa/server/support/CustomerSupportIntegrationTest.java
 
 - 빌드: `./gradlew`, `build.gradle`
 - 하네스: `./scripts/harness`
-- 로컬 스택: `compose.yaml`, `Dockerfile`
+- 로컬 스택: `deploy/templates/compose.template.yml`, `deploy/templates/Dockerfile.template`
+- 공통 설정 초기화: `scripts/setup-release-config.sh`
 - 환경 초기화: `scripts/init-env.sh`
-- 실행 환경 설정: `src/main/resources/application.yml`
+- 실행 환경 설정 템플릿: `deploy/templates/application.template.yml`
 - 지식 root: `AGENTS.md`, `ARCHITECTURE.md`, `docs/`

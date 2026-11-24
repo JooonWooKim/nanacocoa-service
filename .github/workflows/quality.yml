@@ -1,0 +1,63 @@
+name: Quality
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  harness:
+    name: Harness check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Prepare public configuration
+        run: ./scripts/setup-release-config.sh
+      - name: Run repository harness
+        run: ./scripts/harness check
+      - name: Prepare failure summaries
+        if: failure()
+        shell: bash
+        run: |
+          mkdir -p build/ci-evidence
+          if [ -f build/harness/check-summary.txt ]; then
+            awk -F'|' '$1 ~ /^(doctor|architecture|security|migrations|docs|harness-self-check|entropy|smoke|test-baseline|eval|git-diff-check|workspace-stability)$/ && $2 ~ /^(PASS|FAIL|BLOCKED|SKIPPED|BASELINED)$/ { print $1 "|" $2 }' \
+              build/harness/check-summary.txt > build/ci-evidence/check-summary.txt
+          else
+            printf '하네스 결과 없음. 실행 단계의 로그를 확인하세요.\n' > build/ci-evidence/check-summary.txt
+          fi
+          if [ -f build/harness/junit/summary.txt ]; then
+            awk '/^tests=[0-9]+ failures=[0-9]+ skipped=[0-9]+ xml_files=[0-9]+$/' \
+              build/harness/junit/summary.txt > build/ci-evidence/junit-summary.txt
+          fi
+          if [ -f build/harness/junit/failures.txt ]; then
+            awk '/^com\.nanacocoa\.server\.[A-Za-z0-9_.$]+#[A-Za-z0-9_$]+$/' \
+              build/harness/junit/failures.txt > build/ci-evidence/failed-tests.txt
+          fi
+      - name: Upload failure summaries
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: harness-failure-${{ github.run_attempt }}
+          path: |
+            build/ci-evidence/check-summary.txt
+            build/ci-evidence/junit-summary.txt
+            build/ci-evidence/failed-tests.txt
+          if-no-files-found: ignore
+          retention-days: 7

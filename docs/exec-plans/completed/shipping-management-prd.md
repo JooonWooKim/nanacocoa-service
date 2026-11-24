@@ -14,8 +14,7 @@
 
 ## 현재 증거
 
-- [출시 PRD 작성 기록](../completed/commerce-launch-prd.md)과
-  [출시 명세](../../product-specs/commerce-launch-prd.md)를 확인했다.
+- [출시 명세](../../product-specs/commerce-launch-prd.md)를 확인했다.
 - `OrderController`와 `OrderHistoryResponse`에 본인 주문 조회와 배송지 정보가 있다.
   배송 상태, 송장, 관리자 출고 화면은 구현되어 있지 않다.
 - `PaymentTransactionalService`의 취소 준비는 결제·주문 잠금 안에서

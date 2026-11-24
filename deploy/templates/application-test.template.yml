@@ -1,0 +1,19 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+  flyway:
+    enabled: false
+
+payment:
+  reconciliation:
+    enabled: false
+
+order:
+  inventory:
+    expiration-enabled: false
+
+management:
+  health:
+    redis:
+      enabled: false

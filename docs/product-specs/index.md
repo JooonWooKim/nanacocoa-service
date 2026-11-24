@@ -58,3 +58,4 @@
 
 사용자에게 보이는 새 기능은 구현 전이나 구현과 함께 인수 조건, 실패 동작,
 인가, 데이터 영향, 연결된 테스트를 포함한 집중 명세를 추가해야 합니다.
+- [배포 검증 재현성과 PR 품질 검사 PRD](release-readiness-prd.md)는 [이슈 #50](https://github.com/JooonWooKim/nanacocoa-service/issues/50)의 공통 설정, 깨끗한 체크아웃 검증, GitHub 품질 검사와 격리 배포 리허설을 기록합니다. 로컬 구현과 격리 인수는 완료했고 GitHub 실행과 main 반영은 대기 중입니다.

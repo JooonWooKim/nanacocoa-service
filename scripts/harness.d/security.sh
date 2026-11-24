@@ -43,6 +43,13 @@ for root in src scripts docs harness .github AGENTS.md ARCHITECTURE.md README.md
 	fi
 done
 
+if [ -d "$PROJECT_DIR/deploy/templates" ]; then
+	find "$PROJECT_DIR/deploy/templates" -type f | sort |
+	while IFS= read -r file; do
+		scan_file "$file"
+	done
+fi
+
 if [ -f "$PROJECT_DIR/.env.example" ]; then
 	awk -F= '
 		/^(DB_PASSWORD|MYSQL_ROOT_PASSWORD|REDIS_PASSWORD|JWT_SECRET|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|TOSS_PAYMENTS_SECRET_KEY)=/ {
