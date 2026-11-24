@@ -5,6 +5,7 @@ import com.nanacocoa.server.common.exception.NanacocoaException;
 import com.nanacocoa.server.common.userdetails.UserDetailsImpl;
 import com.nanacocoa.server.member.entity.Member;
 import com.nanacocoa.server.member.repository.MemberRepository;
+import com.nanacocoa.server.products.config.RestockNotificationSettings;
 import com.nanacocoa.server.products.dto.reqeust.RegisterProductsRequest;
 import com.nanacocoa.server.products.dto.response.ProductsResponse;
 import com.nanacocoa.server.products.dto.response.InventoryResponse;
@@ -35,6 +36,8 @@ public class ProductsService {
 	private final ProductImageStorage productImageStorage;
 	private final ProductImageValidator productImageValidator;
 	private final ProductDiscoveryService discovery;
+	private final RestockEventRecorder restockEvents;
+	private final RestockNotificationSettings restockSettings;
 
 	@Transactional
 	public ProductsResponse registerProducts(RegisterProductsRequest request, UserDetailsImpl userDetails) {
@@ -71,7 +74,9 @@ public class ProductsService {
 			.orElseThrow(() -> new NanacocoaException(AUTHENTICATION_REQUIRED)).checkAdmin();
 		Products product = productsRepository.findByIdForUpdate(productId)
 			.orElseThrow(() -> new NanacocoaException(NOT_FOUND_PRODUCTS));
+		long previousStock = product.getStockQuantity();
 		product.updateInventory(request.stockQuantity(), request.saleStatus(), request.expectedVersion());
+		restockEvents.recordIfAvailable(product, previousStock);
 		productsRepository.flush();
 		return InventoryResponse.from(product);
 	}
@@ -123,6 +128,6 @@ public class ProductsService {
 		Products product = productsRepository.findById(productId).orElseThrow(
 				() -> new NanacocoaException(NOT_FOUND_PRODUCTS)
 		);
-		return ProductsResponse.from(product);
+		return ProductsResponse.detail(product, restockSettings.enabled());
 	}
 }

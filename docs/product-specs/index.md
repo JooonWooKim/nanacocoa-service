@@ -11,6 +11,7 @@
   테스트에 연결합니다.
 - [커머스 출시 PRD](commerce-launch-prd.md)는 구현 우선순위와 기능별 인수 기준,
   출시 승인 조건을 정의합니다.
+- [품절 상품 재입고 알림 PRD](restock-notification-prd.md)는 [이슈 #48](https://github.com/JooonWooKim/nanacocoa-service/issues/48)의 회원 신청·확정 재입고·알림 기준을 정의합니다. `feature/48`에서 로컬 구현 및 기술 검증을 진행했으며 main 반영은 대기 중입니다.
 - [1:1 문의 답변 알림 PRD](support-reply-notification-prd.md)는 [이슈 #46](https://github.com/JooonWooKim/nanacocoa-service/issues/46)의 답변 확정 감지, 회원 알림함과 문의 상세 연결, 운영자 재시도를 정의합니다. `feature/46` 로컬 구현과 기술 검증을 마쳤으며 main 반영과 운영 인수는 대기 중입니다.
 - [사이트 내 주문 상태 알림 PRD](order-notification-prd.md)는 [이슈 #44](https://github.com/JooonWooKim/nanacocoa-service/issues/44)의 결제·출고·환불 확정 알림, 회원 알림함, 운영자 실패·재시도 계약을 정의합니다. `feature/44` 로컬 구현과 기술 검증을 진행했으며 main 반영과 운영 인수는 대기 중입니다.
 - [고객센터 FAQ·1:1 문의 PRD](customer-support-prd.md)는 [이슈 #42](https://github.com/JooonWooKim/nanacocoa-service/issues/42)의 공개 FAQ, 본인 주문 선택 연결, 문의 접수·조회, 운영자 답변의 인수 기준을 정의합니다. feature/42에서 로컬 구현과 기술 검증을 완료했으며 main 반영은 별도입니다.

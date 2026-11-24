@@ -121,6 +121,10 @@
               <button class="purchase-button purchase-secondary" type="button" disabled data-cart-button>장바구니</button>
               <button class="purchase-button purchase-primary" type="button" disabled data-buy-button>구매하기</button>
             </div>
+            <div data-restock-subscription hidden>
+              <button class="purchase-button purchase-secondary" type="button" data-restock-action hidden>재입고 알림 신청</button>
+              <p role="status" data-restock-status></p>
+            </div>
           </aside>
         </div>
       </section>
@@ -148,6 +152,7 @@
       <nav aria-label="서비스 안내"><a href="policies.html">서비스 약관·개인정보·배송·반품 안내</a></nav>
     </footer>
 
+    <script src="restock-subscription.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

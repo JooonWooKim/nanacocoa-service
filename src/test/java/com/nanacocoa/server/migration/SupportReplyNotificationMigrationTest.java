@@ -29,7 +29,7 @@ class SupportReplyNotificationMigrationTest {
                 values (1,1,'historical','fixture','fixture','ANSWERED',current_timestamp,'fixture',1,current_timestamp)
                 """);
         }
-        var flyway = Flyway.configure().dataSource(url, user, "").locations("classpath:db/migration").load();
+        var flyway = Flyway.configure().dataSource(url, user, "").locations("classpath:db/migration").target("17").load();
         assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
         flyway.validate();
         try (var connection = DriverManager.getConnection(url, user, ""); var sql = connection.createStatement()) {

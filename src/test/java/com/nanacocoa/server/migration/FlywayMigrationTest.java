@@ -43,7 +43,7 @@ class FlywayMigrationTest {
 				.dataSource(url, username, "")
 				.locations("classpath:db/migration")
 				.load();
-		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(14);
+		assertThat(allMigrations.migrate().migrationsExecuted).isEqualTo(15);
 
 		try (Connection connection = DriverManager.getConnection(url, username, "");
 			 Statement statement = connection.createStatement();

@@ -55,7 +55,7 @@ class OrderServiceTest {
 	@BeforeEach
 	void setUp() {
 		orderService = new OrderService(org.mockito.Mockito.mock(com.nanacocoa.server.cart.service.CartCheckoutService.class), orderRepository, productsRepository, memberRepository,
-				new OrderInventoryService(productsRepository, org.mockito.Mockito.mock(com.nanacocoa.server.order.repository.ReturnRequestRepository.class), new com.nanacocoa.server.order.config.ReturnPolicy()), paymentRepository, paymentCancellationRepository, shippingService, org.mockito.Mockito.mock(ReturnRequestService.class));
+				new OrderInventoryService(productsRepository, org.mockito.Mockito.mock(com.nanacocoa.server.order.repository.ReturnRequestRepository.class), new com.nanacocoa.server.order.config.ReturnPolicy(), org.mockito.Mockito.mock(com.nanacocoa.server.products.service.RestockEventRecorder.class)), paymentRepository, paymentCancellationRepository, shippingService, org.mockito.Mockito.mock(ReturnRequestService.class));
 		member = Member.builder()
 				.email("buyer@example.com")
 				.name("구매자")

@@ -179,7 +179,7 @@ class ShippingAddressIntegrationTest {
             sql.executeUpdate("insert into cart_checkouts (id,order_id,member_id,state) values (1,1,1,'WAITING')");
             sql.executeUpdate("insert into cart_checkout_items (checkout_id,item_id,item_version,product_id,quantity,unit_price,outcome) values (1,1,0,1,1,41000,'WAITING')");
         }
-        assertThat(org.flywaydb.core.Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").load().migrate().migrationsExecuted).isEqualTo(6);
+        assertThat(org.flywaydb.core.Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").load().migrate().migrationsExecuted).isEqualTo(7);
         try(var connection=java.sql.DriverManager.getConnection(url,user,"");var sql=connection.createStatement()) {
             for(String table:List.of("shipping_addresses","shipping_address_books","shipping_address_registrations")) {
                 try(var rows=sql.executeQuery("select count(*) from "+table)){assertThat(rows.next()).isTrue();assertThat(rows.getInt(1)).isZero();}

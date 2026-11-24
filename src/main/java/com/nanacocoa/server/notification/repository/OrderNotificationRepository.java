@@ -66,7 +66,7 @@ public interface OrderNotificationRepository extends JpaRepository<OrderNotifica
 
     @Query("""
         select n.id from OrderNotification n
-        where n.status = :status and n.confirmedAt >= :cutoff
+        where n.status = :status and n.confirmedAt >= :cutoff and n.restockSubscriptionId is null
           and ((:replies = true and n.inquiryId is not null) or (:replies = false and n.inquiryId is null))
         order by n.id
         """)
@@ -79,6 +79,10 @@ public interface OrderNotificationRepository extends JpaRepository<OrderNotifica
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select n from OrderNotification n where n.id = :id")
     Optional<OrderNotification> lockById(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select n from OrderNotification n where n.restockSubscriptionId = :subscriptionId")
+    Optional<OrderNotification> lockRestock(@Param("subscriptionId") Long subscriptionId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<OrderNotification> findByIdAndMemberIdAndStatus(Long id, Long memberId, Status status);

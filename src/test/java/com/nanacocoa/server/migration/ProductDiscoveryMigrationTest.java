@@ -30,7 +30,7 @@ class ProductDiscoveryMigrationTest {
                 """);
         }
         var flyway = Flyway.configure().dataSource(url, user, "").locations("classpath:db/migration").load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);
         flyway.validate();
         try (var connection = DriverManager.getConnection(url, user, ""); var sql = connection.createStatement()) {
             try (var product = sql.executeQuery("""
