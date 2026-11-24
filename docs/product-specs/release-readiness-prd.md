@@ -50,7 +50,7 @@
 | --- | --- | --- | --- |
 | RELEASE-01 | 문서 링크, 공용 설정 생성·재실행·충돌 | PASS | 깨끗한 체크아웃에서 초기화 전 문서 검사 통과. 최초 6개 파일 생성, 재실행 변경 없음, 내용 충돌과 심볼릭 링크에서 복사 전 중단, `.env` 보존 확인 |
 | RELEASE-02 | Java 17, 기존 테스트·마이그레이션·평가·전체 하네스 | BASELINED | Java 264개와 평가 63개 통과. 문서·이행·보안·아키텍처 검사에서 신규 위반 없이 기존 구조·보안 예외만 유지. Compose 실행 전 runtime smoke는 SKIPPED |
-| RELEASE-03 | GitHub PR·main push 품질 workflow와 실패 증거 | BLOCKED | workflow YAML과 로컬 하네스 명령 및 실패 증거 추출 검증은 PASS. GitHub 실행 링크와 원격 실패 표시는 변경 반영 후 확인 |
+| RELEASE-03 | GitHub PR·main push 품질 workflow와 실패 증거 | FAIL · 수정 재검증 BLOCKED | PR #51 첫 GitHub 실행에서 주문 예약 만료 시각 정밀도 차이로 Java 1개 실패. 저장 정밀도에 맞추는 로컬 수정은 H2·격리 MySQL에서 검증했고, GitHub 재검사는 원격 반영 대기 |
 | RELEASE-04 | 격리 Compose 이미지, V18·JPA·health, 재시작과 백업·복원 | PASS | 앱·MySQL 8.4·Redis 정상 기동. 재시작과 DB 복원 후 합성 주문·결제·동의 일치. 기존 주문 조회, 신규 가입·실결제 기본 비활성, 이미지에 테스트 설정 미포함 확인 |
 | RELEASE-05 | 모의 PG 기반 가입·구매 회귀 | PASS | 합성 정책에서 필수 동의 누락·중복 가입 차단, 선택 수신 거절 상태 가입·로그인, 주문·결제 재요청과 승인 1회 및 판매 재고 확정 확인 |
 
@@ -61,3 +61,4 @@ API·스키마·거래 규칙은 기존 계약을 유지한다. 실제 배포 �
 - [기술부채 추적기](../exec-plans/tech-debt-tracker.md)
 - [준비 실행 기록](../exec-plans/completed/release-readiness-preparation.md)
 - [구현 및 검증 기록](../exec-plans/completed/release-readiness-implementation.md)
+- [PR #51 검사 실패 수정 기록](../exec-plans/completed/pr-51-reservation-expiry-precision.md)

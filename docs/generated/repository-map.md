@@ -22,7 +22,7 @@
 | `support` | 8 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 
 - 주요 Java 파일: 202
-- 테스트 Java 파일: 46
+- 테스트 Java 파일: 47
 - Flyway 마이그레이션: 18
 - 정적 자원·페이지: 48
 
@@ -146,6 +146,7 @@ src/test/java/com/nanacocoa/server/migration/RestockNotificationMigrationTest.ja
 src/test/java/com/nanacocoa/server/migration/SupportReplyNotificationMigrationTest.java
 src/test/java/com/nanacocoa/server/notification/OrderNotificationIntegrationTest.java
 src/test/java/com/nanacocoa/server/notification/RestockNotificationIntegrationTest.java
+src/test/java/com/nanacocoa/server/order/entity/OrderReservationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/InventoryIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/PaymentOperationsIntegrationTest.java
 src/test/java/com/nanacocoa/server/order/inventory/ReturnRequestIntegrationTest.java

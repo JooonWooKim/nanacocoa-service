@@ -216,6 +216,8 @@ MySQL 8.4.10 집중 18개도 통과했고 전체 187개 중 기존 health 실패
 
 공용 설정으로 만든 격리 Compose 후보에서 앱·MySQL 8.4·Redis 기동과 health, V18 이행, 재시작과 합성 주문·결제·동의 백업·복원을 확인했다. 신규 가입과 실결제 기본 비활성, 별도 테스트 프로필의 합성 가입·모의 PG 구매도 확인했다. 실제 GitHub 검사, 운영 배포 대상 인수와 운영 활성화는 대기 중이며 **운영 배포는 보류**한다. [구현 및 검증 기록](../exec-plans/completed/release-readiness-implementation.md)
 
+[PR #51](https://github.com/JooonWooKim/nanacocoa-service/pull/51)의 첫 GitHub 품질 검사에서는 주문 생성 응답의 만료 시각과 DB에서 조회한 시각의 정밀도 차이로 Java 테스트 1개가 실패했다. 예약 만료 시각을 기록할 때 DB와 같은 마이크로초 단위로 맞추고, H2와 격리 MySQL 8.4에서 첫 응답·재요청·조회·DB 값이 일치하는지 확인했다. 수정분의 GitHub 검사와 운영 배포 대상 인수는 대기 중이다. [회귀 수정 기록](../exec-plans/completed/pr-51-reservation-expiry-precision.md)
+
 ## 운영 결정이 필요한 항목
 
 판매자와의 실제 운영 기준 협의는 후순위다. 아래 항목은 즉시 개발할 기능 목록이 아니며, 판매자 협의 시 재개하고 출시 전 확정한다.

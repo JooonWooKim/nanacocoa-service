@@ -231,6 +231,9 @@ class InventoryIntegrationTest {
             .andReturn().getResponse().getContentAsString();
         var stored = json.readTree(creation).path("data");
         String orderId = stored.path("orderId").asText();
+        String expiresAt = stored.path("reservationExpiresAt").asText();
+        assertThat(jdbc.queryForObject("select reservation_expires_at from orders where order_id = ?",
+            LocalDateTime.class, orderId)).isEqualTo(LocalDateTime.parse(expiresAt));
         jdbc.update("update products set price = ? where id = ?", 60000L, first.getId());
         String replay = json.writeValueAsString(new CreateOrderRequest(" 테스트 ", " 010-0000-0000 ",
             " 테스트 배송지 ", "  ", List.of(secondItem, firstItem)));
@@ -238,10 +241,11 @@ class InventoryIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(replay))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.orderId").value(orderId))
             .andExpect(jsonPath("$.data.totalAmount").value(82000))
-            .andExpect(jsonPath("$.data.reservationExpiresAt").value(stored.path("reservationExpiresAt").asText()));
+            .andExpect(jsonPath("$.data.reservationExpiresAt").value(expiresAt));
         mvc.perform(get(lookup).session(owner).header("Idempotency-Key", key))
             .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
-            .andExpect(jsonPath("$.data.orderId").value(orderId));
+            .andExpect(jsonPath("$.data.orderId").value(orderId))
+            .andExpect(jsonPath("$.data.reservationExpiresAt").value(expiresAt));
         mvc.perform(get(lookup).session(other).header("Idempotency-Key", key)).andExpect(status().isNotFound());
         mvc.perform(get(lookup).session(other).header("Idempotency-Key", key).header("X-Checkout-Account", account))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ORDER_06"));
