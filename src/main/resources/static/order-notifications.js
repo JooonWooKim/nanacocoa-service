@@ -42,7 +42,7 @@
   const filter = select("filter");
   const unread = select("unread");
   const labels = {PAYMENT_COMPLETED: "결제 완료", SHIPPED: "출고 완료", REFUND_COMPLETED: "환불 완료",
-    SUPPORT_ANSWERED: "문의에 답변이 등록되었습니다"};
+    SUPPORT_ANSWERED: "문의에 답변이 등록되었습니다", PRODUCT_RESTOCKED: "신청한 상품이 재입고되었습니다"};
   const statuses = {PENDING: "처리 대기", PUBLISHED: "게시 완료", FAILED: "처리 실패"};
   let active;
   let page = 0;
@@ -99,17 +99,19 @@
     const item = element("li", "");
     item.className = "inventory-card";
     const reply = row.type === "SUPPORT_ANSWERED";
+    const restock = row.type === "PRODUCT_RESTOCKED";
     item.append(element("h2", labels[row.type] || "주문 상태 변경"));
-    item.append(element("p", reply ? "문의 " + row.inquiryId : "주문 " + row.orderId));
+    item.append(element("p", restock ? "상품 " + row.productId : reply ? "문의 " + row.inquiryId : "주문 " + row.orderId));
     if (admin) {
       item.append(element("p", (statuses[row.status] || row.status) + " · 시도 " + row.attemptCount + "회"));
       if (row.failureCode) item.append(element("p", row.failureCode + " · " + row.failedAt + " UTC"));
       if (row.status === "FAILED") item.append(control("재시도 요청", {id: row.id, method: "POST", suffix: "retry"}));
     } else {
       item.append(element("p", row.confirmedAt + " UTC · " + (row.readAt ? "읽음" : "미읽음")));
-      const link = element("a", reply ? "내 문의에서 확인" : "내 주문에서 확인");
-      link.href = reply ? "support-inquiries.html?inquiryId=" + encodeURIComponent(row.inquiryId)
-        : "orders.html?orderId=" + encodeURIComponent(row.orderId);
+      const link = element("a", restock ? "상품 상세에서 확인" : reply ? "내 문의에서 확인" : "내 주문에서 확인");
+      if (restock) link.href = "product-detail.html?id=" + encodeURIComponent(row.productId);
+      else if (reply) link.href = "support-inquiries.html?inquiryId=" + encodeURIComponent(row.inquiryId);
+      else link.href = "orders.html?orderId=" + encodeURIComponent(row.orderId);
       item.append(link);
       if (!row.readAt) item.append(control("읽음으로 표시", {id: row.id, method: "PUT", suffix: "read"}));
     }

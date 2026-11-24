@@ -29,7 +29,8 @@ def run(path):
     row = next((item for item in hits if not item["readAt"]), hits[0])
     read = f"/api/notifications/{row['id']}/read"
     other.call("PUT", read, expected=(404,))
-    assert other.call("GET", "/api/notifications")[1]["data"]["items"] == []
+    other_items = other.call("GET", "/api/notifications")[1]["data"]["items"]
+    assert all(item.get("orderId") not in expected for item in other_items)
     buyer.call("PUT", read, expected=(403,), csrf=False)
     first = buyer.call("PUT", read)[1]["data"]["readAt"]
     assert first and buyer.call("PUT", read)[1]["data"]["readAt"] == first

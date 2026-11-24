@@ -66,6 +66,14 @@ public class Products {
 	@Setter(AccessLevel.NONE)
 	private long stockVersion;
 
+	@Column(nullable = false)
+	@Setter(AccessLevel.NONE)
+	private long availabilityEpoch;
+
+	public boolean isPurchasable() {
+		return saleStatus == SaleStatus.ON_SALE && stockQuantity > 0;
+	}
+
 	public String getAvailability() {
 		return saleStatus == SaleStatus.STOPPED ? "STOPPED" : stockQuantity == 0 ? "SOLD_OUT" : "ON_SALE";
 	}
@@ -75,8 +83,10 @@ public class Products {
 			ErrorCode.INVALID_REQUEST);
 		if (stockVersion != expectedVersion) throw new NanacocoaException(
 			ErrorCode.STOCK_CONFLICT);
+		boolean previouslyAvailable = isPurchasable();
 		stockQuantity = quantity;
 		saleStatus = status;
+		recordAvailabilityChange(previouslyAvailable);
 	}
 
 	public void reserve(int quantity) {
@@ -84,13 +94,16 @@ public class Products {
 			throw new NanacocoaException(
 				ErrorCode.INSUFFICIENT_STOCK);
 		stockQuantity -= quantity;
+		recordAvailabilityChange(true);
 		reservedQuantity = Math.addExact(reservedQuantity, quantity);
 	}
 
 	public void release(int quantity) {
 		requireReserved(quantity);
+		boolean previouslyAvailable = isPurchasable();
 		reservedQuantity -= quantity;
 		stockQuantity = Math.addExact(stockQuantity, quantity);
+		recordAvailabilityChange(previouslyAvailable);
 	}
 
 	public void sellReserved(int quantity) {
@@ -100,7 +113,13 @@ public class Products {
 
 	public void restock(int quantity) {
 		if (quantity <= 0) throw new IllegalArgumentException("quantity must be positive");
+		boolean previouslyAvailable = isPurchasable();
 		stockQuantity = Math.addExact(stockQuantity, quantity);
+		recordAvailabilityChange(previouslyAvailable);
+	}
+
+	private void recordAvailabilityChange(boolean previouslyAvailable) {
+		if (previouslyAvailable != isPurchasable()) availabilityEpoch++;
 	}
 
 	private void requireReserved(int quantity) {

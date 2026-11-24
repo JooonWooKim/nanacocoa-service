@@ -51,7 +51,9 @@ class ProductsServiceTest {
 				memberRepository,
 				productImageStorage,
 				new ProductImageValidator(),
-                org.mockito.Mockito.mock(ProductDiscoveryService.class)
+                org.mockito.Mockito.mock(ProductDiscoveryService.class),
+                org.mockito.Mockito.mock(RestockEventRecorder.class),
+                new com.nanacocoa.server.products.config.RestockNotificationSettings(false, false, "")
 		);
 		Member admin = Member.builder()
 				.email("admin@example.com")

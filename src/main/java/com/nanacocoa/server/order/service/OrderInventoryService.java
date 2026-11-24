@@ -6,6 +6,7 @@ import com.nanacocoa.server.order.entity.OrderItem;
 import com.nanacocoa.server.order.entity.StockState;
 import com.nanacocoa.server.products.entity.Products;
 import com.nanacocoa.server.products.repository.ProductsRepository;
+import com.nanacocoa.server.products.service.RestockEventRecorder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,6 +25,7 @@ public class OrderInventoryService {
 	private final ProductsRepository productsRepository;
     private final com.nanacocoa.server.order.repository.ReturnRequestRepository returnRequests;
     private final com.nanacocoa.server.order.config.ReturnPolicy returnPolicy;
+    private final RestockEventRecorder restockEvents;
 
 	public void prepareApproval(Order order) {
 		if (order.getStockState() == StockState.LEGACY || order.reservationExpired(LocalDateTime.now()))
@@ -61,7 +63,12 @@ public class OrderInventoryService {
         }
 		if (order.getStockState() == StockState.RETURNED) return;
 		order.restockAfterInspection(reason);
-		for (OrderItem item : sortedItems(order)) locked(item).restock(item.getQuantity());
+		for (OrderItem item : sortedItems(order)) {
+			Products product = locked(item);
+			long previousStock = product.getStockQuantity();
+			product.restock(item.getQuantity());
+			if (request != null) restockEvents.recordIfAvailable(product, previousStock);
+		}
 	}
 
 	private List<OrderItem> sortedItems(Order order) {

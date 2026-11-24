@@ -10,10 +10,12 @@
 | `notifications.starts-at` | 활성화 시 필수 | `2026-11-23T00:00:00Z` 형식의 UTC 기준. 기준 시각 포함 |
 | `notifications.support.enabled` | `false` | 전체 게시 작업이 켜져 있을 때 문의 답변 게시 활성 여부 |
 | `notifications.support.starts-at` | 문의 기능 활성화 시 필수 | 주문 기준과 별도의 UTC 시작 시각. 기준 시각 포함 |
+| `notifications.restock.enabled` | `false` | 전체 작업을 켰을 때 재입고 알림 신청·게시 활성 여부 |
+| `notifications.restock.starts-at` | 재입고 기능 활성화 시 필수 | 재입고 이벤트의 UTC 시작 시각. 기준 시각 포함 |
 | `notifications.initial-delay` | `30000` | 첫 실행 대기 시간(ms) |
 | `notifications.fixed-delay` | `30000` | 실행 완료 후 다음 실행까지의 대기 시간(ms) |
 
-활성화 전에 V17 마이그레이션이 적용됐는지 확인하고 기준 시각을 확정한다. 기준 시각이 없거나 유효하지 않으면 활성 설정으로 앱이 시작되지 않는다. 게시 작업을 일시 중단했다가 재개할 때는 기준 시각을 유지한다. 같은 기준에서 미처리 확정 기록을 다시 읽는다. V16 전에 확정된 거래와 V17 전에 확정된 문의 답변의 알림용 시각은 비어 있다. 문의 게시를 중단하는 동안에도 새 답변의 확정 기록은 남는다.
+활성화 전에 V18 마이그레이션이 적용됐는지 확인하고 기준 시각을 확정한다. 기준 시각이 없거나 유효하지 않으면 활성 설정으로 앱이 시작되지 않는다. 게시 작업을 일시 중단했다가 재개할 때는 기준 시각을 유지한다. 같은 기준에서 미처리 확정 기록을 다시 읽는다. V16 전에 확정된 거래와 V17 전에 확정된 문의 답변의 알림용 시각은 비어 있다. 문의 게시를 중단하는 동안에도 새 답변의 확정 기록은 남는다.
 
 게시가 3회 실패하면 **실패** 상태로 남는다. 복구 후 실패 목록의 **재시도 요청**으로 해당 알림을 대기 상태로 돌린다. 작업자가 다음 주기에 처리하며 누적 시도 횟수와 마지막 실패 코드는 보존한다. 거래 상태 확인은 주문 상세와 기존 결제 운영 화면을 사용한다. 작업 로그에는 비식별 오류와 내부 알림 ID만 남긴다.
 
@@ -28,3 +30,7 @@
 - 합성 런타임의 JSON 설정에서 `notifications.support.enabled=true`와 `notifications.support.starts-at`도 지정한 뒤 `python3 -B src/test/python/support_reply_notification_e2e_http.py`를 실행한다. Chrome에서 **내 문의에서 확인**과 로그인 복귀를 확인한다.
 
 [주문 상태 알림 PRD](../product-specs/order-notification-prd.md) · [1:1 문의 답변 알림 PRD](../product-specs/support-reply-notification-prd.md)
+
+관리자 수량 추가 또는 검수 적합 재입고로 가용 재고가 0에서 양수가 되고 판매 가능할 때만 재입고 알림을 게시한다. 기능 중지 중에도 기존 신청 상태와 취소는 이용할 수 있다.
+
+재입고 집중 테스트는 `./gradlew test --tests '*RestockNotification*'`로 실행한다. 격리 MySQL에서는 `RESTOCK_NOTIFY_DB_URL`과 `RESTOCK_NOTIFY_MIGRATION_DB_URL`을 서로 다른 루프백 DB로 설정한다. 합성 앱에서 재입고 설정을 켜고 `python3 -B src/test/python/restock_notification_e2e_http.py`를 실행한다. [품절 상품 재입고 알림 PRD](../product-specs/restock-notification-prd.md)

@@ -30,6 +30,7 @@
 | DISCOVERY-SUPPORT | P1 · 로컬 구현·검증 완료 | [고객센터 FAQ·1:1 문의](customer-support-prd.md) | [이슈 #42](https://github.com/JooonWooKim/nanacocoa-service/issues/42), `feature/42` · 공개 FAQ, 회원 문의·본인 주문 연결 및 운영자 답변, SUPPORT-01~06 PASS | main 반영·배포 검증 별도 |
 | DISCOVERY-NOTIFY | P1 · 로컬 구현·기술 검증 | [사이트 내 주문 상태 알림](order-notification-prd.md) | [이슈 #44](https://github.com/JooonWooKim/nanacocoa-service/issues/44), `feature/44` · 거래 확정 알림, 회원 알림함, 운영자 재시도 · main 반영 대기 | 배포 대상 인수·활성화 기준 시각 확정과 운영 활성화 |
 | DISCOVERY-SUPPORT-NOTIFY | P1 · 로컬 구현·기술 검증 | [1:1 문의 답변 알림](support-reply-notification-prd.md) | [이슈 #46](https://github.com/JooonWooKim/nanacocoa-service/issues/46), `feature/46` · 확정 답변 알림·문의 상세 연결·운영자 재처리 · main 반영 대기 | 배포 대상 인수·시작 시각 확정 및 활성화 |
+| DISCOVERY-RESTOCK-NOTIFY | P1 · 로컬 구현·기술 검증 | [품절 상품 재입고 알림](restock-notification-prd.md) | [이슈 #48](https://github.com/JooonWooKim/nanacocoa-service/issues/48), `feature/48` · 회원 신청·확정 재입고·사이트 알림 · main 반영 대기 | 배포 대상 인수·시작 시각 확정 및 활성화 |
 
 1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART(이슈 #34)는 PR #35, ACCOUNT 배송지 관리(이슈 #36)는 PR #37로 main 반영을 완료했다. 이메일 비밀번호 복구(이슈 #38)는 feature/38에서 로컬 구현·기술 검증했으며 main 반영은 대기한다. 상품 검색·카테고리 관리(이슈 #40)는 로컬 구현·검증을 완료했다. 고객센터 FAQ·1:1 문의(이슈 #42)는 로컬 구현·검증을 완료했다. 주문 상태 알림은 feature/44에서 구현·검증했으며 main 반영 대기 중이다. 운영 인수·정책 승인은 별도로 남아 있다.
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
@@ -334,3 +335,5 @@ PASS이며 doctor와 운영 Compose 스택 인수는 SKIPPED다. 실제 MySQL은
 2026-11-23 `feature/44`에서 [주문 상태 알림](order-notification-prd.md)을 로컬 구현했다. 결제·정상 출고·확정 환불을 회원 알림함에서 조회하고 읽음으로 표시할 수 있다. 운영자는 실패 알림을 확인하고 개별 재시도한다. H2·격리 MySQL 8.4, 모의 PG HTTP, Chrome에서 기술 동작을 검증했다. main 반영과 운영 인수는 대기 중이다. [구현 및 검증 기록](../exec-plans/completed/order-notification-implementation.md)
 
 2026-11-23 `feature/46`에 [1:1 문의 답변 알림](support-reply-notification-prd.md)을 구현했다. H2·격리 MySQL 8.4 이행과 경합, 모의 PG HTTP·Chrome 확인을 마쳤다. main 반영과 운영 활성화는 대기 중이다. [구현 및 검증 기록](../exec-plans/completed/support-reply-notification-implementation.md)
+
+2026-11-24 `feature/48`에 [품절 상품 재입고 알림](restock-notification-prd.md)을 구현했다. H2·격리 MySQL 8.4의 V18 이행과 경합, 모의 PG HTTP·Chrome에서 기술 검증했다. main 반영 및 운영 활성화는 대기 중이다. [구현 및 검증 기록](../exec-plans/completed/restock-notification-implementation.md)

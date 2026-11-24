@@ -12,24 +12,26 @@ public final class NotificationResponses {
 
     public record Item(Long id, @JsonInclude(JsonInclude.Include.NON_NULL) String orderId,
                        @JsonInclude(JsonInclude.Include.NON_NULL) String inquiryId,
+                       @JsonInclude(JsonInclude.Include.NON_NULL) String productId,
                        Type type, LocalDateTime confirmedAt, LocalDateTime readAt) {
         public static Item from(OrderNotification row) {
-            return new Item(row.getId(), row.getOrderNumber(), inquiryIdOf(row), row.getEventType(),
+            return new Item(row.getId(), row.getOrderNumber(), idOf(row.getInquiryId()), idOf(row.getProductId()), row.getEventType(),
                     row.getConfirmedAt(), row.getReadAt());
         }
     }
     public record Page(List<Item> items, int page, boolean hasNext, long unreadCount) {}
     public record Operation(Long id, @JsonInclude(JsonInclude.Include.NON_NULL) String orderId,
-                            @JsonInclude(JsonInclude.Include.NON_NULL) String inquiryId, Type type, Status status, int attemptCount,
+                            @JsonInclude(JsonInclude.Include.NON_NULL) String inquiryId,
+                            @JsonInclude(JsonInclude.Include.NON_NULL) String productId, Type type, Status status, int attemptCount,
                             String failureCode, LocalDateTime failedAt) {
         public static Operation from(OrderNotification row) {
-            return new Operation(row.getId(), row.getOrderNumber(), inquiryIdOf(row), row.getEventType(), row.getStatus(),
+            return new Operation(row.getId(), row.getOrderNumber(), idOf(row.getInquiryId()), idOf(row.getProductId()), row.getEventType(), row.getStatus(),
                     row.getAttemptCount(), row.getFailureCode(), row.getFailedAt());
         }
     }
     public record OperationsPage(List<Operation> items, int page, boolean hasNext) {}
 
-    private static String inquiryIdOf(OrderNotification row) {
-        return row.getInquiryId() == null ? null : row.getInquiryId().toString();
+    private static String idOf(Long id) {
+        return id == null ? null : id.toString();
     }
 }

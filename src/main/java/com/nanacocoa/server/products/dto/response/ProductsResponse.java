@@ -1,5 +1,6 @@
 package com.nanacocoa.server.products.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nanacocoa.server.products.entity.Products;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,6 +16,8 @@ public class ProductsResponse {
 	private String description;
 	private String imageUrl;
 	private String availability;
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private Boolean restockNotificationEnabled;
 
 	public static ProductsResponse from(Products products) {
 		return new ProductsResponse(
@@ -24,7 +27,13 @@ public class ProductsResponse {
 				products.getSummary(),
 				products.getDetailTitle(),
 				products.getDescription(),
-				products.getImageUrl(), products.getAvailability()
+				products.getImageUrl(), products.getAvailability(), null
 		);
+	}
+
+	public static ProductsResponse detail(Products product, boolean restockEnabled) {
+		var result = from(product);
+		if (restockEnabled) result.restockNotificationEnabled = true;
+		return result;
 	}
 }

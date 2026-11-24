@@ -16,7 +16,7 @@ class FilePolicyConsentMigrationTest {
             sql.executeUpdate("INSERT INTO policy_documents (id,document_code,document_version,title,body,consent_mode,effective_at,approved_by,approved_at,content_hash,active) VALUES (901,'TERMS','legacy-v1','fixture','archived original','REQUIRED','2020-01-01 00:00:00','fixture','2020-01-01 00:00:00',REPEAT('a',64),true)");
             sql.executeUpdate("INSERT INTO member_policy_consents (id,member_id,document_id,agreed,recorded_at) VALUES (901,901,901,true,'2020-02-01 01:02:03')");
         }
-        assertThat(Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").load().migrate().migrationsExecuted).isEqualTo(8);
+        assertThat(Flyway.configure().dataSource(url,user,"").locations("classpath:db/migration").load().migrate().migrationsExecuted).isEqualTo(9);
         try (var connection = DriverManager.getConnection(url,user,""); var sql = connection.createStatement()) {
             try (var rows = sql.executeQuery("SELECT * FROM member_policy_consents WHERE id=901")) {
                 assertThat(rows.next()).isTrue();

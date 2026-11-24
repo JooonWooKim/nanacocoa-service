@@ -33,7 +33,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 | `payment` | 승인, 취소, 멱등성, 락, 복구 | `PaymentController` / `PaymentFacade` | 결제 Repository |
 | `policy` | 승인 정책 게시·원문 보존·가입 동의 | `PolicyController` / `PolicyService` | 파일 스냅샷·동의 Repository |
 | `support` | 공개 FAQ, 회원 문의·답변·선택 주문, 운영자 응답 | `SupportController` / `SupportOperationsController` → `SupportService` | 검토형 FAQ 파일·`InquiryRepository` |
-| `notification` | 결제·출고·환불·문의 답변 확정 알림, 회원 읽음, 운영자 재시도 | `NotificationController` → `NotificationService`, `NotificationWorker` → `NotificationPublisher` | `OrderNotificationRepository` |
+| `notification` | 결제·출고·환불·문의 답변·재입고 알림, 회원 읽음, 운영자 재시도 | `NotificationController` → `NotificationService`, `NotificationWorker` → `NotificationPublisher` | `OrderNotificationRepository` |
 | `common` | 응답, 예외, 보안, 세션, 사용자 상세 | 공통 프레임워크 어댑터 | 회원 조회는 기록된 예외 |
 
 생성된 패키지 목록은
@@ -97,6 +97,9 @@ DB 세대를 검증한다. 복구 트랜잭션이 비밀번호·토큰 소비·�
   알림 작업은 각 활성화 조건에 따라 커밋된 기록을 읽고 별도 트랜잭션에서
   게시합니다. 주문·알림 유형과 문의의 유일 제약 및 알림 행 잠금으로 중복
   게시를 막습니다.
+- 재입고 신청과 게시 작업은 상품 → 신청 → 알림 순서로 잠급니다. 확정
+  이벤트와 상품의 현재 판매 가능 구간을 비교하며, 예약 해제는 새 구간을
+  열 수 있어도 확정 이벤트를 기록하지 않습니다.
 - `PaymentRecoveryService`는 대기·불확실 상태의 제공자 결과를 조정합니다.
 - `src/main/resources/db/migration`의 Flyway 파일이 운영 스키마 이력입니다.
   MySQL 프로필에서 Hibernate는 `ddl-auto=validate`를 사용합니다.
