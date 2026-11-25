@@ -1,10 +1,11 @@
 # CI 계약
 
-상태: 로컬 구현 완료, remote와 기본 branch 확인, hosted 품질 게이트는 NC-CI-001로 차단됨
+상태: 공통 설정과 GitHub 품질 workflow 로컬 구현 · 원격 실행 확인 대기
 
 제공자 중립 CI 진입점은 다음과 같습니다.
 
 ```sh
+./scripts/setup-release-config.sh
 ./scripts/harness check
 ```
 
@@ -23,14 +24,14 @@
 - 전체 Gradle 테스트에 적절한 timeout
 - 대체된 이전 실행 취소
 - wrapper·build 입력을 key로 사용하는 Gradle 의존성 cache
-- 실패 후 `build/reports/tests`, `build/test-results`, `build/harness` 업로드
+- 실패 시 하네스 게이트 상태, JUnit 집계, 실패 테스트 식별자 업로드
 - 하네스 계약 주변에 `continue-on-error` 사용 금지
 
-현재 저장소의 host는 GitHub, remote는
-`https://github.com/JooonWooKim/nanacocoa-service.git`, 기본 branch는
-`main`입니다. `.github/workflows/pr-description.yml`은 PR metadata 자동화만
-담당하며 품질 게이트가 아닙니다. NC-CI-001을 해소하려면 별도의 hosted job이
-제공자 전용 테스트 로직 없이 `./scripts/harness check`를 호출해야 합니다.
+`.github/workflows/quality.yml`은 `main` 대상 일반 PR과 `main` push에서
+읽기 권한으로 공통 설정과 기존 하네스를 실행합니다. 동일 PR·브랜치의 이전
+실행은 취소합니다. 실패 요약은 원문 로그·테스트 출력과 분리해 7일간 보관합니다.
+PR 설명 자동화는 별도 workflow에서 실행합니다. NC-CI-001의 원격 실행 확인과
+브랜치 보호 설정은 별도입니다.
 
 NC-TEST-001은 feature/30에서 해소해 제품 실패 기준선이 비어 있습니다. NC-ARCH-001과 검토된 보안 위험이 변경되지 않으면 `check`는
 BASELINED를 표시하면서 종료 코드 0을 반환할 수 있습니다. 기준선 증가나

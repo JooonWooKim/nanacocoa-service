@@ -46,7 +46,12 @@ Spring Boot와 MySQL은 각각 호스트의 loopback 주소에만 바인딩되�
 
 ## 환경 변수 설정
 
+깨끗한 체크아웃에서 공통 Docker·Compose·Spring 설정을 먼저 준비합니다.
+설정 내용이 다른 로컬 파일이 있으면 초기화는 해당 경로를 알려주고 중단합니다.
+기존 환경을 보존하면서 공통 설정을 검증하려면 별도 체크아웃을 사용하세요.
+
 ```bash
+./scripts/setup-release-config.sh
 ./scripts/init-env.sh
 ```
 

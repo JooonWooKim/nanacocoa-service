@@ -16,8 +16,13 @@
 비밀값 내용을 읽지 않고 진단합니다.
 
 ```sh
+./scripts/setup-release-config.sh
 ./scripts/harness doctor
 ```
+
+공통 템플릿은 `deploy/templates/`에 있습니다. 초기화는 누락된 실행 파일만
+만듭니다. 기존 파일의 내용이 다르면 경로를 보고하므로 공통 설정으로 검증할 때는
+깨끗한 체크아웃에서 실행합니다.
 
 ## Docker 없는 테스트
 

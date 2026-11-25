@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -92,7 +93,8 @@ public class Order {
 		if (stockState != StockState.LEGACY && stockState != StockState.RELEASED)
 			throw new NanacocoaException(INVALID_PAYMENT_STATUS);
 		stockState = StockState.RESERVED;
-		reservationExpiresAt = expiresAt;
+		// Use the precision of the DATETIME(6) column before building the response.
+		reservationExpiresAt = expiresAt == null ? null : expiresAt.truncatedTo(ChronoUnit.MICROS);
 	}
 
 	public void sellStock() {

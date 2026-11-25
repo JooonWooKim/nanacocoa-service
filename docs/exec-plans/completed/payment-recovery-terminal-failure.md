@@ -41,7 +41,7 @@
 | `./scripts/harness docs` | PASS | 실행 계획 양식 수정 후 통과 |
 | `git diff --check` | PASS | 공백 오류 없음 |
 
-최종 `./scripts/harness check` 결과는 [하네스 요약](../../../build/harness/check-summary.txt)에 기록합니다.
+최종 `./scripts/harness check` 결과는 `build/harness/check-summary.txt`에 기록합니다.
 
 ## 위험과 롤백
 

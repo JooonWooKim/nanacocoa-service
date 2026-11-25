@@ -31,7 +31,8 @@ workspace_input_files() {
 			-name '*.js' -o -name '*.html' -o -name '*.css' -o \
 			-name '*.toml' -o -name '*.conf' -o -name '*.jar' -o \
 			-name 'Dockerfile' -o -name 'gradlew' -o -name 'gradlew.bat' -o \
-			-name 'harness' -o -name '.env.example' -o \
+			-name 'harness' -o -name '.env.example' -o -name 'env.example' -o \
+			-name 'Dockerfile.template' -o -name 'dockerignore' -o \
 			-name '.gitignore' -o -name '.dockerignore' \
 		\) -print | LC_ALL=C sort
 }

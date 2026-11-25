@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: nanacocoa-server
+  profiles:
+    default: mysql
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
+      timeout: ${REDIS_COMMAND_TIMEOUT:3s}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
+
+product-image:
+  storage-mode: ${PRODUCT_IMAGE_STORAGE_MODE:mock}
+  bucket: ${PRODUCT_IMAGE_BUCKET:}
+  public-base-url: ${PRODUCT_IMAGE_PUBLIC_BASE_URL:}
+  region: ${AWS_REGION:}
+
+policy:
+  signup-enabled: ${POLICY_SIGNUP_ENABLED:false}
+
+toss-payments:
+  enabled: ${TOSS_PAYMENTS_ENABLED:false}
+  base-url: ${TOSS_PAYMENTS_BASE_URL:https://api.tosspayments.com}
+  client-key: ${TOSS_PAYMENTS_CLIENT_KEY:}
+  secret-key: ${TOSS_PAYMENTS_SECRET_KEY:}
+  connect-timeout: ${TOSS_PAYMENTS_CONNECT_TIMEOUT:2s}
+  read-timeout: ${TOSS_PAYMENTS_READ_TIMEOUT:10s}
+
+payment:
+  lock:
+    wait-time: ${PAYMENT_LOCK_WAIT_TIME:2s}
+  reconciliation:
+    enabled: ${PAYMENT_RECONCILIATION_ENABLED:false}
+    fixed-delay: ${PAYMENT_RECONCILIATION_DELAY:10s}
+    initial-delay: ${PAYMENT_RECONCILIATION_INITIAL_DELAY:30s}
+    batch-size: ${PAYMENT_RECONCILIATION_BATCH_SIZE:100}
+    retry-delay: ${PAYMENT_RECONCILIATION_RETRY_DELAY:30s}
+    approval-expiry: ${PAYMENT_APPROVAL_EXPIRY:11m}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: default
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+
+---
+spring:
+  config:
+    activate:
+      on-profile: mysql
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/nanacocoa}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:schema-mysql.sql
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1

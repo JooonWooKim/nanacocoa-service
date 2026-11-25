@@ -65,6 +65,38 @@ fi
 find "$migration_fixture" -mindepth 1 -delete 2>/dev/null || true
 rmdir "$migration_fixture" 2>/dev/null || true
 
+config_fixture=$(mktemp -d "${TMPDIR:-/tmp}/nanacocoa-release-config.XXXXXX")
+(
+	set -e
+	cd "$config_fixture"
+	mkdir -p scripts deploy
+	cp "$PROJECT_DIR/scripts/setup-release-config.sh" scripts/
+	cp -R "$PROJECT_DIR/deploy/templates" deploy/
+	printf '%s\n' 'local fixture' > .env
+	printf '%s\n' 'local fixture' > compose.yaml
+	if ./scripts/setup-release-config.sh > conflict.log 2>&1; then exit 1; fi
+	grep -q 'compose.yaml' conflict.log
+	grep -Fxq 'local fixture' compose.yaml
+	test ! -e Dockerfile
+	test ! -e .env.example
+	rm compose.yaml
+	ln -s .env compose.yaml
+	if ./scripts/setup-release-config.sh > conflict.log 2>&1; then exit 1; fi
+	test -L compose.yaml
+	test ! -e Dockerfile
+	rm compose.yaml
+	./scripts/setup-release-config.sh > first.log
+	test "$(wc -l < first.log | tr -d ' ')" -eq 6
+	./scripts/setup-release-config.sh > second.log
+	test ! -s second.log
+	grep -Fxq 'local fixture' .env
+) 2>/dev/null
+if [ "$?" -ne 0 ]; then
+	printf '공통 설정 초기화 fixture의 충돌·기존 파일 보존·재실행 검사에 실패함\n' >> "$violations"
+fi
+find "$config_fixture" -mindepth 1 -delete 2>/dev/null || true
+rmdir "$config_fixture" 2>/dev/null || true
+
 if ! "$PROJECT_DIR/scripts/harness" help >/dev/null 2>&1; then
 	printf 'scripts/harness help 실패\n' >> "$violations"
 fi
