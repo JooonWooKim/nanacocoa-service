@@ -50,6 +50,47 @@ docker compose logs --tail=200 app
 기존 절차로 실행합니다. [입력 계약](../product-specs/order-payment-observability-prd.md)
 · [미확정 결제 운영 절차](payment-environment.md)
 
+### 모의 Slack 접수와 회신
+
+Python 3.9 이상으로 저장소에서 아래 명령을 실행하면 임시 루프백 포트와 SQLite에서
+서명된 합성 이벤트를 접수하고 별도 프로세스로 스레드 회신을 확인합니다.
+
+```sh
+python3 -B src/test/python/test_slack_incident_intake.py -v
+```
+
+직접 실행할 때는 수신기와 작업자가 같은 로컬 SQLite 파일을 사용합니다.
+아래 값은 모의 이벤트에만 쓰는 합성 설정 예시입니다.
+
+```sh
+mkdir -p build/slack-incident
+env INCIDENT_SLACK_MODE=mock INCIDENT_SLACK_SIGNING_SECRET=synthetic-local-signing-secret \
+  INCIDENT_SLACK_APP=A123 INCIDENT_SLACK_TEAM=T123 INCIDENT_SLACK_CHANNEL=C123 \
+  INCIDENT_SLACK_USER=U123 INCIDENT_SLACK_BOT=U999 \
+  python3 -B scripts/slack_incident_intake.py --database build/slack-incident/queue.db serve
+```
+
+수신기는 `127.0.0.1:18090`의 `POST /integrations/slack/events`를 사용합니다.
+서명된 합성 이벤트와 로컬 비식별 증거를 준비합니다. 이벤트 예시는 위 테스트의
+`envelope`와 `post`에 있으며, 증거는 기존 `incident-evidence` JSON 계약을 따릅니다.
+별도 터미널에서 아래 명령으로 큐를 처리합니다. 계속 처리하려면 `--once`를 생략합니다.
+
+```sh
+python3 -B scripts/slack_incident_intake.py --database build/slack-incident/queue.db \
+  worker --evidence build/slack-incident/incident.json --once
+sqlite3 -readonly build/slack-incident/queue.db \
+  'SELECT id, state, evidence_status, delivery_reason FROM jobs;'
+sqlite3 -readonly build/slack-incident/queue.db \
+  'SELECT channel, thread_ts, text FROM mock_replies;'
+```
+
+`jobs.evidence_status`는 자료 생성 결과이고 `state`는 처리·발송 상태입니다.
+`BLOCKED / DELIVERY_UNKNOWN`은 응답이 끊겼거나 전송 중 작업자가 종료돼 담당자가 원래
+스레드를 확인해야 하는 상태입니다. 중단된 발송은 60초 처리 기한 뒤 다음 큐 검사에서
+판정합니다. 확실히 거절된 비율 제한은 1~60초 대기를 지켜 최초 포함 최대 세 번
+시도합니다. 작업이 끝나면 수신기와 계속 실행한 작업자를 `Ctrl+C`로 종료합니다.
+[Slack 접수 PRD](../product-specs/slack-incident-intake-prd.md)
+
 ## 3. 계층 분류
 
 - 시작·설정: 애플리케이션 프로필, 필수 환경, 의존 서비스 상태
