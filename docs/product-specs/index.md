@@ -58,6 +58,7 @@
 
 사용자에게 보이는 새 기능은 구현 전이나 구현과 함께 인수 조건, 실패 동작,
 인가, 데이터 영향, 연결된 테스트를 포함한 집중 명세를 추가해야 합니다.
-- [격리 MySQL 8.4 품질 검사 PRD](mysql-quality-gate-prd.md)는 [이슈 #54](https://github.com/JooonWooKim/nanacocoa-service/issues/54)의 로컬·GitHub 공통 실행, 이행·JPA 및 주문·재고·결제 테스트와 실패 증거 기준을 정의합니다. 실제 MySQL 로컬 검증을 완료했고 새 GitHub 작업 실행과 main 반영은 대기 중입니다.
+- [주문·결제 장애 추적 PRD](order-payment-observability-prd.md)는 [이슈 #57](https://github.com/JooonWooKim/nanacocoa-service/issues/57)의 요청 번호·오류 화면·자동 복구와 민감 정보 방지 기준을 정의합니다. 구현과 회귀 검증은 대기 중입니다.
+- [격리 MySQL 8.4 품질 검사 PRD](mysql-quality-gate-prd.md)는 [이슈 #54](https://github.com/JooonWooKim/nanacocoa-service/issues/54)의 로컬·GitHub 공통 실행, 이행·JPA 및 주문·재고·결제 테스트와 실패 증거 기준을 정의합니다. [PR #56](https://github.com/JooonWooKim/nanacocoa-service/pull/56)으로 main에 반영했고 병합 후 H2·MySQL 검사를 통과했습니다.
 - [운영 배포 사전점검 PRD](production-release-preflight-prd.md)는 [이슈 #52](https://github.com/JooonWooKim/nanacocoa-service/issues/52)의 후보 품질 검사와 운영 인수 증거를 대조하는 명령 및 인수 기준을 정의합니다. [PR #53](https://github.com/JooonWooKim/nanacocoa-service/pull/53)이 main에 반영됐고 실제 운영 인수는 대기 중입니다.
 - [배포 검증 재현성과 PR 품질 검사 PRD](release-readiness-prd.md)는 [이슈 #50](https://github.com/JooonWooKim/nanacocoa-service/issues/50)의 공통 설정, 깨끗한 체크아웃 검증, GitHub 품질 검사와 격리 배포 리허설을 기록합니다. [PR #51](https://github.com/JooonWooKim/nanacocoa-service/pull/51)이 main에 반영됐고 병합 후 품질 검사도 통과했습니다.
