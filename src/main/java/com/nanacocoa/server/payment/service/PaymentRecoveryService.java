@@ -1,6 +1,7 @@
 package com.nanacocoa.server.payment.service;
 
 import com.nanacocoa.server.common.exception.NanacocoaException;
+import com.nanacocoa.server.common.observability.IncidentTrace;
 import com.nanacocoa.server.payment.entity.CancellationStatus;
 import com.nanacocoa.server.payment.entity.Payment;
 import com.nanacocoa.server.payment.entity.PaymentCancellation;
@@ -14,8 +15,6 @@ import com.nanacocoa.server.payment.repository.PaymentCancellationRepository;
 import com.nanacocoa.server.payment.repository.PaymentRepository;
 import com.nanacocoa.server.payment.service.PaymentTransactionalService.ApprovalWork;
 import com.nanacocoa.server.payment.service.PaymentTransactionalService.CancellationWork;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,9 +24,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import static com.nanacocoa.server.common.observability.IncidentTrace.Operation.*;
+import static com.nanacocoa.server.common.observability.IncidentTrace.Result.*;
+
 @Service
 public class PaymentRecoveryService {
-	private static final Logger log = LoggerFactory.getLogger(PaymentRecoveryService.class);
 	private static final String COMPENSATION_REASON = "내부 결제 확정 실패에 따른 자동 보상 취소";
 
 	private final PaymentRepository paymentRepository;
@@ -93,13 +94,15 @@ public class PaymentRecoveryService {
 	}
 
 	private void reconcileApprovalSafely(Long paymentId, String orderId) {
-		try {
-			paymentLockManager.withOrderLock(orderId, () -> {
-				reconcileApproval(paymentId, false);
-				return null;
-			});
-		} catch (RuntimeException exception) {
-			log.warn("Payment approval reconciliation deferred. paymentId={}", paymentId);
+		try (var trace = IncidentTrace.recoveryAttempt(RECOVERY_APPROVAL)) {
+			try {
+				paymentLockManager.withOrderLock(orderId, () -> {
+					reconcileApproval(paymentId, false);
+					return null;
+				});
+			} catch (RuntimeException exception) {
+				IncidentTrace.mark(INTERNAL_ERROR);
+			}
 		}
 	}
 
@@ -110,6 +113,7 @@ public class PaymentRecoveryService {
 		}
 
 		if (!ready(work.nextRetryAt(), manual)) return;
+		if (work.recoveryAction() == PaymentRecoveryAction.COMPENSATE_APPROVAL) IncidentTrace.markCompensation();
 
 		TossPaymentResponse response;
 		try {
@@ -128,11 +132,14 @@ public class PaymentRecoveryService {
 
 		if ("ABORTED".equals(response.getStatus()) || "EXPIRED".equals(response.getStatus())) {
 			transactionalService.failApproval(work.paymentId(), response.getStatus(), "결제사가 승인 실패를 확인했습니다.");
+			IncidentTrace.mark(FAILED);
 			return;
 		}
 
 		if (response.isCanceled()) {
+			IncidentTrace.markCompensation();
 			transactionalService.completeCompensation(work.paymentId(), response);
+			IncidentTrace.mark(SUCCESS);
 			return;
 		}
 
@@ -147,17 +154,20 @@ public class PaymentRecoveryService {
 					"UNSUPPORTED_PG_STATUS",
 					"지원하지 않는 PG 상태: " + response.getStatus()
 			);
+			IncidentTrace.mark(PENDING);
 			return;
 		}
 
 		try {
 			transactionalService.completeApproval(work.paymentId(), response);
+			IncidentTrace.mark(SUCCESS);
 		} catch (RuntimeException exception) {
 			transactionalService.requestCompensation(
 					work.paymentId(),
 					"RECOVERY_COMPLETION_FAILED",
 					exception.getMessage()
 			);
+			IncidentTrace.mark(PENDING);
 		}
 	}
 
@@ -165,6 +175,7 @@ public class PaymentRecoveryService {
 		if (exception.isNotFound() && work.recoveryAction() == PaymentRecoveryAction.VERIFY_APPROVAL) {
 			if (work.createdAt().plus(approvalExpiry).isBefore(LocalDateTime.now())) {
 				transactionalService.failApproval(work.paymentId(), exception.getCode(), exception.getMessage());
+				IncidentTrace.mark(FAILED);
 			} else {
 				retryApprovalWithSameIdempotencyKey(work);
 			}
@@ -179,6 +190,7 @@ public class PaymentRecoveryService {
 		} else {
 			transactionalService.recordUncertainApproval(work.paymentId(), code, message);
 		}
+		IncidentTrace.mark(PENDING);
 	}
 
 	private void retryApprovalWithSameIdempotencyKey(ApprovalWork work) {
@@ -190,11 +202,14 @@ public class PaymentRecoveryService {
 					work.approvalIdempotencyKey()
 			);
 			transactionalService.completeApproval(work.paymentId(), response);
+			IncidentTrace.mark(SUCCESS);
 		} catch (TossPaymentsException exception) {
 			if (exception.isDefinitive()) {
 				transactionalService.failApproval(work.paymentId(), exception.getCode(), exception.getMessage());
+				IncidentTrace.mark(FAILED);
 			} else {
 				transactionalService.recordUncertainApproval(work.paymentId(), exception.getCode(), exception.getMessage());
+				IncidentTrace.mark(PENDING);
 			}
 		} catch (RuntimeException exception) {
 			transactionalService.requestCompensation(
@@ -202,6 +217,7 @@ public class PaymentRecoveryService {
 					"RECOVERY_COMPLETION_FAILED",
 					exception.getMessage()
 			);
+			IncidentTrace.mark(PENDING);
 		}
 	}
 
@@ -212,6 +228,7 @@ public class PaymentRecoveryService {
 					"COMPENSATION_LOOKUP_PENDING",
 					"보상할 승인 결제 상태를 확인할 수 없습니다."
 			);
+			IncidentTrace.mark(PENDING);
 			return;
 		}
 
@@ -222,19 +239,23 @@ public class PaymentRecoveryService {
 					work.compensationIdempotencyKey()
 			);
 			transactionalService.completeCompensation(work.paymentId(), cancelResponse);
+			IncidentTrace.mark(SUCCESS);
 		} catch (TossPaymentsException exception) {
 			transactionalService.requestCompensation(work.paymentId(), exception.getCode(), exception.getMessage());
+			IncidentTrace.mark(PENDING);
 		}
 	}
 
 	private void reconcileCancellationSafely(Long cancellationId, String orderId) {
-		try {
-			paymentLockManager.withOrderLock(orderId, () -> {
-				reconcileCancellation(cancellationId, false);
-				return null;
-			});
-		} catch (RuntimeException exception) {
-			log.warn("Payment cancellation reconciliation deferred. cancellationId={}", cancellationId);
+		try (var trace = IncidentTrace.recoveryAttempt(RECOVERY_CANCELLATION)) {
+			try {
+				paymentLockManager.withOrderLock(orderId, () -> {
+					reconcileCancellation(cancellationId, false);
+					return null;
+				});
+			} catch (RuntimeException exception) {
+				IncidentTrace.mark(INTERNAL_ERROR);
+			}
 		}
 	}
 
@@ -255,6 +276,7 @@ public class PaymentRecoveryService {
 					exception.getCode(),
 					exception.getMessage()
 			);
+			IncidentTrace.mark(PENDING);
 			return;
 		}
 
@@ -262,11 +284,13 @@ public class PaymentRecoveryService {
 				|| !Objects.equals(work.orderId(), lookup.getOrderId())
 				|| !Objects.equals(work.amount(), lookup.getTotalAmount())) {
 			transactionalService.recordUncertainCancellation(work.cancellationId(), "PG_PAYMENT_MISMATCH", "결제사 조회 결과 불일치");
+			IncidentTrace.mark(PENDING);
 			return;
 		}
 
 		if (lookup.isCanceled()) {
 			transactionalService.completeCancellation(work.cancellationId(), lookup);
+			IncidentTrace.mark(SUCCESS);
 			return;
 		}
 
@@ -276,6 +300,7 @@ public class PaymentRecoveryService {
 					"CANCEL_LOOKUP_PENDING",
 					"취소 가능한 결제 상태를 확인할 수 없습니다."
 			);
+			IncidentTrace.mark(PENDING);
 			return;
 		}
 
@@ -286,15 +311,18 @@ public class PaymentRecoveryService {
 					work.idempotencyKey()
 			);
 			transactionalService.completeCancellation(work.cancellationId(), cancelResponse);
+			IncidentTrace.mark(SUCCESS);
 		} catch (TossPaymentsException exception) {
 			if (exception.isDefinitive()) {
 				transactionalService.failCancellation(work.cancellationId(), exception.getCode(), exception.getMessage());
+				IncidentTrace.mark(FAILED);
 			} else {
 				transactionalService.recordUncertainCancellation(
 						work.cancellationId(),
 						exception.getCode(),
 						exception.getMessage()
 				);
+				IncidentTrace.mark(PENDING);
 			}
 		} catch (NanacocoaException exception) {
 			throw exception;

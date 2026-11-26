@@ -1,23 +1,29 @@
 """실행 중인 commerceE2e 서버의 실제 HTTP·세션·CSRF·DB 대조. 외부 주소는 허용하지 않는다."""
 import http.cookiejar
 import json
+import re
 import time
 import urllib.error
 import urllib.request
 import uuid
 
 BASE = 'http://127.0.0.1:18082'
+TRACED_POST = re.compile(r'/api/(orders|payments/confirm|payments/[^/]+/cancel|admin/payment-operations/[^/]+/[^/]+/reconcile)')
 
 class Session:
     def __init__(self, role):
         self.http = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
         self.csrf = None
+        self.traces = set()
         self.call('POST', '/api/auth/login', {'email': role+'@example.test', 'password': 'E2eFixture123!'})
         self.csrf = None  # 로그인으로 회전한 토큰을 다시 조회한다.
 
     def call(self, method, path, data=None, expected=(200,), headers=None, csrf=True):
         assert path.startswith('/api/')
         h = {'Content-Type': 'application/json', **(headers or {})}
+        traced = method == 'POST' and TRACED_POST.fullmatch(path)
+        if traced:
+            h['X-Request-Id'] = 'synthetic-client-marker'
         if method != 'GET' and csrf:
             if self.csrf is None:
                 self.csrf = self.call('GET', '/api/auth/csrf')[1]['data']
@@ -30,6 +36,13 @@ class Session:
             response = error
         body = json.loads(response.read() or '{}')
         assert response.status in expected, (method, path.split('?')[0], response.status, expected, body.get('code'))
+        if traced:
+            incident_id = response.headers.get('X-Request-Id')
+            parsed = uuid.UUID(incident_id)
+            assert parsed.version == 4 and str(parsed) == incident_id and incident_id not in self.traces
+            self.traces.add(incident_id)
+        else:
+            assert response.headers.get('X-Request-Id') is None
         return response.status, body
 
 
@@ -73,7 +86,10 @@ def run():
             pending=get(admin,'/api/admin/payment-operations?kind=VERIFY_APPROVAL')['items']
             row=next(x for x in pending if x['orderId']==oid)
             wait_recovery('APPROVAL',row['id'])
-        buyer.call('POST','/api/payments/confirm',confirm,headers=confirm_headers,expected=(200,201))
+        confirmed = buyer.call('POST','/api/payments/confirm',confirm,headers=confirm_headers,expected=(200,201))[1]['data']
+        if product==1:
+            buyer.call('POST',f"/api/payments/{confirmed['paymentId']}/cancel",{'cancelReason':'가상 검증'},
+                       headers={'Idempotency-Key':str(uuid.uuid4())},expected=(409,))
         if product==6:
             path='/api/admin/shipping/orders/'+oid
             ship=get(admin,path)
@@ -113,7 +129,8 @@ def run():
         assert after['providerCalls']['confirm:'+oid]==1
         assert get(buyer,'/api/orders/'+oid)['returns']['requests'][0]['refundStatus']=='SUCCESS'
         evidence.append({'scenario':product,'orderId':oid,'requestId':rid,'result':'PASS'})
-    print(json.dumps({'scenarios':evidence,'snapshot':snapshot()},ensure_ascii=False,indent=2))
+    print(json.dumps({'scenarios':evidence,'traceCount':len(buyer.traces | admin.traces | other.traces),
+                      'snapshot':snapshot()},ensure_ascii=False,indent=2))
 
 if __name__ == '__main__':
     run()

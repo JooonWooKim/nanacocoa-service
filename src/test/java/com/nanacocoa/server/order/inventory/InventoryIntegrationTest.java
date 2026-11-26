@@ -198,6 +198,54 @@ class InventoryIntegrationTest {
         stock(product, 0, 1);
     }
 
+    @Test void incidentTraceCoversCsrfAuthenticationAndUncertainPayment() throws Exception {
+        var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("nanacocoa.incident");
+        var captured = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+        captured.start();
+        logger.addAppender(captured);
+        try {
+            var order = order(product(1), 1);
+            String endpoint = "/api/payments/confirm";
+            String paymentKey = "incident-private-key-marker";
+            String payload = json.writeValueAsString(new ConfirmPaymentRequest(paymentKey, order.getOrderId(), order.getTotalAmount()));
+            String key = UUID.randomUUID().toString();
+            var forbidden = mvc.perform(post(endpoint).queryParam("trace", "query-marker"))
+                .andExpect(status().isForbidden()).andReturn().getResponse();
+            var unauthorized = mvc.perform(post(endpoint).with(csrf(mvc)))
+                .andExpect(status().isUnauthorized()).andReturn().getResponse();
+            var adminDenied = mvc.perform(post("/api/admin/payment-operations/APPROVAL/1/reconcile")
+                    .session(session(buyer)).with(csrf(mvc)))
+                .andExpect(status().isForbidden()).andReturn().getResponse();
+            when(tossPaymentsClient.confirm(eq(paymentKey), eq(order.getOrderId()), eq(order.getTotalAmount()), anyString()))
+                .thenThrow(new com.nanacocoa.server.payment.pg.TossPaymentsException(
+                    com.nanacocoa.server.payment.pg.TossPaymentsException.Kind.UNCERTAIN, "PG_TIMEOUT", "provider-marker"));
+            var pending = mvc.perform(post(endpoint).session(session(buyer)).with(csrf(mvc))
+                    .header("Idempotency-Key", key).header("X-Request-Id", "spoof-marker")
+                    .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isAccepted()).andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andReturn().getResponse();
+            when(tossPaymentsClient.isDisabled()).thenReturn(true);
+            var unavailable = mvc.perform(post(endpoint).session(session(buyer)).with(csrf(mvc))
+                    .header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isServiceUnavailable()).andReturn().getResponse();
+            var responses = List.of(forbidden, unauthorized, adminDenied, pending, unavailable);
+            var outcomes = List.of("CSRF_REJECTED", "UNAUTHENTICATED", "FORBIDDEN", "PENDING", "INTERNAL_ERROR");
+            assertThat(captured.list).hasSize(outcomes.size());
+            for (int i = 0; i < outcomes.size(); i++) {
+                String line = captured.list.get(i).getFormattedMessage();
+                assertThat(line).doesNotContain("-marker", key, order.getOrderId());
+                var event = json.readTree(line.substring("INCIDENT_EVENT ".length()));
+                assertThat(event.path("id").asText()).isEqualTo(responses.get(i).getHeader("X-Request-Id"));
+                assertThat(event.path("httpStatus").asInt()).isEqualTo(responses.get(i).getStatus());
+                assertThat(event.path("result").asText()).isEqualTo(outcomes.get(i));
+            }
+            verify(tossPaymentsClient).confirm(eq(paymentKey), eq(order.getOrderId()), eq(order.getTotalAmount()), anyString());
+        } finally {
+            logger.detachAppender(captured);
+            captured.stop();
+        }
+    }
+
     @Test void submissionHttpContractScopesKeysAndReplaysStoredOrder() throws Exception {
         Products first = product(2), second = product(1);
         String endpoint = "/api/orders";
@@ -227,6 +275,7 @@ class InventoryIntegrationTest {
         var creation = mvc.perform(post(endpoint).session(owner).with(csrf(mvc)).header("Idempotency-Key", key)
                 .header("X-Checkout-Account", account).contentType(MediaType.APPLICATION_JSON).content(payload))
             .andExpect(status().isCreated()).andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(header().exists("X-Request-Id"))
             .andExpect(jsonPath("$.data.canStartPayment").value(true))
             .andReturn().getResponse().getContentAsString();
         var stored = json.readTree(creation).path("data");

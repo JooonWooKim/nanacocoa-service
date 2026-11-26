@@ -34,7 +34,7 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 | `policy` | 승인 정책 게시·원문 보존·가입 동의 | `PolicyController` / `PolicyService` | 파일 스냅샷·동의 Repository |
 | `support` | 공개 FAQ, 회원 문의·답변·선택 주문, 운영자 응답 | `SupportController` / `SupportOperationsController` → `SupportService` | 검토형 FAQ 파일·`InquiryRepository` |
 | `notification` | 결제·출고·환불·문의 답변·재입고 알림, 회원 읽음, 운영자 재시도 | `NotificationController` → `NotificationService`, `NotificationWorker` → `NotificationPublisher` | `OrderNotificationRepository` |
-| `common` | 응답, 예외, 보안, 세션, 사용자 상세 | 공통 프레임워크 어댑터 | 회원 조회는 기록된 예외 |
+| `common` | 응답, 예외, 보안, 세션, 사용자 상세, 요청 추적 | 공통 프레임워크 어댑터 | 회원 조회는 기록된 예외 |
 
 생성된 패키지 목록은
 [docs/generated/repository-map.md](docs/generated/repository-map.md)에 있습니다.

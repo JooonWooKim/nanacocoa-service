@@ -11,7 +11,7 @@
 | 영역 | Java 파일 | 주요 역할 |
 | --- | ---: | --- |
 | `cart` | 14 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
-| `common` | 13 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
+| `common` | 15 | 공통 응답, 오류, 보안, 세션, 사용자 상세 |
 | `member` | 26 | 식별, 회원가입, 로그인, 세션 |
 | `notification` | 14 | 주문 상태 알림, 읽음, 운영자 재시도 |
 | `order` | 38 | 주문, 배송, 서버 가격 계산 |
@@ -21,8 +21,8 @@
 | `recovery` | 13 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 | `support` | 8 | 분류되지 않은 최상위 패키지, ARCHITECTURE.md에 기록 필요 |
 
-- 주요 Java 파일: 202
-- 테스트 Java 파일: 47
+- 주요 Java 파일: 204
+- 테스트 Java 파일: 48
 - Flyway 마이그레이션: 18
 - 정적 자원·페이지: 48
 
@@ -40,6 +40,7 @@ src/main/java/com/nanacocoa/server/cart/repository
 src/main/java/com/nanacocoa/server/cart/service
 src/main/java/com/nanacocoa/server/common
 src/main/java/com/nanacocoa/server/common/exception
+src/main/java/com/nanacocoa/server/common/observability
 src/main/java/com/nanacocoa/server/common/response
 src/main/java/com/nanacocoa/server/common/security
 src/main/java/com/nanacocoa/server/common/security/config
@@ -128,6 +129,7 @@ src/test/java/com/nanacocoa/server/HealthContractHttpTest.java
 src/test/java/com/nanacocoa/server/NanacocoaServerApplicationTests.java
 src/test/java/com/nanacocoa/server/SessionSecurityHttpTest.java
 src/test/java/com/nanacocoa/server/cart/CartIntegrationTest.java
+src/test/java/com/nanacocoa/server/common/observability/IncidentTraceTest.java
 src/test/java/com/nanacocoa/server/common/session/ProfileVerificationSessionTest.java
 src/test/java/com/nanacocoa/server/e2e/CommerceE2eServer.java
 src/test/java/com/nanacocoa/server/e2e/RecoveryE2eServer.java

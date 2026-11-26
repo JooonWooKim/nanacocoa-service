@@ -39,7 +39,7 @@ public class CommerceE2eServer {
                 "--payment.reconciliation.enabled=false", "--order.inventory.expiration-enabled=false",
                 "--policy.signup-enabled=false", "--shipping.carriers.test.name=가상 택배",
                 "--shipping.carriers.test.tracking-pattern=[0-9]{10}",
-                "--logging.level.root=WARN");
+                "--logging.level.root=WARN", "--logging.level.nanacocoa.incident=INFO");
     }
 
     @TestConfiguration(proxyBeanMethods = false)

@@ -1,5 +1,6 @@
 package com.nanacocoa.server.payment.service;
 
+import com.nanacocoa.server.common.observability.IncidentTrace;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,7 +27,12 @@ public class PaymentRecoveryScheduler {
 			initialDelayString = "${payment.reconciliation.initial-delay:30s}"
 	)
 	public void reconcile() {
-		recoveryService.reconcileDueApprovals(batchSize);
-		recoveryService.reconcileDueCancellations(batchSize);
+		try (var trace = IncidentTrace.recoveryRun()) {
+			recoveryService.reconcileDueApprovals(batchSize);
+			recoveryService.reconcileDueCancellations(batchSize);
+			IncidentTrace.mark(IncidentTrace.Result.SUCCESS);
+		} catch (RuntimeException exception) {
+			throw new IllegalStateException("Payment recovery batch failed");
+		}
 	}
 }
