@@ -18,7 +18,8 @@
 | OPS-HEALTH | main 반영 완료 / 운영 확인 잔여 | [상태 확인 계약 정비](health-check-prd.md) | [이슈 #30](https://github.com/JooonWooKim/nanacocoa-service/issues/30), main `de5c595` 기준 `feature/30` 로컬 구현. Actuator 정합화·실제 HTTP 4개·전체 엄격 191개 PASS 후 health 실패 기준선 제거. PR #31로 main 반영 완료 | 환경 smoke와 다른 기술부채는 별도 |
 | OPS-RELEASE-READINESS | P0 · main 반영 완료 | [배포 검증 재현성과 PR 품질 검사](release-readiness-prd.md) | [이슈 #50](https://github.com/JooonWooKim/nanacocoa-service/issues/50) · 공용 설정과 격리 Compose 검증 완료. [PR #51](https://github.com/JooonWooKim/nanacocoa-service/pull/51) 병합 후 [main 품질 검사](https://github.com/JooonWooKim/nanacocoa-service/actions/runs/45515506630) 통과 | 실제 운영 배포 대상 인수 |
 | OPS-RELEASE-PREFLIGHT | P0 · main 반영 완료 | [운영 배포 사전점검](production-release-preflight-prd.md) | [이슈 #52](https://github.com/JooonWooKim/nanacocoa-service/issues/52), `feature/52` · 후보·환경이 일치하는 6가지 운영 배포 증거를 읽기 전용으로 대조. [PR #53](https://github.com/JooonWooKim/nanacocoa-service/pull/53) 병합 | 실제 운영 대상 증거 확보와 운영 담당자 인수 |
-| OPS-MYSQL-QUALITY | P0 · 로컬 구현·검증 완료 | [격리 MySQL 8.4 품질 검사](mysql-quality-gate-prd.md) | [이슈 #54](https://github.com/JooonWooKim/nanacocoa-service/issues/54), `feature/54` · [PR #55](https://github.com/JooonWooKim/nanacocoa-service/pull/55)로 준비 문서 main 반영. MySQL 8.4.10에서 이행·JPA·주문·재고·결제 67개 검증 | 검사 구현의 main 반영과 GitHub 실제 실행 확인 |
+| OPS-MYSQL-QUALITY | P0 · main 반영 완료 | [격리 MySQL 8.4 품질 검사](mysql-quality-gate-prd.md) | [이슈 #54](https://github.com/JooonWooKim/nanacocoa-service/issues/54), `feature/54` · [PR #55](https://github.com/JooonWooKim/nanacocoa-service/pull/55)로 준비 문서 main 반영. MySQL 8.4.10에서 이행·JPA·주문·재고·결제 67개 검증 | [PR #56](https://github.com/JooonWooKim/nanacocoa-service/pull/56) 병합. H2·MySQL GitHub PR 검사 통과 |
+| OPS-ORDER-PAYMENT-OBS | P0 · 로컬 구현 / main 반영 대기 | [주문·결제 장애 추적](order-payment-observability-prd.md) | [이슈 #57](https://github.com/JooonWooKim/nanacocoa-service/issues/57), `feature/57` · 요청 번호, 오류 화면과 로그 연결, 자동 복구 식별, 비식별 해결 자료와 권장 테스트 | 원격 품질 검사와 배포 대상 인수 대기. Slack·AI는 후속 |
 | SEC | P0 | [세션 보안](session-security-prd.md) | PR #15 병합. 세션 쓰기 전반의 CSRF 보호, POST 로그아웃, 로그인 세션 ID 회전 구현 | 이슈 #32 기술 회귀 완료. 배포 대상 최종 검증은 별도 |
 | PAY | P0 | [결제 환경 분리와 모의 PG 검증](payment-environment-prd.md) | 결제 승인·취소·조회·복구 구현. PR #17의 환경 분리·모의 PG와 PR #21의 주문 제출 멱등성 병합. [PR #23](https://github.com/JooonWooKim/nanacocoa-service/pull/23)으로 [미확정 거래 운영 조회·개별 복구](payment-operations-prd.md) 구현·검증 및 main 반영 완료 | 미확정 거래 점검 담당자·문의 대응 절차 승인, 모의 PG·RETURN 기술 종단 검증은 이슈 #32에서 완료. 운영 설정·배포 대상 인수 별도 |
 | POLICY | 구현 완료 · 기술 회귀 우선 / 운영 확정 후순위 | [서비스 안내·약관·가입 동의](service-policy-prd.md) | [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 정책 조회·원문 보존·가입 동의 검증/원자적 저장·화면을 구현. 후속 파일 조회 전환과 V10 이력 이행까지 [PR #29](https://github.com/JooonWooKim/nanacocoa-service/pull/29)으로 main 반영 완료 | 기술 회귀 검증 우선. 원문·필수 항목·기존 회원 적용 및 배송/반품 조건 확정·정책 대조·가입 활성화는 판매자 협의 후 진행(출시 전 필수) |
@@ -39,7 +40,10 @@
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
 3. [운영 배포 사전점검](production-release-preflight-prd.md)은 로컬에서 구현·합성 검증했다. main 반영과 실제 후보에 대한 운영 검토는 대기 중이다.
 4. [격리 MySQL 8.4 품질 검사](mysql-quality-gate-prd.md)의 공통 실행 경로와 독립 GitHub 작업을 로컬에서 구현했다. 실제 MySQL 8.4.10 검증은 통과했고 새 GitHub 작업의 원격 검증과 main 반영은 대기 중이다.
-5. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
+5. [주문·결제 장애 추적](order-payment-observability-prd.md)은 `feature/57`에서 구현했다. 요청 번호로 해당 기록을 찾고, 관련 코드·절차와 권장 검사를 해결 자료로 묶는다. 원격 품질 검사·main 반영과 운영 담당자 인수를 이어서 추적한다.
+6. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
+
+2026-11-26 주문·결제 장애 추적 검증에서 H2 Java 268개, 격리 MySQL 8.4.10 집중 68개, 실제 모의 PG HTTP 종단 6개가 통과했다. Chrome checkout의 승인 거절 요청 번호를 정형 로그와 확인했으며 같은 번호로 비식별 해결 자료를 생성했다. 전체 하네스는 기존 구조·보안 예외가 유지된 `BASELINED`다. 로컬 검증 근거와 남은 운영 인수 범위는 실행 기록에서 추적한다. [구현·검증 실행 기록](../exec-plans/completed/order-payment-observability-implementation.md)
 
 2026-11-21 다음 P0 기술 작업을 [이슈 #32](https://github.com/JooonWooKim/nanacocoa-service/issues/32)의
 [종단 검증 PRD](p0-commerce-e2e-prd.md)로 준비했다. `feature/32`의 문서는 로컬 미커밋이다.

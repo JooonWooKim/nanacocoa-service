@@ -117,14 +117,21 @@
     try {
       const response = await requestAuth(`${endpoint}/${target.type}/${target.id}/reconcile`, { method: "POST" });
       const body = await readJson(response);
-      if (!response.ok) { errors(response.status, body.code); notice = message.textContent; }
-      else notice = response.status === 202 ? "아직 결과 확인 중입니다. 예정 시각 이후 다시 조회해주세요." : "거래 처리 결과가 확인됐습니다.";
+      if (!response.ok) {
+        errors(response.status, body.code);
+        notice = incidentMessage(message.textContent, incidentRequestId(response));
+      } else notice = response.status === 202
+        ? incidentMessage("아직 결과 확인 중입니다. 예정 시각 이후 다시 조회해주세요.", incidentRequestId(response))
+        : "거래 처리 결과가 확인됐습니다.";
     } catch (error) {
-      notice = error.code === "CSRF_INVALID" ? "보안 토큰이 만료됐습니다. 상태 확인 후 다시 실행해주세요."
-        : "응답을 확인하지 못했습니다. 복구를 다시 누르기 전에 현재 상태를 조회해주세요.";
+      notice = incidentMessage(error.code === "CSRF_INVALID" ? "보안 토큰이 만료됐습니다. 상태 확인 후 다시 실행해주세요."
+        : "응답을 확인하지 못했습니다. 복구를 다시 누르기 전에 현재 상태를 조회해주세요.", error.requestId);
     } finally { setBusy(false); }
     // 결과 유실 후에도 POST를 반복하지 않고 저장된 결과만 조회한다.
-    await load();
+    const refresh = load();
+    const refreshRequest = pendingRead;
+    await refresh;
+    if (pendingRead !== refreshRequest) return;
     message.textContent = `${notice} ${message.textContent}`.trim();
     retry.hidden = false;
   }

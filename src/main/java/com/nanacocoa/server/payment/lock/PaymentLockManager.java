@@ -44,7 +44,7 @@ public class PaymentLockManager implements OrderPaymentLock {
 			Thread.currentThread().interrupt();
 			throw new NanacocoaException(PAYMENT_LOCK_INTERRUPTED);
 		} catch (RuntimeException exception) {
-			log.error("Redis payment lock acquisition failed. orderId={}", orderId, exception);
+			log.error("Redis payment lock acquisition failed.");
 			throw new NanacocoaException(PAYMENT_LOCK_UNAVAILABLE);
 		}
 
@@ -60,7 +60,7 @@ public class PaymentLockManager implements OrderPaymentLock {
 					lock.unlock();
 				}
 			} catch (RuntimeException exception) {
-				log.error("Redis payment lock release failed. orderId={}", orderId, exception);
+				log.error("Redis payment lock release failed.");
 			}
 		}
 	}

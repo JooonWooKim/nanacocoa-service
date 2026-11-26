@@ -131,12 +131,7 @@ public class PaymentFacade {
 	}
 
 	private void compensateApproval(ApprovalWork work, RuntimeException completionFailure) {
-		log.error(
-				"Internal payment completion failed; starting compensation. paymentId={}, orderId={}",
-				work.paymentId(),
-				work.orderId(),
-				completionFailure
-		);
+		log.error("Internal payment completion failed; starting compensation.");
 		try {
 			transactionalService.requestCompensation(
 					work.paymentId(),
@@ -144,7 +139,7 @@ public class PaymentFacade {
 					completionFailure.getMessage()
 			);
 		} catch (RuntimeException recoveryPersistenceFailure) {
-			log.error("Failed to persist compensation intent. paymentId={}", work.paymentId(), recoveryPersistenceFailure);
+			log.error("Failed to persist compensation intent.");
 		}
 
 		try {
@@ -155,7 +150,7 @@ public class PaymentFacade {
 			);
 			transactionalService.completeCompensation(work.paymentId(), cancelResponse);
 		} catch (RuntimeException compensationFailure) {
-			log.error("Payment compensation remains unresolved. paymentId={}", work.paymentId(), compensationFailure);
+			log.error("Payment compensation remains unresolved.");
 			try {
 				transactionalService.requestCompensation(
 						work.paymentId(),
@@ -163,7 +158,7 @@ public class PaymentFacade {
 						compensationFailure.getMessage()
 				);
 			} catch (RuntimeException ignored) {
-				log.error("Failed to reschedule payment compensation. paymentId={}", work.paymentId(), ignored);
+				log.error("Failed to reschedule payment compensation.");
 			}
 		}
 	}
@@ -211,7 +206,7 @@ public class PaymentFacade {
 		try {
 			return transactionalService.completeCancellation(work.cancellationId(), pgResponse);
 		} catch (RuntimeException completionFailure) {
-			log.error("Payment cancellation DB completion failed. cancellationId={}", work.cancellationId(), completionFailure);
+			log.error("Payment cancellation DB completion failed.");
 			return transactionalService.recordUncertainCancellation(
 					work.cancellationId(),
 					"CANCEL_COMPLETION_UNCERTAIN",

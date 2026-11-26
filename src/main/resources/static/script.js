@@ -401,6 +401,19 @@ function sanitizeCssUrl(url) {
   return String(url || "").replace(/["\\\n\r]/g, "");
 }
 
+function incidentRequestId(response) {
+  return validIncidentRequestId(response?.headers?.get?.("X-Request-Id"));
+}
+
+function validIncidentRequestId(value) {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value) ? value : "";
+}
+
+function incidentMessage(message, requestId) {
+  const valid = validIncidentRequestId(requestId);
+  return valid ? `${message} 요청 번호: ${valid}` : message;
+}
+
 async function requestAuth(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   const sameOrigin = new URL(url, window.location.href).origin === window.location.origin;
@@ -443,6 +456,7 @@ async function requestAuth(url, options = {}) {
     if (body.code === "CSRF_INVALID") {
       const error = new Error(body.error || "보안 토큰을 다시 발급받으려면 다시 시도해 주세요.");
       error.code = body.code;
+      error.requestId = incidentRequestId(response);
       throw error;
     }
   }
@@ -1904,16 +1918,17 @@ async function initCheckoutPage() {
         }),
       });
       const body = await readJson(response);
+      const requestId = incidentRequestId(response);
 
       if (response.status === 401) {
         preservePaymentCallbackLoginReturnUrl();
-        renderPaymentFailure("로그인이 만료되었습니다. 다시 로그인해 결제 승인을 확인해 주세요.", context, false, true);
+        renderPaymentFailure(incidentMessage("로그인이 만료되었습니다. 다시 로그인해 결제 승인을 확인해 주세요.", requestId), context, false, true);
         return;
       }
 
       if (response.status === 202 && body.data?.status === "PENDING" && body.data.paymentId) {
         context.paymentId = body.data.paymentId;
-        renderPaymentPending(context);
+        renderPaymentPending(context, incidentMessage("결제사 응답을 확인하고 있습니다. 잠시 후 상태를 다시 확인해 주세요.", requestId));
         return;
       }
 
@@ -1924,7 +1939,7 @@ async function initCheckoutPage() {
       }
 
       renderPaymentFailure(
-        checkoutApiError(body, "결제 승인에 실패했습니다. 주문서에서 다시 시도해 주세요."),
+        incidentMessage(checkoutApiError(body, "결제 승인에 실패했습니다. 주문서에서 다시 시도해 주세요."), requestId),
         context,
         response.status === 422 || response.status === 503,
       );
@@ -1934,14 +1949,14 @@ async function initCheckoutPage() {
         const currentSession = await loadAuthSession();
         if (!currentSession.loadFailed && !currentSession.authenticated) {
           preservePaymentCallbackLoginReturnUrl();
-          renderPaymentFailure("로그인이 만료되었습니다. 다시 로그인해 결제 승인을 확인해 주세요.", context, false, true);
+          renderPaymentFailure(incidentMessage("로그인이 만료되었습니다. 다시 로그인해 결제 승인을 확인해 주세요.", error.requestId), context, false, true);
           return;
         }
       }
       renderPaymentResult({
         eyebrow: "PAYMENT APPROVAL",
         title: "결제 승인 결과를 확인하지 못했습니다.",
-        message: error.message || "네트워크 연결을 확인한 뒤 승인을 다시 시도해 주세요.",
+        message: incidentMessage(error.message || "네트워크 연결을 확인한 뒤 승인을 다시 시도해 주세요.", error.requestId),
         context,
         showStatusCheck: true,
         statusCheckText: "결제 승인 다시 시도",
@@ -2035,6 +2050,7 @@ async function initCheckoutPage() {
       const error = new Error(checkoutApiError(body, "주문 접수 결과를 확인하지 못했습니다."));
       error.code = body.code;
       error.requiresLogin = response.status === 401;
+      error.requestId = payload ? incidentRequestId(response) : "";
       throw error;
     } finally {
       window.clearTimeout(timeout);
@@ -2046,7 +2062,7 @@ async function initCheckoutPage() {
     renderPaymentResult({
       eyebrow: "주문 확인",
       title: "주문 접수 결과를 확인하지 못했습니다.",
-      message: accountChanged ? error.message : "같은 주문의 접수 결과를 다시 확인해 주세요.",
+      message: incidentMessage(accountChanged ? error.message : "같은 주문의 접수 결과를 다시 확인해 주세요.", error.requestId),
       showStatusCheck: !error.requiresLogin && !accountChanged,
       statusCheckText: "주문 다시 확인",
       returnHref: error.requiresLogin || accountChanged ? checkoutLoginHref() : "orders.html",
@@ -2325,7 +2341,7 @@ async function initCheckoutPage() {
             removeCheckoutSessionValue(submissionStorageKey);
             submissionKey = null;
           }
-          if(cartSelection){renderCheckoutGuard(guard,error.message,"cart.html","장바구니에서 다시 선택");form.hidden=true;guard.hidden=false;return;}
+          if(cartSelection){renderCheckoutGuard(guard,incidentMessage(error.message,error.requestId),"cart.html","장바구니에서 다시 선택");form.hidden=true;guard.hidden=false;return;}
           throw error;
         }
         if (error.requiresLogin || error.code === "ORDER_06") {
@@ -2336,14 +2352,16 @@ async function initCheckoutPage() {
           const saved = await requestSubmission();
           if (saved) {
             showSubmittedOrder(saved.order);
-            if (error.code === "ORDER_05") resultMessage.textContent = error.message;
+            if (error.code === "ORDER_05") resultMessage.textContent = incidentMessage(error.message, error.requestId);
             return;
           }
         } catch (lookupError) {
-          showSubmissionLookupError(lookupError);
+          showSubmissionLookupError({ ...lookupError, message: lookupError.message, requestId: error.requestId });
           return;
         }
-        throw new Error("아직 접수 결과를 확인하지 못했습니다. 같은 내용으로 다시 제출해 주세요.");
+        const missingOrder = new Error("아직 접수 결과를 확인하지 못했습니다. 같은 내용으로 다시 제출해 주세요.");
+        missingOrder.requestId = error.requestId;
+        throw missingOrder;
       }
 
       if (!result.created || !result.order.canStartPayment) {
@@ -2362,7 +2380,7 @@ async function initCheckoutPage() {
         resultMessage.textContent = error.message || "결제창을 열지 못했습니다. 다시 시도해 주세요.";
       }
     } catch (error) {
-      setCheckoutMessage(messageBox, error.message || "결제 준비 중 문제가 발생했습니다.",
+      setCheckoutMessage(messageBox, incidentMessage(error.message || "결제 준비 중 문제가 발생했습니다.", error.requestId),
         error.requiresLogin ? checkoutLoginHref() : null);
     } finally {
       submissionInProgress = false;

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const script = fs.readFileSync('src/main/resources/static/script.js', 'utf8');
 const locationCode = script.slice(script.indexOf('function paymentOperationsLocation('), script.indexOf('function initLoginPage()'));
+const incidentCode = script.slice(script.indexOf('function incidentRequestId('), script.indexOf('async function requestAuth('));
 function parse(search) {
   const context = {URLSearchParams, window:{location:{search}}}; vm.createContext(context);
   vm.runInContext(locationCode, context);
@@ -31,6 +32,7 @@ function harness(request) {
   const document={getElementById:id=>nodes[id],createElement:tag=>new Element(tag),querySelector:()=>main,querySelectorAll:()=>main.all().filter(node=>['button','input','select','a'].includes(node.tagName))};
   const ctx={URLSearchParams,AbortController,document,requestAuth:request,readJson:response=>response.json(),history:{replaceState(){}},location:{search:'?type=APPROVAL&id=1'},window:{confirm:()=>true,addEventListener(){},location:{search:''}}};
   vm.createContext(ctx); vm.runInContext(locationCode,ctx);
+  vm.runInContext(incidentCode,ctx);
   vm.runInContext(fs.readFileSync('src/main/resources/static/payment-operations.js','utf8'),ctx);
   return {nodes,main};
 }
@@ -70,4 +72,26 @@ test('CSRF failure is explained and the POST is not automatically retried',async
   });
   await tick(); await main.all().find(node=>node.textContent==='개별 복구').events.click();
   assert.equal(posts,1);assert.match(nodes['operations-message'].textContent,/보안 토큰/);
+});
+
+test('reconcile shows only a valid request ID for the affected action', async () => {
+  const id = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+  for (const value of [id, 'sensitive-<raw-header>', undefined]) {
+    let posts = 0;
+    const {main, nodes} = harness(async (url, options) => {
+      if (options.method === 'POST') {
+        posts++;
+        return {ok:false, status:503, headers:{get:() => value}, json:async () => ({code:'PAYMENT_11'})};
+      }
+      return response(row);
+    });
+    await tick();
+    await main.all().find(node => node.textContent === '개별 복구').events.click();
+    const message = nodes['operations-message'].textContent;
+    assert.equal(message.includes(id), value === id);
+    assert.doesNotMatch(message, /raw-header/);
+    assert.equal(posts, 1);
+    await nodes['operations-retry'].events.click();
+    assert.doesNotMatch(nodes['operations-message'].textContent, /요청 번호/);
+  }
 });

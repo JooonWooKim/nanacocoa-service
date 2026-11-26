@@ -27,6 +27,29 @@ docker compose logs --tail=200 app
 완전한 제공자 payload를 붙여 넣거나 저장하지 않습니다. 장애 산출물을
 저장소에 추가하기 전에 비식별화합니다.
 
+### 주문·결제 해결 자료
+
+화면의 요청 번호를 사용해 승인된 로그 조회 경로에서 `INCIDENT_EVENT` 항목을
+찾습니다. 자동 복구는 같은 실행 번호의 배치와 개별 처리 항목을 함께 수집합니다.
+로그 접두사 뒤 JSON 객체만 검토해 `events`에 넣습니다. 배포 또는 실행 기록에서
+확인한 40자리 커밋을 `candidateCommit`에 적고 같은 커밋을 체크아웃합니다.
+수정 후보를 대조할 때는 담당자가 검토한 저장소 상대 경로를 `changedPaths` 배열에
+추가합니다. 이동된 파일은 이전 경로와 새 경로를 모두 넣습니다.
+
+```sh
+./scripts/harness incident-evidence --input incident.json --request-id 155dd4fe-3483-4fde-8930-fcb520b705f1
+./scripts/harness incident-evidence --input incident.json --run-id ed58be6b-ccb1-4fde-b01f-1cf4efd2516c
+```
+
+- `PASS`는 해당 번호의 자료 생성을 뜻합니다. 실패 또는 보류 단계, 관련 코드·절차,
+  권장 검사를 확인하고 격리 환경의 실제 검사 결과를 별도로 남깁니다.
+- `BLOCKED`는 후보 커밋이나 같은 번호의 실패·보류 증거를 확인해야 할 때 표시됩니다.
+- `FAIL`은 입력의 형식·필드·값을 점검하라는 신호입니다. 명령은 오류의 원본 값을 출력하지 않습니다.
+
+미확정 결제는 저장된 거래 상태를 먼저 조회합니다. 격리 검증과 운영 복구는 각각 담당자가
+기존 절차로 실행합니다. [입력 계약](../product-specs/order-payment-observability-prd.md)
+· [미확정 결제 운영 절차](payment-environment.md)
+
 ## 3. 계층 분류
 
 - 시작·설정: 애플리케이션 프로필, 필수 환경, 의존 서비스 상태

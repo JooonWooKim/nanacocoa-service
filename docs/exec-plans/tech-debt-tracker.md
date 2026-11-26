@@ -13,7 +13,7 @@
 | NC-DATA-001 | 활성 | 마이그레이션 도입 | MySQL 프로필이 `baseline-on-migrate: true`와 기준 버전 1을 사용합니다. | 기존 배포 이력을 감사하고 flag 변경 전에 기준화가 계속 필요한지 결정합니다. | 새·관리 DB가 버전 없는 스키마를 거부하고 배포 DB에 문서화된 전환 절차가 있습니다. |
 | NC-DATA-002 | 로컬 구현 · 원격 검증 대기 | 데이터베이스 충실도 | [이슈 #54](https://github.com/JooonWooKim/nanacocoa-service/issues/54)에서 격리 MySQL 8.4와 전용 Gradle 작업을 추가했습니다. Flyway·JPA·재고·모의 결제 자동 검증을 기존 H2 검사와 분리했습니다. | GitHub의 실제 실행 결과와 장기 유지 상태를 검토합니다. | 운영 마이그레이션 이력과 JPA 검증이 CI의 MySQL 8.4에서 통과합니다. |
 | NC-CI-001 | 원격 검증 대기 | hosted CI | 공통 설정 초기화와 GitHub 품질 workflow가 기존 하네스를 호출한다. | PR 또는 main의 실제 품질 검사 결과와 실패 요약을 확인한다. | 운영 비밀값 없이 원격 하네스가 실행되고 기존 기준선·실패 분류를 유지한다. |
-| NC-OBS-001 | 제안 | 관측성 | Actuator health는 있지만 구조화된 correlation ID, metrics·tracing 스택, 자동 임시 스택이 없습니다. | 인증·상태 확인 계약 수정 후 디버깅 필요를 측정하고 비식별화 테스트가 있는 저위험 상관관계·metrics만 추가합니다. | 핵심 사용자 흐름이 제한된 진단에 충분한 로그·metrics·trace를 제공합니다. |
+| NC-OBS-001 | 일부 로컬 구현 | 관측성 | 주문·결제 요청 번호와 복구 실행 번호, 비식별 해결 자료를 로컬 구현했습니다. 통합 metrics·tracing과 자동 임시 스택은 후속 범위입니다. | [이슈 #57 구현 PRD](../product-specs/order-payment-observability-prd.md)의 원격 검증과 배포 대상 인수를 진행하고 추가 진단 필요성을 측정합니다. | 핵심 사용자 흐름이 제한된 진단에 충분한 로그·metrics·trace를 제공합니다. |
 
 새 항목에는 ID, 상태, 증거, 다음 행동, 객관적 제거 조건이 필요합니다.
 검사를 삭제하거나 약화해 기준선을 닫지 않습니다.

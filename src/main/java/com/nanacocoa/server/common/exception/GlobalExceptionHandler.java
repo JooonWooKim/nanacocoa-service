@@ -1,5 +1,6 @@
 package com.nanacocoa.server.common.exception;
 
+import com.nanacocoa.server.common.observability.IncidentTrace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,6 +32,13 @@ public class GlobalExceptionHandler {
         String error = e.getErrorCode().getError();
         ErrorMessage errorMessage = new ErrorMessage(code, error);
 
+        switch (e.getErrorCode()) {
+            case INSUFFICIENT_STOCK, STOCK_CONFLICT, ORDER_RESERVATION_EXPIRED ->
+                    IncidentTrace.mark(IncidentTrace.Result.STOCK_CONFLICT);
+            case PAYMENT_APPROVAL_FAILED, PAYMENT_CANCEL_FAILED -> IncidentTrace.mark(IncidentTrace.Result.FAILED);
+            case PAYMENT_RECOVERY_DEFERRED, PAYMENT_IN_PROGRESS -> IncidentTrace.mark(IncidentTrace.Result.DEFERRED);
+            default -> { }
+        }
         logger.error(e.getErrorCode().getCode() + " : " + e.getErrorCode().getError());
 
         return ResponseEntity.status(status).cacheControl(org.springframework.http.CacheControl.noStore()).body(errorMessage);
@@ -64,6 +72,7 @@ public class GlobalExceptionHandler {
 			org.springframework.orm.ObjectOptimisticLockingFailureException.class})
 	public ResponseEntity<ErrorMessage> handleConcurrentUpdate(Exception exception) {
 		ErrorCode error = ErrorCode.STOCK_CONFLICT;
+		IncidentTrace.mark(IncidentTrace.Result.STOCK_CONFLICT);
 		return ResponseEntity.status(error.getHttpStatus()).body(new ErrorMessage(error.getCode(), error.getError()));
 	}
 

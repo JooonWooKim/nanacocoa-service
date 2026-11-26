@@ -16,6 +16,7 @@ import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nanacocoa.server.common.exception.ErrorCode;
 import com.nanacocoa.server.common.exception.ErrorMessage;
+import com.nanacocoa.server.common.observability.IncidentTrace;
 import com.nanacocoa.server.common.security.SessionGenerationFilter;
 import com.nanacocoa.server.common.security.SessionGenerationVerifier;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
@@ -50,6 +51,7 @@ public class SecurityConfig {
                         defaultDeniedHandler.handle(request, response, exception);
                         return;
                     }
+                    IncidentTrace.mark(IncidentTrace.Result.CSRF_REJECTED);
                     var error = ErrorCode.CSRF_INVALID;
                     response.setStatus(error.getHttpStatus().value());
                     response.setContentType("application/json");
