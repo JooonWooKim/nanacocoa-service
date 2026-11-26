@@ -50,6 +50,25 @@ docker compose logs --tail=200 app
 기존 절차로 실행합니다. [입력 계약](../product-specs/order-payment-observability-prd.md)
 · [미확정 결제 운영 절차](payment-environment.md)
 
+### 로컬 모의 장애 분석
+
+위에서 만든 비식별 이벤트 파일의 요청 번호 또는 자동 복구 실행 번호를 사용합니다.
+예시 번호를 실제로 선택한 합성 요청·실행 번호로 바꿔 한 명령을 실행합니다.
+
+```sh
+./scripts/harness incident-analyze --input incident.json --request-id 155dd4fe-3483-4fde-8930-fcb520b705f1
+./scripts/harness incident-analyze --input incident.json --run-id ed58be6b-ccb1-4fde-b01f-1cf4efd2516c
+```
+
+`PASS`에서는 `hypotheses`의 원인 후보, 인용 이벤트와 출처, `nextCheck`를 확인합니다.
+`recommendedTests`는 해결 자료가 추천한 검사 목록입니다. 담당자가 실제 확인과 검사를
+수행합니다. `BLOCKED`는 증거 부족·커밋 불일치·지원 범위 또는 크기·시간 한도를 뜻하고,
+`FAIL`은 입력이나 모의 모델 출력의 계약 오류입니다. `reason`에서 상세 분류를 확인합니다.
+
+모의 모델은 호출 한 번으로 제한하며 `modelCost`는 0입니다. 집중 검증은
+`python3 -B src/test/python/test_incident_analysis.py -v`로 실행합니다.
+[분석 PRD](../product-specs/incident-analysis-prd.md)
+
 ### 모의 Slack 접수와 회신
 
 Python 3.9 이상으로 저장소에서 아래 명령을 실행하면 임시 루프백 포트와 SQLite에서
