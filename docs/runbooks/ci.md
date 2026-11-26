@@ -39,6 +39,14 @@ BASELINED를 표시하면서 종료 코드 0을 반환할 수 있습니다. 기�
 조용한 해소는 실패하며 리뷰가 필요합니다. 엄격한 release gate는 빈 기준선과
 `./scripts/harness test` 통과를 추가로 요구해야 합니다.
 
+## 격리 MySQL 품질 검사
+
+`./scripts/harness mysql-quality`는 Java 17, Python 3, 로컬 Docker daemon을 사용합니다.
+공용 템플릿과 합성 DB만 사용하며, 앞선 H2 검사와 분리된 Gradle 작업을 실행합니다.
+컨테이너는 호스트에서 동적 loopback 포트로만 접속할 수 있고 실행이 끝나면 정리됩니다.
+요약은 `build/harness/mysql-quality/summary.json`에서 확인합니다.
+GitHub는 실패 시 이 파일을 보관합니다. [검사 범위와 인수 기준](../product-specs/mysql-quality-gate-prd.md)
+
 ## 운영 배포 사전점검
 
 운영 담당자는 비식별 증거를 [사전점검 PRD](../product-specs/production-release-preflight-prd.md)의

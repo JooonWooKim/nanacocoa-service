@@ -55,6 +55,35 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.register('mysqlQualityTest', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    outputs.upToDateWhen { false }
+    outputs.doNotCacheIf('uses a disposable MySQL database') { true }
+
+    def reportDirectory = providers.environmentVariable('MYSQL_QUALITY_XML_DIR')
+    reports.junitXml.outputLocation.set(layout.projectDirectory.dir(reportDirectory.orElse('build/test-results/mysqlQualityTest').get()))
+    reports.html.required.set(false)
+
+    filter {
+        includeTestsMatching 'com.nanacocoa.server.migration.FlywayMigrationTest'
+        includeTestsMatching 'com.nanacocoa.server.migration.FilePolicyConsentMigrationTest'
+        includeTestsMatching 'com.nanacocoa.server.order.inventory.InventoryIntegrationTest'
+        includeTestsMatching 'com.nanacocoa.server.order.inventory.PaymentOperationsIntegrationTest'
+        includeTestsMatching 'com.nanacocoa.server.order.inventory.ReturnRequestIntegrationTest'
+    }
+    doFirst {
+        def keys = ['SUBMISSION_MIGRATION_TEST_DB_URL', 'POLICY_FILE_MIGRATION_DB_URL', 'INVENTORY_TEST_DB_URL',
+                    'PAYMENT_OPERATIONS_TEST_DB_URL', 'RETURNS_TEST_DB_URL']
+        def urls = keys.collect { environment[it] }
+        def localMysql = ~/jdbc:mysql:\/\/127\.0\.0\.1:[1-9][0-9]{0,4}\/[a-z_]+(?:\?.*)?/
+        if (!reportDirectory.isPresent() || !urls.every { it != null && it ==~ localMysql }) {
+            throw new GradleException('mysqlQualityTest requires isolated MySQL configuration from the harness.')
+        }
+    }
+}
+
 // 운영 jar에는 포함되지 않는 loopback 브라우저 검증 서버.
 tasks.register('commerceE2e', JavaExec) {
     dependsOn testClasses
