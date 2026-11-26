@@ -61,3 +61,27 @@ jobs:
             build/ci-evidence/failed-tests.txt
           if-no-files-found: ignore
           retention-days: 7
+
+  mysql-quality:
+    name: MySQL 8.4 quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Run isolated MySQL quality gate
+        run: ./scripts/harness mysql-quality
+      - name: Upload MySQL failure summary
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: mysql-quality-failure-${{ github.run_attempt }}
+          path: build/harness/mysql-quality/summary.json
+          if-no-files-found: ignore
+          retention-days: 7
