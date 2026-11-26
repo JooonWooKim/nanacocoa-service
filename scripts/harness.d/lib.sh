@@ -25,7 +25,7 @@ workspace_input_files() {
 		-type d \( -name .git -o -name .gradle -o -name build \) -prune -o \
 		-type f \( \
 			-name '*.java' -o -name '*.gradle' -o -name '*.yml' -o \
-			-name '*.yaml' -o -name '*.md' -o -name '*.sh' -o \
+			-name '*.yaml' -o -name '*.md' -o -name '*.sh' -o -name '*.py' -o \
 			-name '*.sql' -o -name '*.properties' -o -name '*.txt' -o \
 			-name '*.tsv' -o -name '*.xml' -o -name '*.json' -o \
 			-name '*.js' -o -name '*.html' -o -name '*.css' -o \

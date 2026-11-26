@@ -101,6 +101,10 @@ if ! "$PROJECT_DIR/scripts/harness" help >/dev/null 2>&1; then
 	printf 'scripts/harness help 실패\n' >> "$violations"
 fi
 
+if ! python3 -B "$PROJECT_DIR/src/test/python/test_release_preflight.py" >/dev/null 2>&1; then
+	printf '운영 배포 사전점검 CLI fixture 실패 · Python 3와 test_release_preflight.py를 확인하세요\n' >> "$violations"
+fi
+
 if "$PROJECT_DIR/scripts/harness" definitely-not-a-command >/dev/null 2>&1; then
 	printf 'scripts/harness가 유효하지 않은 명령을 허용함\n' >> "$violations"
 fi

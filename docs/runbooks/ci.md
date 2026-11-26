@@ -17,6 +17,7 @@
 ## 호스팅 실행기 요구사항
 
 - Java 17
+- Python 3
 - 실행 가능한 Gradle wrapper
 - POSIX shell과 표준 Unix 텍스트 도구
 - 운영 비밀값 없음
@@ -37,6 +38,14 @@ NC-TEST-001은 feature/30에서 해소해 제품 실패 기준선이 비어 있�
 BASELINED를 표시하면서 종료 코드 0을 반환할 수 있습니다. 기준선 증가나
 조용한 해소는 실패하며 리뷰가 필요합니다. 엄격한 release gate는 빈 기준선과
 `./scripts/harness test` 통과를 추가로 요구해야 합니다.
+
+## 운영 배포 사전점검
+
+운영 담당자는 비식별 증거를 [사전점검 PRD](../product-specs/production-release-preflight-prd.md)의
+JSON 형식으로 준비한 뒤 `./scripts/harness release-preflight --input <파일>`을 실행합니다.
+콘솔 안내는 표준 오류, JSON은 표준 출력으로 전달됩니다. 종료 코드 0은 증거 요건 충족,
+1은 실패, 2는 미충족입니다. 후보 커밋과 대상 환경이 일치하는지 확인하고
+실제 배포는 출시 승인 담당자의 절차를 따릅니다.
 
 ## PR Description 자동화
 
