@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 상태 | `feature/57` 로컬 구현 · main 반영 대기 |
+| 상태 | main 반영 완료 · [PR #58](https://github.com/JooonWooKim/nanacocoa-service/pull/58) · 운영 인수 대기 |
 | 우선순위 | P0 OPS-ORDER-PAYMENT-OBS · 기술부채 NC-OBS-001 |
 | 기준 | 2026-11-26 원격 main `f08b213b22dc540d9adf9a0329c906d9de63370f` |
 | 이슈·브랜치 | [이슈 #57](https://github.com/JooonWooKim/nanacocoa-service/issues/57) · `feature/57` → `origin/feature/57` |
@@ -53,6 +53,8 @@
 결제·재고가 달라질 수 있는 후보는 기존 `./scripts/harness check`와 `./scripts/harness mysql-quality`를 격리 환경에서 실행한다. 권장 테스트가 나온 것과 테스트가 통과한 것은 별도 증거다. [미확정 결제 운영 절차](../runbooks/payment-environment.md)
 
 ## 후속 Slack·AI 연동
+
+첫 후속 작업은 [Slack 장애 접수와 해결 자료 회신](slack-incident-intake-prd.md)이다. 모의 수신과 회신으로 기존 비식별 자료를 연결하며 운영 연결과 AI 분석은 각 후속에서 다룬다.
 
 동일한 비식별 JSON을 승인된 Slack 접수와 AI 분석의 입력으로 재사용한다. AI는 근거 위치와 수정 후보 또는 추가 증거 요청을 제안하고, 담당자가 후보를 검토한 뒤 격리 테스트를 실행한다. 실패 후 재제안은 최초 제안 외 최대 두 번으로 제한한다. 제한된 모델·토큰 예산과 검증 결과를 기록하고, 한도 내에 검증되지 않으면 담당자에게 이관한다. 캐시·모델 선택은 비용과 소요 시간이 측정된 이후 조정한다.
 

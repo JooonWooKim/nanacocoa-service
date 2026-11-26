@@ -113,6 +113,10 @@ if ! python3 -B "$PROJECT_DIR/src/test/python/test_incident_evidence.py" >/dev/n
 	printf '장애 해결 자료 fixture 실패 · test_incident_evidence.py를 확인하세요\n' >> "$violations"
 fi
 
+if ! python3 -B "$PROJECT_DIR/src/test/python/test_slack_incident_intake.py" >/dev/null 2>&1; then
+	printf '모의 Slack 장애 접수 fixture 실패 · test_slack_incident_intake.py를 확인하세요\n' >> "$violations"
+fi
+
 if "$PROJECT_DIR/scripts/harness" definitely-not-a-command >/dev/null 2>&1; then
 	printf 'scripts/harness가 유효하지 않은 명령을 허용함\n' >> "$violations"
 fi

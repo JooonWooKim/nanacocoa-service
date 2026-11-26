@@ -39,6 +39,10 @@ API를 제공합니다. MySQL은 영구 데이터의 기준 저장소이고, Red
 생성된 패키지 목록은
 [docs/generated/repository-map.md](docs/generated/repository-map.md)에 있습니다.
 
+Slack 장애 접수의 모의 구현은 루프백 HTTP 수신기와 별도 작업자로 실행합니다.
+수신기는 검증된 작업을 로컬 SQLite에 저장하고, 작업자는 `incident-evidence`의
+비식별 결과를 모의 스레드 회신으로 기록합니다. [Slack 검증 절차](docs/runbooks/incident-debugging.md#모의-slack-접수와-회신)
+
 ## 계층 의존 방향
 
 정상 요청 방향은 다음과 같습니다.
