@@ -30,7 +30,7 @@ for root in src scripts docs harness .github AGENTS.md ARCHITECTURE.md README.md
 		scan_file "$path"
 	elif [ -d "$path" ]; then
 		find "$path" -type f \( \
-			-name '*.java' -o -name '*.gradle' -o -name '*.sh' -o \
+			-name '*.java' -o -name '*.gradle' -o -name '*.sh' -o -name '*.py' -o \
 			-name '*.md' -o -name '*.yml' -o -name '*.yaml' -o \
 			-name '*.properties' -o -name '*.txt' -o -name '*.tsv' -o \
 			-name '*.js' -o -name '*.html' -o -name '*.css' -o \

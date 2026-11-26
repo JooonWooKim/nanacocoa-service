@@ -21,6 +21,8 @@ usage() {
   docs              지식 구조, 링크, 생성 문서 drift를 검사합니다
   eval              현재 테스트 증거로 핵심 위험을 평가합니다
   smoke             Compose와 이미 실행 중인 app을 검사합니다
+  release-preflight --input <파일>
+                    배포 후보와 운영 인수 증거를 대조합니다
   evidence          비식별화된 상태·증거 묶음을 수집합니다
   clean             build/harness 임시 결과만 삭제합니다
 
@@ -78,6 +80,14 @@ case "$command" in
 			exit 64
 		fi
 		exec "$COMMAND_DIR/$command.sh" "$@"
+		;;
+	release-preflight)
+		if ! command -v python3 >/dev/null 2>&1; then
+			printf '%s\n' '사전점검 차단 · Python 3 필요' >&2
+			printf '%s\n' '{"schemaVersion":1,"result":"BLOCKED","exitCode":2,"reason":"PYTHON_UNAVAILABLE","checks":[]}'
+			exit 2
+		fi
+		exec python3 -B "$COMMAND_DIR/release-preflight.py" "$@"
 		;;
 	test)
 		cd "$SCRIPT_DIR/.."

@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 상태 | 기술 개발·검증 우선 · 판매자 운영 기준 협의는 후순위 대기(실제 출시 전 필수) |
-| 기준일 | 2026-11-24 원격 main `9fc323407e306662e9154603401fb492e8bafc81`, [PR #49](https://github.com/JooonWooKim/nanacocoa-service/pull/49) 병합 확인 |
+| 기준일 | 2026-11-26 원격 main `34f9153cef1fa86b11ab4bcdfafa1497188f7c99`, [PR #51](https://github.com/JooonWooKim/nanacocoa-service/pull/51) 병합 확인 |
 | 대상 | 구매 회원, 배송·환불 운영자, 출시 승인 담당자 |
 
 ## 목표
@@ -16,7 +16,8 @@
 | --- | --- | --- | --- | --- |
 | P0-E2E | 구현된 기술 시나리오 검증 완료 | [구매·환불·재입고 종단 검증](p0-commerce-e2e-prd.md) | [이슈 #32](https://github.com/JooonWooKim/nanacocoa-service/issues/32), main `afc8cc2` 기준 `feature/32` 구현을 [PR #33](https://github.com/JooonWooKim/nanacocoa-service/pull/33)로 main 반영 완료 (`3ed0c59`). PRD 12개 시나리오에 Java/JS·HTTP·Safari 증거 연결. 확인창 취소/수락·전체 배송/반품·환불 복구 PASS | 운영 정책 승인·실데이터·배포 대상 인수는 별도 |
 | OPS-HEALTH | main 반영 완료 / 운영 확인 잔여 | [상태 확인 계약 정비](health-check-prd.md) | [이슈 #30](https://github.com/JooonWooKim/nanacocoa-service/issues/30), main `de5c595` 기준 `feature/30` 로컬 구현. Actuator 정합화·실제 HTTP 4개·전체 엄격 191개 PASS 후 health 실패 기준선 제거. PR #31로 main 반영 완료 | 환경 smoke와 다른 기술부채는 별도 |
-| OPS-RELEASE-READINESS | P0 · 로컬 구현·격리 검증 완료 | [배포 검증 재현성과 PR 품질 검사](release-readiness-prd.md) | [이슈 #50](https://github.com/JooonWooKim/nanacocoa-service/issues/50), `feature/50` · 공용 설정, 깨끗한 체크아웃 하네스, 격리 Compose 검증 완료. GitHub 품질 검사 추가, main 반영 대기 | 실제 GitHub PR·main 검사와 운영 배포 대상 인수 |
+| OPS-RELEASE-READINESS | P0 · main 반영 완료 | [배포 검증 재현성과 PR 품질 검사](release-readiness-prd.md) | [이슈 #50](https://github.com/JooonWooKim/nanacocoa-service/issues/50) · 공용 설정과 격리 Compose 검증 완료. [PR #51](https://github.com/JooonWooKim/nanacocoa-service/pull/51) 병합 후 [main 품질 검사](https://github.com/JooonWooKim/nanacocoa-service/actions/runs/45515506630) 통과 | 실제 운영 배포 대상 인수 |
+| OPS-RELEASE-PREFLIGHT | P0 · 로컬 구현·합성 검증 완료 | [운영 배포 사전점검](production-release-preflight-prd.md) | [이슈 #52](https://github.com/JooonWooKim/nanacocoa-service/issues/52), `feature/52` · 후보·환경이 일치하는 6가지 운영 배포 증거를 읽기 전용으로 대조. main 반영 대기 | 실제 운영 대상 증거 확보와 운영 담당자 인수 |
 | SEC | P0 | [세션 보안](session-security-prd.md) | PR #15 병합. 세션 쓰기 전반의 CSRF 보호, POST 로그아웃, 로그인 세션 ID 회전 구현 | 이슈 #32 기술 회귀 완료. 배포 대상 최종 검증은 별도 |
 | PAY | P0 | [결제 환경 분리와 모의 PG 검증](payment-environment-prd.md) | 결제 승인·취소·조회·복구 구현. PR #17의 환경 분리·모의 PG와 PR #21의 주문 제출 멱등성 병합. [PR #23](https://github.com/JooonWooKim/nanacocoa-service/pull/23)으로 [미확정 거래 운영 조회·개별 복구](payment-operations-prd.md) 구현·검증 및 main 반영 완료 | 미확정 거래 점검 담당자·문의 대응 절차 승인, 모의 PG·RETURN 기술 종단 검증은 이슈 #32에서 완료. 운영 설정·배포 대상 인수 별도 |
 | POLICY | 구현 완료 · 기술 회귀 우선 / 운영 확정 후순위 | [서비스 안내·약관·가입 동의](service-policy-prd.md) | [이슈 #28](https://github.com/JooonWooKim/nanacocoa-service/issues/28)의 정책 조회·원문 보존·가입 동의 검증/원자적 저장·화면을 구현. 후속 파일 조회 전환과 V10 이력 이행까지 [PR #29](https://github.com/JooonWooKim/nanacocoa-service/pull/29)으로 main 반영 완료 | 기술 회귀 검증 우선. 원문·필수 항목·기존 회원 적용 및 배송/반품 조건 확정·정책 대조·가입 활성화는 판매자 협의 후 진행(출시 전 필수) |
@@ -35,7 +36,8 @@
 
 1. SEC·PAY·RETURN·POLICY와 상태 확인 정비는 main에 반영됐다. 이슈 #32의 합성 정책·가상 데이터·모의 PG 기술 시나리오 12개와 Safari 실제 확인창·배송/반품 전체 흐름도 검증 완료했다. 이 검증 환경과 완료한 시나리오를 다음 미구현 작업으로 다시 선택하지 않는다. CART(이슈 #34)는 PR #35, ACCOUNT 배송지 관리(이슈 #36)는 PR #37로 main 반영을 완료했다. 이메일 비밀번호 복구(이슈 #38)는 feature/38에서 로컬 구현·기술 검증했으며 main 반영은 대기한다. 상품 검색·카테고리 관리(이슈 #40)는 로컬 구현·검증을 완료했다. 고객센터 FAQ·1:1 문의(이슈 #42)는 로컬 구현·검증을 완료했다. 주문 상태 알림은 feature/44에서 구현·검증했으며 main 반영 대기 중이다. 운영 인수·정책 승인은 별도로 남아 있다.
 2. 판매자 정보·배송비·취소/반품 조건 협의와 운영 약관 작성·승인은 후순위로 미룬다. 이를 다음 기능 구현의 선행 작업으로 선택하지 않는다. 판매자 협의 대기 중에도 기술 검증과 운영 기준에 의존하지 않는 P1 기능 준비·구현을 진행할 수 있다. P1의 기존 우선순위는 유지한다.
-3. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
+3. [운영 배포 사전점검](production-release-preflight-prd.md)은 로컬에서 구현·합성 검증했다. main 반영과 실제 후보에 대한 운영 검토는 대기 중이다.
+4. 판매자와 협의할 수 있게 되면 아래 후순위 운영 작업을 재개한다. 확정한 조건을 문서·서버 설정과 대조하고 실제 데이터 등록, 전체 인스턴스 배포·최종 운영 검증을 거쳐 출시한다. 승인·설정 전에는 신규 가입·RETURN 신규 신청/처리·실거래를 활성화하지 않는다.
 
 2026-11-21 다음 P0 기술 작업을 [이슈 #32](https://github.com/JooonWooKim/nanacocoa-service/issues/32)의
 [종단 검증 PRD](p0-commerce-e2e-prd.md)로 준비했다. `feature/32`의 문서는 로컬 미커밋이다.
@@ -217,6 +219,14 @@ MySQL 8.4.10 집중 18개도 통과했고 전체 187개 중 기존 health 실패
 공용 설정으로 만든 격리 Compose 후보에서 앱·MySQL 8.4·Redis 기동과 health, V18 이행, 재시작과 합성 주문·결제·동의 백업·복원을 확인했다. 신규 가입과 실결제 기본 비활성, 별도 테스트 프로필의 합성 가입·모의 PG 구매도 확인했다. 실제 GitHub 검사, 운영 배포 대상 인수와 운영 활성화는 대기 중이며 **운영 배포는 보류**한다. [구현 및 검증 기록](../exec-plans/completed/release-readiness-implementation.md)
 
 [PR #51](https://github.com/JooonWooKim/nanacocoa-service/pull/51)의 첫 GitHub 품질 검사에서는 주문 생성 응답의 만료 시각과 DB에서 조회한 시각의 정밀도 차이로 Java 테스트 1개가 실패했다. 예약 만료 시각을 기록할 때 DB와 같은 마이크로초 단위로 맞추고, H2와 격리 MySQL 8.4에서 첫 응답·재요청·조회·DB 값이 일치하는지 확인했다. 수정분의 GitHub 검사와 운영 배포 대상 인수는 대기 중이다. [회귀 수정 기록](../exec-plans/completed/pr-51-reservation-expiry-precision.md)
+
+### 2026-11-25 최신 main 격리 재검증
+
+`34f9153`에서 Chrome 합성 가입·로그인, 저장 배송지, 복수 상품 83,000원과 바로 구매 41,000원 모의 결제를 재검증했다. 승인 호출은 주문당 한 번이었고 동일 주문 제출 키의 만료 시각이 일치했다. 격리 Compose의 재시작·백업·복원과 병합 후 GitHub 품질 검사도 통과했다. 구매 기능 6/6, 배포 준비 2/6을 확인했으며 판매자 정책 승인, 운영 서버·실재고 인수, 운영 결제 검증, 최종 배포·공개가 남아 있다. [main 품질 검사](https://github.com/JooonWooKim/nanacocoa-service/actions/runs/45515506630)
+
+### 2026-11-26 운영 배포 사전점검 결과
+
+[이슈 #52](https://github.com/JooonWooKim/nanacocoa-service/issues/52)의 읽기 전용 명령을 로컬에 구현했다. 합성 CLI 검증 8개와 Java 265개가 통과했고 전체 check는 기존 구조·보안 예외를 유지한 BASELINED다. 후보 `34f9153`은 품질 검사와 격리 리허설 증거가 확인됐다. 운영 인수 증거 네 가지가 남아 2/6 충족, BLOCKED로 판정했다. main 반영과 실제 운영 인수는 대기 중이고 운영 배포는 보류한다. [사전점검 구현 기록](../exec-plans/completed/production-release-preflight-implementation.md)
 
 ## 운영 결정이 필요한 항목
 
