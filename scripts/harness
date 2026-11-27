@@ -26,6 +26,8 @@ usage() {
                     배포 후보와 운영 인수 증거를 대조합니다
   release-rehearsal --candidate <전체 커밋 SHA>
                     후보 격리 기동·재시작·DB 복원 증거를 생성합니다
+  release-evidence --candidate <전체 커밋 SHA> --quality-run <ID> --rehearsal <파일> --target <별칭>
+                    같은 후보의 품질·리허설 증거로 사전점검 입력을 만듭니다
   evidence          비식별화된 상태·증거 묶음을 수집합니다
   incident-evidence --input <파일> <--request-id|--run-id> <번호>
                     주문·결제 장애 해결 자료를 JSON으로 정리합니다
@@ -115,7 +117,7 @@ case "$command" in
 		fi
 		exec python3 -B "$COMMAND_DIR/mysql-quality.py"
 		;;
-	incident-evidence|incident-analyze|slack-reply-pilot|pr-create)
+	release-evidence|incident-evidence|incident-analyze|slack-reply-pilot|pr-create)
 		exec python3 -B "$COMMAND_DIR/$command.py" "$@"
 		;;
 	test)

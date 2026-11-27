@@ -62,6 +62,19 @@ PASS의 `check` 객체를 같은 SHA의 사전점검 입력 `checks` 배열에 �
 
 ## 운영 배포 사전점검
 
+후보의 `main` Quality 실행 번호와 [리허설 JSON](#배포-후보-격리-리허설)을 확보한 뒤
+기술 증거 입력을 생성합니다. `QUALITY_RUN_ID`는 GitHub Actions 실행 번호입니다.
+
+```sh
+./scripts/harness release-evidence --candidate "$(git rev-parse HEAD)" \
+  --quality-run "$QUALITY_RUN_ID" --rehearsal rehearsal.json --target production > preflight.json
+./scripts/harness release-preflight --input preflight.json
+```
+
+두 작업이 같은 실행 시도에 있어야 합니다. 일부 작업만 재실행한 시도에서 작업이 빠졌다면
+전체 작업을 다시 실행한 뒤 결과를 확인합니다. `release-quality-<시도>` 요약은 30일간 보관합니다.
+기준선 승인과 운영 증거는 담당자가 추가합니다. [증거 수집 PRD](../product-specs/release-evidence-prd.md)
+
 운영 담당자는 비식별 증거를 [사전점검 PRD](../product-specs/production-release-preflight-prd.md)의
 JSON 형식으로 준비한 뒤 `./scripts/harness release-preflight --input <파일>`을 실행합니다.
 콘솔 안내는 표준 오류, JSON은 표준 출력으로 전달됩니다. 종료 코드 0은 증거 요건 충족,

@@ -109,6 +109,10 @@ if ! python3 -B "$PROJECT_DIR/src/test/python/test_release_rehearsal.py" >/dev/n
 	printf '배포 후보 격리 리허설 CLI fixture 실패 · test_release_rehearsal.py를 확인하세요\n' >> "$violations"
 fi
 
+if ! python3 -B "$PROJECT_DIR/src/test/python/test_release_evidence.py" >/dev/null 2>&1; then
+	printf '배포 사전점검 증거 수집 fixture 실패 · test_release_evidence.py를 확인하세요\n' >> "$violations"
+fi
+
 if ! python3 -B "$PROJECT_DIR/src/test/python/test_mysql_quality.py" >/dev/null 2>&1; then
 	printf '격리 MySQL 품질 검사 fixture 실패 · test_mysql_quality.py를 확인하세요\n' >> "$violations"
 fi
@@ -161,7 +165,7 @@ if "$PROJECT_DIR/scripts/harness" test-baseline --from-results unexpected-argume
 	printf 'scripts/harness test-baseline이 추가 인자를 허용함\n' >> "$violations"
 fi
 
-for command in doctor bootstrap check test test-unit test-integration architecture docs eval smoke release-rehearsal evidence clean security migrations generate-docs entropy test-baseline; do
+for command in doctor bootstrap check test test-unit test-integration architecture docs eval smoke release-rehearsal release-evidence evidence clean security migrations generate-docs entropy test-baseline; do
 	if ! "$PROJECT_DIR/scripts/harness" help | grep -qE "^  $command([[:space:]]|$)"; then
 		printf 'help 출력에 명령이 문서화되어 있지 않음: %s\n' "$command" >> "$violations"
 	fi

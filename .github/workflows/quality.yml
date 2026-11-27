@@ -31,6 +31,20 @@ jobs:
         run: ./scripts/setup-release-config.sh
       - name: Run repository harness
         run: ./scripts/harness check
+      - name: Prepare release quality evidence
+        if: success() && github.event_name == 'push'
+        run: |
+          mkdir -p build/ci-evidence
+          python3 -B scripts/harness.d/release-evidence.py --publish-quality build/harness/check-summary.txt \
+            > build/ci-evidence/quality-summary.json
+      - name: Upload release quality evidence
+        if: success() && github.event_name == 'push'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-quality-${{ github.run_attempt }}
+          path: build/ci-evidence/quality-summary.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Prepare failure summaries
         if: failure()
         shell: bash
