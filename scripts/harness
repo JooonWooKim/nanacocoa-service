@@ -31,6 +31,8 @@ usage() {
                     검증된 장애 자료로 원인 후보와 확인 절차를 모의 분석합니다
   incident-analyze --live-pilot
                     고정 합성 사례를 전용 프로젝트에서 실제 모델로 분석합니다
+  pr-create --title <제목> --body-file <파일> [--base <브랜치>] [--head <브랜치>]
+                    푸시된 브랜치의 PR을 열고 Codex 리뷰를 요청합니다
   clean             build/harness 임시 결과만 삭제합니다
 
 유지보수 명령:
@@ -103,7 +105,7 @@ case "$command" in
 		fi
 		exec python3 -B "$COMMAND_DIR/mysql-quality.py"
 		;;
-	incident-evidence|incident-analyze)
+	incident-evidence|incident-analyze|pr-create)
 		exec python3 -B "$COMMAND_DIR/$command.py" "$@"
 		;;
 	test)

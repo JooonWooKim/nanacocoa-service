@@ -19,6 +19,23 @@ refactor를 수행하지 않습니다.
 저장소에 remote, 범위가 제한된 자격 증명, 리뷰 규칙, 명시적 사용자 승인이
 생긴 후에만 hosted 자동화가 유지보수 변경안을 열 수 있습니다.
 
+## PR 생성과 Codex 리뷰 요청
+
+PR 생성을 요청하면 하네스가 `origin`의 푸시된 브랜치에서 PR을 열고,
+PR 대화에 `@codex review` 댓글을 남깁니다. GitHub CLI에 로그인된 환경에서
+제목과 본문 파일을 지정합니다. 현재 로컬 브랜치와 `main`이 기본이며 필요하면
+`--head`와 `--base`를 지정합니다.
+
+```sh
+./scripts/harness pr-create --title "PR 제목" --body-file /tmp/pr-body.md
+```
+
+원격 브랜치의 커밋이 로컬과 일치해야 진행합니다. 동일한 열린 PR과 저장소 역할이
+있는 작성자의 기존 요청 댓글은 재사용합니다. 결과 JSON의 `prUrl`과 `reviewUrl`에서
+PR과 댓글을 확인합니다. 댓글이 확인되지 않으면 기존 PR 링크와 실패 사유가 표시됩니다.
+원인을 확인한 뒤 같은 명령을 다시 실행하면 열린 PR에서 이어집니다. 이 요청 흐름에는
+별도 push나 병합이 포함되지 않습니다.
+
 ## AI PR Description
 
 상태: 구현 완료, `main` 병합과 repository secret 등록 후 활성화
