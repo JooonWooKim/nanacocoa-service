@@ -50,13 +50,13 @@ def object_with_unique_keys(pairs):
     return result
 
 
-def read_input(path):
+def read_input(path, max_bytes=MAX_BYTES):
     fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
     with os.fdopen(fd, "rb") as source:
         if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
             raise InvalidInput("INVALID_INPUT_FILE")
-        data = source.read(MAX_BYTES + 1)
-    if len(data) > MAX_BYTES:
+        data = source.read(max_bytes + 1)
+    if len(data) > max_bytes:
         raise InvalidInput("INPUT_TOO_LARGE")
     return json.loads(data.decode("utf-8"), object_pairs_hook=object_with_unique_keys)
 
@@ -195,11 +195,11 @@ def report_for(candidate, events, paths, kind, identifier):
     return report
 
 
-def evaluate(args):
+def evaluate(args, *, max_bytes=MAX_BYTES):
     if (len(args) != 4 or args[0] != "--input" or args[2] not in {"--request-id", "--run-id"}
             or not matches(UUID, args[3])):
         raise InvalidInput("INVALID_ARGUMENTS")
-    candidate, events, paths = parse_manifest(read_input(args[1]))
+    candidate, events, paths = parse_manifest(read_input(args[1], max_bytes))
     if candidate != head_commit():
         return {"status": "BLOCKED", "reason": "CANDIDATE_MISMATCH",
                 "neededEvidence": "증거를 수집한 커밋의 로컬 체크아웃"}

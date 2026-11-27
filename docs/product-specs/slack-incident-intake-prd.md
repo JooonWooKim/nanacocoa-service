@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 상태 | `feature/59` 로컬 모의 구현 · main 반영 대기 |
+| 상태 | 모의 구현 main 반영 완료 · [PR #60](https://github.com/JooonWooKim/nanacocoa-service/pull/60) · 운영 인수 대기 |
 | 우선순위 | P1 운영 자동화 |
 | 기준 | 2026-11-26 원격 `main` `c1def14566f6a7902530579f148881a92c8ee58d` · [PR #58](https://github.com/JooonWooKim/nanacocoa-service/pull/58) |
 | 이슈·브랜치 | [이슈 #59](https://github.com/JooonWooKim/nanacocoa-service/issues/59) · `feature/59` → `origin/feature/59` |
