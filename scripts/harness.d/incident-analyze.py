@@ -1,11 +1,16 @@
-"""Build a local incident analysis with one bounded mock model call."""
+"""Build a local mock analysis or run an explicit synthetic model pilot."""
 
+from contextlib import contextmanager
 import importlib
 import json
+import os
 import signal
 import subprocess
 import sys
 import time
+import uuid
+
+import incident_pilot
 
 
 evidence = importlib.import_module("incident-evidence")
@@ -36,6 +41,19 @@ ADVICE = {
     },
 }
 
+PILOT_CASES = (
+    ("ORDER_CREATE", "STOCK_CONFLICT", 409, {
+        "INSUFFICIENT_AVAILABLE_STOCK": "주문 시점의 판매 가능 수량이 부족했을 수 있습니다.",
+        "RESERVATION_CONTENTION": "동시 주문이 재고 예약 단계에서 경합했을 수 있습니다.",
+    }),
+    ("PAYMENT_CONFIRM", "PENDING", 202, {
+        "APPROVAL_CONFIRMATION_PENDING": "승인 결과 확정이 지연됐을 수 있습니다.",
+    }),
+    ("RECOVERY_CANCELLATION", "FAILED", None, {
+        "CANCELLATION_RECOVERY_FAILED": "취소 복구 단계에서 결과를 얻거나 반영하지 못했을 수 있습니다.",
+    }),
+)
+
 
 class DeadlineExceeded(Exception):
     """The local analysis exceeded its time budget."""
@@ -47,6 +65,17 @@ class InvalidModelOutput(Exception):
 
 def deadline_expired(_signum, _frame):
     raise DeadlineExceeded()
+
+
+@contextmanager
+def analysis_deadline(seconds):
+    previous_handler = signal.signal(signal.SIGALRM, deadline_expired)
+    try:
+        signal.setitimer(signal.ITIMER_REAL, seconds)
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 def as_bytes(value):
@@ -155,10 +184,9 @@ def analyze(args, result, model):
 def run(args, *, model=mock_model, time_limit=TIME_LIMIT_SECONDS):
     started = time.monotonic()
     result = {"modelCalls": 0, "modelCost": 0}
-    previous_handler = signal.signal(signal.SIGALRM, deadline_expired)
     try:
-        signal.setitimer(signal.ITIMER_REAL, time_limit)
-        analyze(args, result, model)
+        with analysis_deadline(time_limit):
+            analyze(args, result, model)
     except (DeadlineExceeded, subprocess.TimeoutExpired):
         result.update(status="BLOCKED", reason="TIME_LIMIT_EXCEEDED")
     except evidence.InvalidInput as error:
@@ -170,9 +198,6 @@ def run(args, *, model=mock_model, time_limit=TIME_LIMIT_SECONDS):
         result.update(status="FAIL", reason="INPUT_UNAVAILABLE")
     except (ValueError, RecursionError):
         result.update(status="FAIL", reason="INVALID_JSON")
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, previous_handler)
     if result["status"] != "PASS":
         result.pop("hypotheses", None)
         result.pop("recommendedTests", None)
@@ -180,8 +205,77 @@ def run(args, *, model=mock_model, time_limit=TIME_LIMIT_SECONDS):
     return result
 
 
+def pilot_case(candidate, number, fixture, api_key, transport, result):
+    operation, outcome, http_status, choices = fixture
+    event = {
+        "kind": "HTTP" if http_status is not None else "RECOVERY",
+        "id": str(uuid.UUID(int=number, version=4)),
+        "occurredAt": "2026-11-27T00:00:00Z",
+        "operation": operation, "result": outcome, "durationMs": 0,
+    }
+    if http_status is not None:
+        event["httpStatus"] = http_status
+    evidence.validate_event(event)
+    stage, _, sources, tests = evidence.guidance(event)
+    if not evidence.candidate_has_references(candidate, [*sources, *(evidence.TEST_PATHS[test] for test in tests)]):
+        raise incident_pilot.PilotProblem("BLOCKED", "CANDIDATE_REFERENCES_MISSING")
+    payload = {
+        "stage": stage,
+        "evidence": {"number": number, "operation": operation, "result": outcome},
+        "candidateIds": list(choices),
+    }
+    result["modelCalls"] = 1
+    response = transport(api_key, payload)
+    result["usage"] = incident_pilot.usage_tokens(response)
+    choice = incident_pilot.selected_candidate(response, payload)
+    result.update(status="PASS", reason="ANALYSIS_PREPARED", hypothesis={
+        "candidateId": choice, "stage": stage, "cause": choices[choice], "nextCheck": ADVICE[stage][1],
+        "evidenceNumber": number, "event": event, "sources": list(sources),
+    }, recommendedTests=list(tests))
+
+
+def run_live_pilot(api_key, *, transport=incident_pilot.fetch_response, time_limit=incident_pilot.CASE_TIMEOUT):
+    started = time.monotonic()
+    result = {"mode": "live-pilot", "model": incident_pilot.MODEL, "modelCalls": 0, "cases": []}
+    if not api_key or not all("!" <= character <= "~" for character in api_key):
+        return {**result, "status": "BLOCKED", "reason": "PILOT_KEY_UNAVAILABLE", "durationMs": 0}
+
+    candidate = None
+    for number, fixture in enumerate(PILOT_CASES, start=1):
+        case_started = time.monotonic()
+        case = {"case": fixture[0], "modelCalls": 0, "usage": None}
+        try:
+            with analysis_deadline(time_limit):
+                if candidate is None:
+                    candidate = evidence.head_commit()
+                    if not evidence.matches(evidence.SHA, candidate):
+                        raise incident_pilot.PilotProblem("BLOCKED", "CANDIDATE_UNAVAILABLE")
+                    result["candidateCommit"] = candidate
+                pilot_case(candidate, number, fixture, api_key, transport, case)
+        except incident_pilot.PilotProblem as error:
+            case.update(status=error.status, reason=error.reason)
+        except (DeadlineExceeded, subprocess.TimeoutExpired):
+            case.update(status="BLOCKED", reason="TIME_LIMIT_EXCEEDED")
+        except OSError:
+            case.update(status="BLOCKED", reason="PILOT_UNAVAILABLE")
+        if case["status"] != "PASS":
+            case.pop("hypothesis", None)
+            case.pop("recommendedTests", None)
+        case["durationMs"] = int((time.monotonic() - case_started) * 1000)
+        result["cases"].append(case)
+        result["modelCalls"] += case["modelCalls"]
+        if case["status"] != "PASS":
+            break
+    result.update(status=case["status"], reason=case["reason"] if case["status"] != "PASS" else "PILOT_PREPARED",
+                  durationMs=int((time.monotonic() - started) * 1000))
+    return result
+
+
 def main(args):
-    result = run(args)
+    if args == ["--live-pilot"]:
+        result = run_live_pilot(os.environ.get(incident_pilot.API_KEY_ENV))
+    else:
+        result = run(args)
     print(json.dumps(result, ensure_ascii=False))
     return EXIT_CODES[result["status"]]
 

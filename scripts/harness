@@ -29,6 +29,8 @@ usage() {
                     주문·결제 장애 해결 자료를 JSON으로 정리합니다
   incident-analyze --input <파일> <--request-id|--run-id> <번호>
                     검증된 장애 자료로 원인 후보와 확인 절차를 모의 분석합니다
+  incident-analyze --live-pilot
+                    고정 합성 사례를 전용 프로젝트에서 실제 모델로 분석합니다
   clean             build/harness 임시 결과만 삭제합니다
 
 유지보수 명령:
