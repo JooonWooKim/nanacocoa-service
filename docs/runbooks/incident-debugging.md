@@ -134,6 +134,23 @@ sqlite3 -readonly build/slack-incident/queue.db \
 시도합니다. 작업이 끝나면 수신기와 계속 실행한 작업자를 `Ctrl+C`로 종료합니다.
 [Slack 접수 PRD](../product-specs/slack-incident-intake-prd.md)
 
+### 실제 Slack 회신 파일럿
+
+승인된 테스트 채널에 전용 Slack 봇을 초대하고, 봇 토큰·워크스페이스 ID·채널 ID·
+원본 스레드의 타임스탬프를 각각 `INCIDENT_SLACK_PILOT_BOT_TOKEN`,
+`INCIDENT_SLACK_PILOT_TEAM`, `INCIDENT_SLACK_PILOT_CHANNEL`,
+`INCIDENT_SLACK_PILOT_THREAD_TS` 환경 변수로 설정합니다.
+
+```sh
+./scripts/harness slack-reply-pilot
+```
+
+`REPLY_CONFIRMED`와 `replyTs`가 표시되면 해당 스레드의 합성 회신 한 건을
+확인합니다. 재실행에서 `ALREADY_SENT`가 나오면 기존 영수증을 사용한 것입니다.
+`DELIVERY_UNCONFIRMED`이면 원본 스레드에서 실제 전달 여부를 확인합니다.
+결과 확인과 재실행에는 같은 작업 트리의 `.slack-reply-pilot/receipts.sqlite3`를
+사용합니다. [파일럿 계약](../product-specs/slack-incident-reply-pilot-prd.md)
+
 ## 3. 계층 분류
 
 - 시작·설정: 애플리케이션 프로필, 필수 환경, 의존 서비스 상태

@@ -60,6 +60,7 @@
 인가, 데이터 영향, 연결된 테스트를 포함한 집중 명세를 추가해야 합니다.
 - [주문·결제 장애 추적 PRD](order-payment-observability-prd.md)는 [이슈 #57](https://github.com/JooonWooKim/nanacocoa-service/issues/57)의 요청 번호·오류 화면·자동 복구 및 비식별 해결 자료의 기준을 정의합니다. [PR #58](https://github.com/JooonWooKim/nanacocoa-service/pull/58)로 main에 반영됐으며 운영 인수는 대기 중입니다.
 - [Slack 장애 접수와 해결 자료 회신 PRD](slack-incident-intake-prd.md)는 [이슈 #59](https://github.com/JooonWooKim/nanacocoa-service/issues/59)의 접수·중복 방지·스레드 회신과 모의 Slack 검증 기준을 정의합니다. [PR #60](https://github.com/JooonWooKim/nanacocoa-service/pull/60)로 모의 구현이 main에 반영됐으며 실제 연동은 대기 중입니다.
+- [장애 자료 실제 Slack 회신 파일럿 PRD](slack-incident-reply-pilot-prd.md)는 [이슈 #65](https://github.com/JooonWooKim/nanacocoa-service/issues/65)의 합성 회신·중복 방지와 테스트 채널 인수를 정의합니다. 로컬 구현과 모의 검증을 마쳤습니다.
 - [주문·결제 AI 장애 분석 PRD](incident-analysis-prd.md)는 [이슈 #61](https://github.com/JooonWooKim/nanacocoa-service/issues/61)의 로컬 CLI, 모의 모델, 근거 검증과 호출 한도를 정의합니다. [PR #62](https://github.com/JooonWooKim/nanacocoa-service/pull/62)로 모의 구현이 main에 반영됐으며 실제 모델 연결은 대기 중입니다.
 - [장애 분석 실제 모델 파일럿 PRD](incident-analysis-live-pilot-prd.md)는 [이슈 #63](https://github.com/JooonWooKim/nanacocoa-service/issues/63)의 합성 장애 검증, 후보·근거 검증과 전용 프로젝트 인수 기준을 정의합니다. 로컬 구현과 모의 HTTP 검증을 마쳤으며 실제 호출 인수는 대기 중입니다.
 - [격리 MySQL 8.4 품질 검사 PRD](mysql-quality-gate-prd.md)는 [이슈 #54](https://github.com/JooonWooKim/nanacocoa-service/issues/54)의 로컬·GitHub 공통 실행, 이행·JPA 및 주문·재고·결제 테스트와 실패 증거 기준을 정의합니다. [PR #56](https://github.com/JooonWooKim/nanacocoa-service/pull/56)으로 main에 반영했고 병합 후 H2·MySQL 검사를 통과했습니다.
