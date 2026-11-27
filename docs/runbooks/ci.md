@@ -60,6 +60,18 @@ GitHub는 실패 시 이 파일을 보관합니다. [검사 범위와 인수 기
 PASS의 `check` 객체를 같은 SHA의 사전점검 입력 `checks` 배열에 넣습니다. JSON에는
 상태, 완료 단계, 비식별 증거만 남습니다. [리허설 PRD](../product-specs/release-rehearsal-prd.md)
 
+## 배포 후보 롤백 리허설
+
+후보를 체크아웃하고 되돌릴 이전 버전의 전체 SHA를 지정합니다.
+
+```sh
+./scripts/harness release-rollback --previous "$PREVIOUS_RELEASE_SHA" --candidate "$(git rev-parse HEAD)"
+```
+
+이전 버전에서 만든 합성 DB 백업으로 후보 이행과 이전 앱 복원을 각각 격리 검증합니다.
+이전 앱에서 결제 완료 주문까지 조회합니다. 출력은 기술 검토에 첨부할 비식별 JSON입니다.
+운영 승인과 트래픽을 연 뒤의 거래 보존은 기존 출시 절차를 따릅니다. [롤백 리허설 PRD](../product-specs/release-rollback-prd.md)
+
 ## 운영 배포 사전점검
 
 후보의 `main` Quality 실행 번호와 [리허설 JSON](#배포-후보-격리-리허설)을 확보한 뒤

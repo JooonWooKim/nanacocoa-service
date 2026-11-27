@@ -306,10 +306,12 @@ def check_payment_guard(port):
     )
     if code != 200:
         raise RehearsalError(reason)
+    session = session_cookies(headers, cookies)
     code, payment, _ = http_json(port, "/api/payments/client-config", reason,
-                                 headers={"Cookie": session_cookies(headers, cookies)})
+                                 headers={"Cookie": session})
     if code != 503 or payment.get("code") != "PAYMENT_11" or payment.get("data") is not None:
         raise RehearsalError(reason)
+    return session
 
 
 def check_schema(stack):

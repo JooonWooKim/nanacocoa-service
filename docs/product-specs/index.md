@@ -67,4 +67,5 @@
 - [운영 배포 사전점검 PRD](production-release-preflight-prd.md)는 [이슈 #52](https://github.com/JooonWooKim/nanacocoa-service/issues/52)의 후보 품질 검사와 운영 인수 증거를 대조하는 명령 및 인수 기준을 정의합니다. [PR #53](https://github.com/JooonWooKim/nanacocoa-service/pull/53)이 main에 반영됐고 실제 운영 인수는 대기 중입니다.
 - [배포 후보 격리 리허설 PRD](release-rehearsal-prd.md)는 [이슈 #67](https://github.com/JooonWooKim/nanacocoa-service/issues/67)의 후보 고정, 격리 기동, 합성 DB 재시작·복원과 REHEARSAL 증거 기준을 정의합니다. [PR #68](https://github.com/JooonWooKim/nanacocoa-service/pull/68)로 main에 반영했습니다.
 - [배포 사전점검 증거 자동 수집 PRD](release-evidence-prd.md)는 [이슈 #69](https://github.com/JooonWooKim/nanacocoa-service/issues/69)의 GitHub 품질·격리 리허설 증거 수집과 후보 일치 검증을 정의합니다.
+- [배포 후보 롤백 리허설 PRD](release-rollback-prd.md)는 [이슈 #71](https://github.com/JooonWooKim/nanacocoa-service/issues/71)의 후보 이행, 배포 전 백업을 이용한 이전 앱 복원과 주문 조회를 정의합니다.
 - [배포 검증 재현성과 PR 품질 검사 PRD](release-readiness-prd.md)는 [이슈 #50](https://github.com/JooonWooKim/nanacocoa-service/issues/50)의 공통 설정, 깨끗한 체크아웃 검증, GitHub 품질 검사와 격리 배포 리허설을 기록합니다. [PR #51](https://github.com/JooonWooKim/nanacocoa-service/pull/51)이 main에 반영됐고 병합 후 품질 검사도 통과했습니다.
