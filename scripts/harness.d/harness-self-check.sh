@@ -117,6 +117,14 @@ if ! python3 -B "$PROJECT_DIR/src/test/python/test_incident_analysis.py" >/dev/n
 	printf '장애 분석 fixture 실패 · test_incident_analysis.py를 확인하세요\n' >> "$violations"
 fi
 
+if ! python3 -B "$PROJECT_DIR/src/test/python/test_incident_live_pilot.py" >/dev/null 2>&1; then
+	printf '실제 모델 파일럿의 모의 HTTP fixture 실패 · test_incident_live_pilot.py를 확인하세요\n' >> "$violations"
+fi
+
+if ! python3 -B "$PROJECT_DIR/src/test/python/test_pr_create.py" >/dev/null 2>&1; then
+	printf 'PR 생성·Codex 리뷰 fixture 실패 · test_pr_create.py를 확인하세요\n' >> "$violations"
+fi
+
 if ! python3 -B "$PROJECT_DIR/src/test/python/test_slack_incident_intake.py" >/dev/null 2>&1; then
 	printf '모의 Slack 장애 접수 fixture 실패 · test_slack_incident_intake.py를 확인하세요\n' >> "$violations"
 fi

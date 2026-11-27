@@ -69,6 +69,30 @@ docker compose logs --tail=200 app
 `python3 -B src/test/python/test_incident_analysis.py -v`로 실행합니다.
 [분석 PRD](../product-specs/incident-analysis-prd.md)
 
+### 합성 사례 실제 모델 파일럿
+
+승인된 전용 프로젝트의 키가 `INCIDENT_ANALYSIS_OPENAI_API_KEY` 환경 변수에
+설정된 터미널에서 실행합니다. 키를 명령 인자·증거 파일에 넣으면 안 됩니다.
+
+```sh
+./scripts/harness incident-analyze --live-pilot
+```
+
+재고 예약 실패, 승인 미확정, 자동 복구 실패 순으로 고정된 합성 사례를 실행합니다.
+각 사례에서 전용 프로젝트로 한 번 호출할 수 있으며, 중간에 `FAIL`이나 `BLOCKED`가
+발생하면 남은 사례에서 호출하지 않습니다. 전체 `PASS`는 세 사례의 모델 응답이
+검증됐다는 뜻입니다. 이후 담당자가 `cases`의 근거와 `nextCheck`를 대조해 인수합니다.
+
+키가 없으면 `PILOT_KEY_UNAVAILABLE`과 호출 0회를 출력합니다. `usage`는 확인된 토큰
+사용량이며 응답에서 확인할 수 없으면 `null`입니다. PR·CI에서는 아래 모의 HTTP
+검사를 사용합니다.
+
+```sh
+python3 -B src/test/python/test_incident_live_pilot.py -v
+```
+
+[파일럿 구현 PRD](../product-specs/incident-analysis-live-pilot-prd.md)
+
 ### 모의 Slack 접수와 회신
 
 Python 3.9 이상으로 저장소에서 아래 명령을 실행하면 임시 루프백 포트와 SQLite에서
