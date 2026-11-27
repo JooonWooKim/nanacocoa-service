@@ -47,6 +47,19 @@ BASELINED를 표시하면서 종료 코드 0을 반환할 수 있습니다. 기�
 요약은 `build/harness/mysql-quality/summary.json`에서 확인합니다.
 GitHub는 실패 시 이 파일을 보관합니다. [검사 범위와 인수 기준](../product-specs/mysql-quality-gate-prd.md)
 
+## 배포 후보 격리 리허설
+
+검토한 후보를 체크아웃한 뒤 로컬 Docker와 Compose에서 실행합니다.
+
+```sh
+./scripts/harness release-rehearsal --candidate "$(git rev-parse HEAD)"
+```
+
+후보 이미지와 임시 MySQL·Redis를 기동하고, 합성 데이터가 앱 재시작과 별도 DB 복원 뒤에도
+같은지 확인합니다. stdout JSON의 종료 코드는 PASS 0, FAIL 1, BLOCKED 2입니다.
+PASS의 `check` 객체를 같은 SHA의 사전점검 입력 `checks` 배열에 넣습니다. JSON에는
+상태, 완료 단계, 비식별 증거만 남습니다. [리허설 PRD](../product-specs/release-rehearsal-prd.md)
+
 ## 운영 배포 사전점검
 
 운영 담당자는 비식별 증거를 [사전점검 PRD](../product-specs/production-release-preflight-prd.md)의

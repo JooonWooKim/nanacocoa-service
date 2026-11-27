@@ -24,6 +24,8 @@ usage() {
   smoke             Compose와 이미 실행 중인 app을 검사합니다
   release-preflight --input <파일>
                     배포 후보와 운영 인수 증거를 대조합니다
+  release-rehearsal --candidate <전체 커밋 SHA>
+                    후보 격리 기동·재시작·DB 복원 증거를 생성합니다
   evidence          비식별화된 상태·증거 묶음을 수집합니다
   incident-evidence --input <파일> <--request-id|--run-id> <번호>
                     주문·결제 장애 해결 자료를 JSON으로 정리합니다
@@ -98,6 +100,13 @@ case "$command" in
 			exit 2
 		fi
 		exec python3 -B "$COMMAND_DIR/release-preflight.py" "$@"
+		;;
+	release-rehearsal)
+		if ! command -v python3 >/dev/null 2>&1; then
+			printf '%s\n' '{"schemaVersion":1,"result":"BLOCKED","exitCode":2,"reason":"PYTHON_UNAVAILABLE","completed":[]}'
+			exit 2
+		fi
+		exec python3 -B "$COMMAND_DIR/release-rehearsal.py" "$@"
 		;;
 	mysql-quality)
 		if [ "$#" -ne 0 ]; then
